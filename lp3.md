@@ -1,6 +1,7 @@
 # Literate Programming
 
-This is the third cycle of literate programming. In this cycle, we want to implement macros.
+This is the third cycle of literate programming. In this cycle, we want to implement directives and subheading directives. We will not implement macros at this time. 
+
 
 ## So far
 
@@ -8,7 +9,10 @@ Each file can specify the leading character(s) for a substitution, but an unders
 
 Use 
     FILE: name, regexp   
-to specify a different substituion regex. The heading should be the first parenthetical group. 
+to specify a different substituion regex. The heading should be the first parenthetical group.
+
+The default is the same as 
+    /\_\"([^"]*)\"/
 
 ## Recommendations
 
@@ -18,7 +22,7 @@ A lot of the literate programming for JavaScript might involve creating function
       code
     }
 
-in some code block (or subblocks). Let's say it is in section highfun
+in some code block. Let's say it is in section highfun
 
 And then later on we could import them into some other control structure by using
 
@@ -34,9 +38,9 @@ Note that we do want the heading to be inlined for this though one could write i
 
 ## Directives
 
-We will implement more directives. Directives will be recognized as, at the start of a line, all caps followed by a colon. 
+We will implement more directives. Directives will be recognized as, at the start of a line, as all caps and a matching word. This may be conflict, but seems unlikely. A space would defeat the regex.
     function (line) {     
-      var reg = /^([A-Z]+)\:(.*)$/
+      var reg = /^([A-Z]+)\s+(.*)$/
       var match = ret.exec(line)
       if (match) {
         return [match[1], match[2]];
@@ -47,14 +51,23 @@ We will implement more directives. Directives will be recognized as, at the star
 
 The function takes in a line and either returns [directive name, unparsed parameters] or false if no directive. 
 
+* FILE already present; puts the code block and its substitutions in a file. regex?
 * ADD take this code block and add it to another codeblock. Specify pre, post, and a possible priority level. 
 * DEBUG Some debugging output code. 
 * FIDDLE Something that allows one to specify different parameters and generate multiple compiles/runs or something. 
 * RETURN returns control to other code block
 * LOAD give file name, location, section to import, version number. Create a literate program manager kind of thing like npm. Have tests that run to make sure compatible. Could do latest if it passes and works back until working version or something. 
-* MODULE different than LOAD. It loads a npm module or whatever is specfied. 
-* REQUIRE is a marker for where to place modules for that section of code. All MODULEs are placed at that point, in the order they are seen.
+* MODULE grab a module from a repository:  install command, link to repo/other comments
+* COMMAND write a command line snippet that will be run. SECURITY problem. 
 * VERSION gives a version label to the section. Semantics is the version number followed by any comments about it. 
+* AFTER/BEFORE/REPLACE takes in section name, regex string to match and will place the code block after the match/before the match/instead of the match respectively. It will do 
+
+
+### JavaScript Directives
+
+* VARS A list of the variables for the snippet of interest. This is mainly to deal with loop variables. 
+* HEREVARS places the variables of a section there. It can be a comma separated list of headings; the vars will be placed in that order.
+* SET/TEST/RESULT is a test code for snippets. SET will set variable values for multiple tests, TEST will then run the snippet and RESULT checks it. 
 
 In all of these a parenthetical right after the term will link it to that section. Otherwise, it relates to the current code block section. 
 
@@ -78,7 +91,7 @@ TEST for example could have some code above it (with substitutions) and then TES
 
 The load directive allows one to load another literate program. This means one has to specify a location (file system or url), a version number, and a section heading to start the grabbing/compiling. One should detect looping, with failure as the probable result. 
 
-MODULE: npm, semver, [semver](https://github.com/isaacs/node-semver)
+MODULE npm, semver, [semver](https://github.com/isaacs/node-semver)
 
     
 ##### DOC
@@ -171,23 +184,33 @@ Each subheading is nested in the one above. So we need structures that hold the 
 
 ## Macros
 
-A macro takes in some parameters and outputs some code. A macro is written in JavaScript and is evaluated by the server. This is a security risk for running other's code. 
+A macro takes in some parameters and outputs some text. A macro is written in JavaScript and is evaluated by the server. This is a security risk for running other's code. 
 
 A macro is initiated just as a substitution, but parentheses after it. The whole thing just gets eval'd.
 
 So a macro such as _"check for undefined"('x')  would have 'x' thrown in and it is used in the code as a string. 
 
+A main use case is in coding up documents, not programs. So this allows for the dynamic generation of static text. 
+
 ### Macro regex
 
-The regex looks for underscore, quotes, then parenthetical. The parenthetical cannot have parentheses. 
+The regex looks for 2 underscores and some stuff in a parenthses. The parenthetical cannot have parentheses. 
 
-    var macroreg = /\_\"([^"])\"\(()\)/;
+    var macroreg = /\_\_([^"]+)\(([^)]+)\)/;
 
-This needs to be converted in another iteration to a full parser to allow parentheses and even other macros in it. 
+
 
 ##### Examples
 
-The macroreg could be 
+A troublesome thing in JavaScript is knowing if something is defined or not. So let's say we want to check for it being defined and supply a default value: 
+
+    __undefined("y", 2)
+
+And the macro undefined could be 
+
+  function (name, val) {
+    return "if (typeof "+name+' === "undefined") { 'y = 2;}
+  }
 
   
 ### Types
