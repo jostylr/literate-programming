@@ -3,16 +3,182 @@
 This is the third cycle of literate programming. In this cycle, we want to implement directives and subheading directives. We will not implement macros at this time. 
 
 
-## So far
+## So far (modified)
 
 Each file can specify the leading character(s) for a substitution, but an underscore will be default. To create a file, use FILE: name at the beginning of a line. Then all code in that block will define the contents of that file. 
 
-Use 
-    FILE: name, regexp   
-to specify a different substituion regex. The heading should be the first parenthetical group.
+Use FILE name
 
-The default is the same as 
+Use substitutions _"heading title" for replacements. 
+
+There was a substitution regex idea, but there is use in having convention:
+ 
     /\_\"([^"]*)\"/
+    
+
+
+## Capital letters
+
+We will use all caps to signify directives. The all caps letter only matches if there is something to match. 
+
+A directive is an all caps as first word on the line. 
+
+    FILE lp.js
+
+We also use constants in code. The patten is caps and periods(in middle). So 
+
+    p {color: MOJO.RED}
+    
+
+The reg would be
+
+    /[A-Z][A-Z\.]*[A-Z]/
+
+## Runnable Code
+
+One should also be able to run JavaScript code directly in the interpreter. I think a decent convention would be underscore backtick code  backtick.        
+
+    _`javascript code`
+
+The eval output (last evaluated value) is what is placed in the code to replace the backtick call.
+
+Before evaling the code, the substitutions are run on this. So if one wants to run a code block: 
+
+    _`_"javascript code block"`
+    
+Not pretty, but it offers some flexibility. I imagine, most of the time, it should be a little bit of code fragment that is typed directly. One could have a directive that RUNs setup code allowing this bit to just read off from that. 
+
+## Multi-level substitutions
+
+There may be need to run substitutions after a first pass or more. For example, compiling a jade template into html and then running the substitutions that put in the text of the template. 
+
+In this case, I think multiple underscores could do the trick. 
+
+Example:
+
+    #example
+        _"nav jade"
+        #text
+             __"markdown text"
+    
+
+## Line analysis
+
+So we have three basic things that we might see in code that the compiler needs to do something about:
+
+1. Substitutions
+2. Constants
+3. Evaling
+
+In earlier versions, we have commenting. We will drop this from this version. It does not seem useful. Just do a find in the text. 
+
+The function takes in a string for the code and returns a string if replacements happened or false if none happened.
+
+We run through the code string, matching block name/js code block/constant. We note the location, get the replacement text, and continue on. We also keep a look out for multi-level, preparing to reduce the level. 
+
+Once all matches are found, we replace the text and then return the array. 
+
+
+    function oneSub (code, name, doc) {
+        
+        _"Max sub limit"
+                
+        code = doc.pre[name](code, doc); 
+
+        var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|([A-Z][A-Z.]*[A-Z]))/g;
+        var rep = [];
+        var toRun, newCode, match;
+        
+        var blocks = doc.blocks;
+
+        while (match = reg.exec(code) ) {
+            
+            //multi-level 
+        
+            if (match[2]) {
+                // section
+                if (blocks.hasOwnProperty(match[2])) {
+                    _"Matching block, multi-level"
+                    // do a one-level sub
+                    newCode = blocks[match[2]].code.join("\n");
+                    // we use or for the case of no subs
+                    rep.push([match[0], oneSub(newCode, match[2], doc) || newCode]);
+                }               
+            } else if (match[3]) {
+                // code
+                _"Matching block, multi-level"
+                toRun = fullSub(match[3]);
+                rep.push([match[0], eval(toRun)]);
+
+            } else {
+                // constant
+                if (constants.hasOwnProperty(match[4])) {
+                  rep.push([match[0], constants[match[4]]]);
+                }
+            }
+
+        }
+        //do the replacements or return false
+        if (rep.length > 0) {
+            for (var i = 0; i < rep.length; i += 1) {
+                code = code.replace(rep[i][0], rep[i][1]);
+            }
+            code = doc.post[name](code, doc); 
+            return code; 
+            
+        } else {
+            return false;
+        }
+    }
+        
+We need the function fullSub which runs through the code repeatedly until all substitutions are made. 
+
+We have two hooks for pre and post processing of the joined code text. 
+
+### Max sub limit
+
+We need to regard against infinite recursion of substituting. We do this by having a maximum loop limit. 
+
+        if (subtimes >= maxsub) {
+            return false;
+        } else {
+            subtimes += 1;
+        }
+
+#### Initial subtimes
+
+    var subtimes = 0;
+    var maxsub = 1e5;
+
+
+### The full substitution 
+
+This is invoked with a FILE directive. Each file is processed fully. This is also what needs to be done for any eval'd code substitution blocks.
+
+    function (name, doc) {
+        var compiled = doc.blocks[name].code.join("\n");
+            
+        var newText = compiled;
+        while(newText) {
+            compiled = newText;
+            newText = oneSub(compiled, name, doc);
+        }
+            
+        return compiled;
+    }
+
+The objects pre and post are objects filled by the directives for pre and post compilation phases. 
+
+
+### Matching block, multi-level
+
+There is a match, but the level is not yet ready  for full substitution
+
+                    if (match[1] && match[1].length > 1) {
+                        rep.push([match[0], match[0].slice(1)]);
+                        continue;
+                    }
+
 
 ## Recommendations
 
@@ -36,25 +202,385 @@ or one could write
 
 Note that we do want the heading to be inlined for this though one could write it on separate lines. 
 
-## Directives
+## Directives parser
 
-We will implement more directives. Directives will be recognized as, at the start of a line, as all caps and a matching word. This may be conflict, but seems unlikely. A space would defeat the regex.
-    function (line) {     
-      var reg = /^([A-Z]+)\s+(.*)$/
-      var match = ret.exec(line)
+We will implement more directives. Directives will be recognized as, at the start of a line, as all caps and a matching word. This may be conflict, but seems unlikely. A space in front would defeat the regex. Periods are also allowed as in constants. At least two capital letters are required.
+
+    function (line, doc) {     
+      var reg = /^([A-Z][A-Z\.]*[A-Z])\s*(.*)$/;
+      var match = reg.exec(line);
       if (match) {
-        return [match[1], match[2]];
+        if (directives.hasOwnProperty(match[1])) {
+            directives[match[1]](match[2], doc);
+            return true;
+        } else {
+            return false;
+        }
       } else {
         return false;
       }
     }
 
-The function takes in a line and either returns [directive name, unparsed parameters] or false if no directive. 
+The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
+
+
+## Subsection Headings
+
+Subsection headings refer to the higher level previous code block. One can write "#### Test"   (cap not matters) to write a test section for "## Great code".  This allows for the display of the markdown to have these sections hidden by default. 
+Some possibilities as above, but also a doc type for writing user documentation. The literate programming is the developer's documentation, but how to use whatever can be written from within as well. 
+
+By going two extra levels, we can recognize levels for testing and so forth without polluting the global namespace. Two levels could be those, such as examples, that should be for general review while three levels could be for edge case test cases, hidden by default. 
+
+## Chunk headings
+
+Parse out the section headings. These constitute "#+" followed by a name. Grab what follows. Parse code blocks indicated by 4 spaces in. One block per section reported, but can be broken up. Stitched together in sequence. 
+
+To do this programmatically, we will split the whole text by newlines. At each line, analyze whether there is a "#" starting it--if so, get text after for name of section. At each line, check if there are four spaces. If so, add the line of code to the block. 
+
+Each subheading is nested in the one above. So we need structures that hold the block and heading hierarchy.
+
+
+## Parse lines
+
+We create a function that takes in a literate program, splits it into lines, and parses them, returning a structure for compilation. 
+
+The structure consists of blocks that are themselves objects with an array of code lines, an array of the full lines, an array of any direct descendants, any subdirectives, and then any other properties object. 
+
+    function (lp) {
+      var i, line, nn; 
+      var doc = {
+        blocks : {},
+        cur : _"Current structure",
+        defaultProcessors : _"Default processors",
+        files : [],
+        pre : {}, 
+        post : {}
+      };
+      doc.processors = [].concat(doc.defaultProcessors);
+      var lines = md.split("\n");
+      doc.cur.level = 0; 
+      var n = lines.length;
+      for (i = 0; i < n; i += 1) {
+        line = lines[i];
+        nn = doc.processors.length;
+        for (var ii = 0; ii < nn; ii += 1) {
+            if (doc.processors[ii](line, doc) ) {
+                doc.cur.full.push(line);
+                break;
+            }
+        }
+      }
+      return doc;
+    }
+
+So we need to define four functions dealing with each type of object. They act on the doc object as necessary and will return true if successfully matched, short-circuiting the rest. 
+
+### Current structure
+
+We have an array of code lines, the array of full lines, sub directive headings, and properties
+
+    {
+      code : [],
+      full : [],
+      subdire : [],
+      prop : {}
+    }
+
+
+### Default processors
+
+The processors array allows us to change the behavior of the parser based on directives. They should return true if processing is done for the line. The argument is always the current line and the doc structure. 
+
+    [ 
+    _"Code parser", 
+    _"Head parser", 
+    _"Directives parser", 
+    _"Plain parser" 
+    ]
+
+
+### Code parser
+
+We look for 4 spaces of indentation. If so, it is code and we store it in the current code block. Alternative pathways are handled elsewhere by replacing cur.code with something else and restoring it as necessary.
+
+    function (line, doc) {
+      var code = /^ {4}(.+)$/;
+      var match = code.exec(line);
+      if (match) {
+        doc.cur.code.push(match[1]);
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+
+
+### Head parser
+
+We recognize a heading by the start of a line having '#'. We count the number of sharps, let's call it level. The old level is oldLevel.
+
+If level <= oldLevel +1, then we have a new subsection of code.
+
+If level >= oldLevel +2, then this is a Heading Directive and we try to match it with a directive. It feeds directly into the oldLevel section and is not globally visible. 
+
+For new global blocks, we use the heading string as the block name. 
+
+    function (line, doc) {
+      var level, oldLevel, cur, name;
+      var head = /^(\#+)\s*(.+)$/;
+      var match = head.exec(line);
+      if (match) {
+        name = match[2].trim();
+        oldLevel = doc.level || 0;
+        level = match[1].length;
+        cur = _"Current structure";
+
+        _"Directive heading"
+        
+        // new code block
+        
+        doc.blocks[name] = cur; 
+        doc.cur = cur; 
+        doc.level = level;
+        doc.name = name;        
+        doc.pre[name] = function (code, doc) {return code;};
+        doc.post[name] = function (code, doc) {return code;};
+        // new processors for each section
+        doc.processors = [].concat(doc.defaultProcessors);
+        
+        return true;
+      } 
+      return false;
+    }
+
+In the above, we are defining the default processors again fresh. This prevents any kind of manipulations from leaking from one section to another. It could be a performance penalty, but probably not a big deal. Garbage collection should remove old processors. 
+
+
+#### Directive heading
+
+Here we want to change the current block to take the current part, but it needs to be added to the parent's subdire
+
+        if (level >= oldLevel +2) {
+            level = oldLevel; 
+            doc.cur = cur; 
+            doc.blocks[doc.name].subdire.push(cur);
+            return true;
+        }
+
+
+### Plain parser
+
+This is a default. It means there is nothing special about the line. So we simply add it to the current full block.
+
+    function (line, doc) {
+      doc.cur.full.push(line);
+      return true;
+    }
+
+## The Program
+
+Open the file to read and then read it, parse the lines,  piece them together, save file. 
+
+    /*global require, process, console*/
+
+    _"Load modules"
+
+
+    _"Utility Trim"
+    
+    var save = _"Save files";
+    
+    var directives = _"Directives";
+
+    var constants = {};
+    
+    _"Load file"
+    var lineparser = _"Parse lines";
+        
+    var doc = lineparser(md);
+    
+    _"Initial subtimes"
+    
+    var oneSub = _"Line analysis";
+    var fullSub = _"The full substitution";
+    
+    var makeFiles = _"Make files";
+    
+    makeFiles(doc);
+
+
+
+FILE lp3.js
+JS.TIDY
+JS.HINT
+
+## The Docs
+
+Here we write the basic docs for the user.
+
+    lp3 is the third iteration of the literate programming attempt by jostylr. It handles multiple files, substitutions, macros, and subheading directives. 
+
+    To run this, the basic command is
+
+        node lp3.js file.md
+    
+    where file.md is the literate program to be parsed.
+
+    The literate program has multiple sections that get weaved together. 
+
+    _"Directives Doc"
+
+    _"Substitution Doc"
+
+    _"Subheading directives Doc"
+
+    _"Further information on literate programming"
+
+
+ //FILE: lp3Doc.md
+
+### Further information on literate programming
+
+
+
+
+
+
+## Directives
+
+
+Create the object that holds the directives. It will contain object names for any directives that need to be instituted. Each of the values should be a function that takes in the material on the line post-command and the doc which gives access to the current block and name. 
+
+
+    { 
+        "FILE" : _"File directive",
+        "JS.TIDY" : _"JS tidy",
+        "JS.HINT" : _"JS hint"
+    }
+
+
+### File directive
+     
+The command is `FILE fname.ext` where fname.ext is the filename and extension to use. 
+
+    function (options, doc) {
+        options = options.trim();
+        doc.files.push([options, doc.name]);
+    }
+
+### JS tidy
+
+Run the compiled code through JSBeautify 
+
+    function (options, doc) {
+       var post = doc.post[doc.name];
+       doc.post[doc.name] = function (code, doc) {
+           code = post(code, doc);
+           return beautify(code, options ||{ indent_size: 2, "jslint_happy": true } );
+       };
+    }
+   
+
+### JS hint
+
+Run the compiled code through JSHint and output the results to console.
+
+    function (options, doc) {
+       var post = doc.post[doc.name];
+       doc.post[doc.name] = function (code, doc) {
+           code = post(code, doc);
+           jshint(code, options ||{ } );
+           var log = [], err;
+           for (var i = 0; i < jshint.errors.length; i += 1) {
+               err = jshint.errors[i];
+               log.push(err.line+","+err.character+": "+err.reason);
+           }
+           console.log(log.join("\n"));
+           return code;
+       };
+    }
+
+
+### NPM module
+
+Take in module name and place a global require variable at top of
+
+
+## Make files
+
+We now want to assemble all the code. This function takes in a parsed lp doc and uses the files array to know which files to make and how to weave them together. 
+
+So the plan is to go through each item in files. Call the full substitute method on it and then save it. 
+
+    function (doc) {
+        var files = doc.files;
+        var fname, blockname, text;
+        for (var i = 0; i < files.length; i  += 1) {
+            fname = files[i][0];
+            blockname = files[i][1];
+            text = fullSub(blockname, doc);
+            save(fname, text);
+        }
+    }
+
+The save command will save the text block to the filename. 
+
+
+
+
+## Load file
+
+Get the filename from the command line arguments. It should be third item in [proccess.argv](http://nodejs.org/api/process.html#process_process_argv).  
+
+No need to worry about async here so we use the sync version of [readFile](http://nodejs.org/api/fs.html#fs_fs_readfilesync_filename_encoding).
+
+    var filename, md;
+    filename = process.argv[2];
+    md = fs.readFileSync(filename, 'utf8');
+
+
+## Save files
+    
+Given name and text, save the file. 
+
+    function (name, text) {
+          fs.writeFileSync(name, text, 'utf8');
+    }
+
+
+## Utility Trim
+
+This was lifted from JavaScript the Definitive Guide: 
+
+    // Define the ES5 String.trim() method if one does not already exist.
+    // This method returns a string with whitespace removed from the start and end.
+    String.prototype.trim = String.prototype.trim || function() {
+       if (!this) return this;                // Don't alter the empty string
+       return this.replace(/^\s+|\s+$/g, ""); // Regular expression magic
+    };
+
+
+## Load modules
+
+We need the filesystem module that is default installed.
+
+    var fs = require('fs');
+    var beautify = require('js-beautify').js_beautify;
+    var jshint = require('jshint').JSHINT;
+
+## References
+
+I always have to look up the RegEx stuff. Here I created regexs and used their [exec](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/RegExp/exec) method to get the chunks of interest. 
+
+[MDN RegExp page](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/RegExp)
+
+
+## Directive Implementation
 
 * FILE already present; puts the code block and its substitutions in a file. regex?
 * ADD take this code block and add it to another codeblock. Specify pre, post, and a possible priority level. 
 * DEBUG Some debugging output code. 
-* FIDDLE Something that allows one to specify different parameters and generate multiple compiles/runs or something. 
 * RETURN returns control to other code block
 * LOAD give file name, location, section to import, version number. Create a literate program manager kind of thing like npm. Have tests that run to make sure compatible. Could do latest if it passes and works back until working version or something. 
 * MODULE grab a module from a repository:  install command, link to repo/other comments
@@ -158,424 +684,3 @@ This is a place that can input debugging code.
 * VERSION gives a version label to the section. Semantics is the version number followed by any comments about it. 
 
 
-## Subsection Headings
-
-Subsection headings refer to the higher level previous code block. One can write "#### Test"   (cap not matters) to write a test section for "## Great code".  This allows for the display of the markdown to have these sections hidden by default. 
-Some possibilities as above, but also a doc type for writing user documentation. The literate programming is the developer's documentation, but how to use whatever can be written from within as well. 
-
-By going two extra levels, we can recognize levels for testing and so forth without polluting the global namespace. Two levels could be those, such as examples, that should be for general review while three levels could be for edge case test cases, hidden by default. 
-
-### Chunk headings
-
-Parse out the section headings. These constitute "#+" followed by a name. Grab what follows. Parse code blocks indicated by 4 spaces in. One block per section reported, but can be broken up. Stitched together in sequence. 
-
-To do this programmatically, we will split the whole text by newlines. At each line, analyze whether there is a "#" starting it--if so, get text after for name of section. At each line, check if there are four spaces. If so, add the line of code to the block. 
-
-Each subheading is nested in the one above. So we need structures that hold the block and heading hierarchy.
-
-
-
-
-
-
-
-
-* EXAMPLE  This makes the code block run as an example. There should be a dividing line between input and expected output. The difference between this and test is that an example should be readable and illuminating 
-
-## Macros
-
-A macro takes in some parameters and outputs some text. A macro is written in JavaScript and is evaluated by the server. This is a security risk for running other's code. 
-
-A macro is initiated just as a substitution, but parentheses after it. The whole thing just gets eval'd.
-
-So a macro such as _"check for undefined"('x')  would have 'x' thrown in and it is used in the code as a string. 
-
-A main use case is in coding up documents, not programs. So this allows for the dynamic generation of static text. 
-
-### Macro regex
-
-The regex looks for 2 underscores and some stuff in a parenthses. The parenthetical cannot have parentheses. 
-
-    var macroreg = /\_\_([^"]+)\(([^)]+)\)/;
-
-
-
-##### Examples
-
-A troublesome thing in JavaScript is knowing if something is defined or not. So let's say we want to check for it being defined and supply a default value: 
-
-    __undefined("y", 2)
-
-And the macro undefined could be 
-
-  function (name, val) {
-    return "if (typeof "+name+' === "undefined") { 'y = 2;}
-  }
-
-  
-### Types
-
-* TEST Give some input, write down expected output, and something about running it. 
-
-## Parse lines
-
-We create a function that takes in a literate program, splits it into lines, and parses them, returning a structure fur compilation. 
-
-The structure consists of blocks that are themselves objects with an array of code lines, an array of the full lines, an array of any direct descendants, any subdirectives, and then any other properties object. 
-
-    function (lp) {
-      var i, line; 
-      var firstblock = [];
-      var doc = {
-        blocks : {},
-        cur : _"Current structure"
-      };
-      var lines = md.split("\n");
-      doc.cur.level = 0; 
-      var n = lines.length;
-      for (i = 0; i < n; i += 1) {
-        line = lines;
-        code(line, doc) ||
-        head(line, doc) || 
-        directive(line, doc) ||
-        plain(line, doc);
-      }
-      return doc;
-    }
-
-So we need to define four functions dealing with each type of object. They act on the doc object as necessary and will return true if successfully matched, short-circuiting the rest. 
-
-### Current structure
-
-We have an array of code lines, the array of full lines, direct escendants, sub directive headings, and properties
-
-    {
-      code : [],
-      full : [],
-      desc : [],
-      subdire : [],
-      prop : {}
-    }
-
-### Code parse 
-
-We look for 4 spaces of indenation. If so, it is code and we store it in the current code block. Alternative pathways are handled elsewhere by replacing cur.code with something else and restoring it as necessary.
-
-    function (line, doc) {
-      var code = /^ {4}(.+)$/;
-      match = code.exec(line);
-      if (match) {
-        doc.cur.full.push(line);
-        doc.cur.code.push(match[1]);
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-Done. 
-
-##### TESTFUN
-
-PREP : doc = {cur: {full : [], code : []}}
-IN: "    some code;", doc
-RUN:
-OUT: true
-CHECK : doc === {cur: {full : ["    some code;"], code : ["some code;"]}}
-
-
-### Head parse
-
-We recognize a heading by the start of a line having '#'. We count the number of sharps, let's call it level. The old level is oldLevel.
-
-If level = oldLevel +1, then we have a new subsection of code. It will be a descendant of the old section, but it will also appear for free access. 
-
-If level > oldLevel +2, then this is a Heading Directive and we try to match it with a directive. It feeds directly into the oldLevel section and is not globally visible. 
-
-If level <= oldLevel then it pops up as a new subsection as a descendant at the earliest previous level of lower number. 
-
-For new global blocks, we use the heading string as the block name. 
-
-    function (line, doc) {
-      var match, level, oldLevel, cur, old;
-      var head = /^(\#+)\s*(.+)$/;
-      match = head.exec(line);
-      if (match) {
-        match[2] = match[2].trim();
-        oldLevel = doc.level || 0;
-        level = match[1].length;
-        cur = _"Current structure";
-        old = doc.curBlock;
-
-If directive, we do something different entirely. We cut out early with a return. 
-
-        if (level >= oldLevel +2) {
-          headDirective(match[2], cur, doc); 
-          return true;
-        }
-
-First we check if this will be a descendant of another block. If so, we go up the parent chain looking for a parent whose level is lower than level. Once found, that is the old to proceed with. 
-
-        if (level <= oldLevel) {
-          doc.level = level;
-          parent = old.parent; 
-          while (old.parent && parent.level >= level) {
-            old = old.parent;
-          }
-
-Old is now set and we move on to get everything going. 
-
-
-
-        while (headlevel <= headcrumbs.length) {
-          headcrumbs.shift();
-        }
-        while (headlevel > headcrumbs.length + 1) {
-          headcrumbs.unshift("");
-        }
-        headlevel += 1; 
-        headcrumbs.unshift(match[2]);
-        current = blocks[match[2]] = [];
-
-We will also assemble the full block as well. 
-
-        curfull = fullblocks[match[2]] = [];
-      }
-
-    }
-
- NOT DONE   
-
-### Directive parse
-
-If directive, it tries to execute the directive, passing in whatever follows as the first argument and then the current code block and current full block.  
-
-    funciton (line, doc) {
-     var directive = /^\s*([A-Z]+)\:\s*(.*)$/;
-          match = directive.exec(line);
-          if (match && (dire.hasOwnProperty(match[1]))) {
-            dire[match[1]](match[2], current, curfull);
-          }
-
-    }
-  
-NOT DONE
-
-### Plain parse
-
-This is a default. It means there is nothing special about the line. So we simply add it to the current full block.
-
-    function (line, doc) {
-      doc.cur.full.push(line);
-      return true;
-    }
-
-Done.
-
-## The Program
-
-Open the file to read and then read it, extract the list of names, extract the code blocks, piece them together, save file. 
-
-    _"Load modules"
-    _"Save files"
-    _"Load file"
-    _"Get comment function"
-    _"Directive execute"
-    _"Chunk headings"
-    _"DoSub"
-    _"Make substitutions"
-
-
-FILE: lp3.js
-
-## The Docs
-
-Here we write the basic docs for the user.
-
-    lp3 is the third iteration of the literate programming attempt by jostylr. It handles multiple files, substitutions, macros, and subheading directives. 
-
-    To run this, the basic command is
-
-        node lp3.js file.md
-    
-    where file.md is the literate program to be parsed.
-
-    The literate program has multiple sections that get weaved together. 
-
-    _"Directives Doc"
-
-    _"Substitution Doc"
-
-    _"Subheading directives Doc"
-
-    _"Further information on literate programming"
-
-
-FILE: lp3Doc.md
-
-### Further information on literate programming
-
-
-
-
-
-
-## Directive execute
-
-
-Create the object dire. It will contain object names for any directives that need to be instititued. For now, just FILE which adds to the files list. It has an optional regex string for matching substitutions. 
-
-    var files = {};
-
-    var dire = {
-      FILE : function (options, code, full) {
-        var reg = /^([a-zA-z0-9\/.]+)(?:\s*\,\s*(\S+))?/;
-        var match = reg.exec(options);
-        if (match) {
-          var filename = match[1],
-              sub = (match[2]) ? (new RegExp(match[2])) : /\_\"([^"]+)"/;
-          files[filename] = [sub, code, full, typeComment(filename)];
-        } else {
-            console.log("error", options);
-        }
-      }
-    };
-
-The default regex matches _"heading name"  It replaces the whole line that it appears on. This is code block insertion.
-
-
-## Get comment function
-
-We need parse the type of file and then get the comment function associated with it. The markdown comment is nothing since the only way is HTML, but that could appear in some markdowns? Need to test in tumblr. 
-
-    var fileTypes = { 
-      js : function (type, name) {
-        return "//"+type+" "+name+"\n";
-      },
-      html : function (type, name) {
-        return "<!--"+type+" "+name+"!-->\n";
-      },
-      css : function (type, name) {
-        return "/*"+type+" "+name+"*/\n";
-      },
-      md : function (type, name) {
-        return ""; 
-      },
-      none : function (type, name) {
-        return ""; 
-      }
-    };
-
-    var typeComment = function (filename) {
-      var dots = filename.split(".");
-      var type = dots[dots.length -1];
-      return fileTypes[type] || fileTypes.none;
-    };
-
-
-## Make substitutions
-
-We now want to assemble all the code. At this point in the code, we have the files object which is of the form:
-
-filename: [regex to match, code blocks array, full lines array]
-
-So the plan is to go through each item in files. For every heading requested, grab the code, make substitutions, and then assemble. 
-
-    var fname, file;
-    for (fname in files) {
-      file = files[fname];
-      save(fname, doSub(file[0], file[1], fname, file[3]).join("\n"));
-    }
-
-The save command will save the text block to the filename. 
-
-
-
-### DoSub
-
-Here we implement the doSub command. 
-
-The doSub command takes in substitute block and the code lines array. It should go through each line and if it matches a heading regexp, then the line is replaced with that new code block. 
-
-
-We use comment and name to create comments in the code delimiting where the substitutions are. 
-
-    var doSub = function doSub (sub, code, name, comment) {
-      var i, n = code.length, line, match, blockname,
-          ret = [comment("begin", name)] , newLines;
-      for (i = 0; i < n; i += 1) {
-        line = code[i];
-        match = sub.exec(line);
-        if (match) {
-          blockname = match[1];
-          if (blocks.hasOwnProperty(match[1])) {
-            newLines = doSub(sub, blocks[blockname], blockname, comment); 
-            ret = ret.concat(newLines);
-          } else {
-            console.log("no matching block name", blockname, line);
-            ret.push(line);
-          }
-
-
-If it is not a substitution line, then we just add it on to the array.
-
-        } else {
-          ret.push(line);
-        }
-
-      } // end for
-      ret.push(comment("end", name));
-      return ret;
-    };
-
-
-## Load file
-
-Get the filename from the command line arguments. It should be third item in [proccess.argv](http://nodejs.org/api/process.html#process_process_argv).  
-
-No need to worry about async here so we use the sync version of [readFile](http://nodejs.org/api/fs.html#fs_fs_readfilesync_filename_encoding).
-
-    var filename, md;
-    filename = process.argv[2];
-    md = fs.readFileSync(filename, 'utf8');
-
-And now we want to strip the filename of its extension to use it for saving.
-
-    filename  = filename.substring(0, filename.lastIndexOf('.'));
-
-## Save files
-    
-Given name and text, save the file. 
-
-    var save = function (name, text) {
-          fs.writeFileSync(name, text, 'utf8');
-    };
-
-
-Done.
-
-
-## Utility Trim
-
-This was lifted from JavaScript the Definitive Guide: 
-
-    // Define the ES5 String.trim() method if one does not already exist.
-    // This method returns a string with whitespace removed from the start and end.
-    String.prototype.trim = String.prototype.trim || function() {
-       if (!this) return this;                // Don't alter the empty string
-       return this.replace(/^\s+|\s+$/g, ""); // Regular expression magic
-    };
-
-
-## Load modules
-
-We need the filesystem module that is default installed.
-
-    /*global require, process, console*/
-    var fs = require('fs');
-
-## References
-
-I always have to look up the RegEx stuff. Here I created regexs and used their [exec](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/RegExp/exec) method to get the chunks of interest. 
-
-[MDN RegExp page](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/RegExp)
