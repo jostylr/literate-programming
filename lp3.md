@@ -3,6 +3,14 @@
 This is the third cycle of literate programming. In this cycle, we want to implement directives and subheading directives. We will not implement macros at this time. 
 
 
+## TODO
+
+make into command line module 
+
+separate file from core in preparation for online version
+
+write docs and examples 
+
 ## So far (modified)
 
 Each file can specify the leading character(s) for a substitution, but an underscore will be default. To create a file, use FILE: name at the beginning of a line. Then all code in that block will define the contents of that file. 
@@ -30,7 +38,7 @@ We also use constants in code. The patten is caps and periods(in middle). So
     p {color: MOJO.RED}
     
 
-The reg would be
+The reg would beginning
 
     /[A-Z][A-Z\.]*[A-Z]/
 
@@ -70,20 +78,19 @@ So we have three basic things that we might see in code that the compiler needs 
 2. Constants
 3. Evaling
 
-In earlier versions, we have commenting. We will drop this from this version. It does not seem useful. Just do a find in the text. 
+In earlier versions, we have commenting. We will drop this from this version. It does not seem useful and leads to complicated placement issues. Just do a find in the text. 
 
-The function takes in a string for the code and returns a string if replacements happened or false if none happened.
+The function takes in a string for the code (and doc argument). It returns a string if replacements happened or false if none happened.
 
 We run through the code string, matching block name/js code block/constant. We note the location, get the replacement text, and continue on. We also keep a look out for multi-level, preparing to reduce the level. 
 
-Once all matches are found, we replace the text and then return the array. 
+Once all matches are found, we replace the text and then return it. If no substitutions are found, we send back false indicating it is done. 
 
 
-    function oneSub (code, name, doc) {
+    function oneSub (code, doc) {
         
         _"Max sub limit"
-                
-        code = doc.pre[name](code, doc); 
+        
 
         var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|([A-Z][A-Z.]*[A-Z]))/g;
         var rep = [];
@@ -91,7 +98,7 @@ Once all matches are found, we replace the text and then return the array.
         
         var blocks = doc.blocks;
 
-        while (match = reg.exec(code) ) {
+        while ( (match = reg.exec(code) ) !== null ) {
             
             //multi-level 
         
@@ -99,15 +106,12 @@ Once all matches are found, we replace the text and then return the array.
                 // section
                 if (blocks.hasOwnProperty(match[2])) {
                     _"Matching block, multi-level"
-                    // do a one-level sub
-                    newCode = blocks[match[2]].code.join("\n");
-                    // we use or for the case of no subs
-                    rep.push([match[0], oneSub(newCode, match[2], doc) || newCode]);
+                    rep.push([match[0], fullSub(match[2], doc)]);
                 }               
             } else if (match[3]) {
                 // code
                 _"Matching block, multi-level"
-                toRun = fullSub(match[3]);
+                toRun = fullSub(match[3], doc);
                 rep.push([match[0], eval(toRun)]);
 
             } else {
@@ -123,7 +127,6 @@ Once all matches are found, we replace the text and then return the array.
             for (var i = 0; i < rep.length; i += 1) {
                 code = code.replace(rep[i][0], rep[i][1]);
             }
-            code = doc.post[name](code, doc); 
             return code; 
             
         } else {
@@ -153,21 +156,36 @@ We need to regard against infinite recursion of substituting. We do this by havi
 
 ### The full substitution 
 
-This is invoked with a FILE directive. Each file is processed fully. This is also what needs to be done for any eval'd code substitution blocks.
+This compiles a block to its fullly substituted values.
 
-    function (name, doc) {
-        var compiled = doc.blocks[name].code.join("\n");
-            
-        var newText = compiled;
-        while(newText) {
-            compiled = newText;
-            newText = oneSub(compiled, name, doc);
+    function fullSub (name, doc) {
+        var block = doc.blocks[name]; 
+
+        if (block.hasOwnProperty("compiled") ) {
+            return block.compiled;
         }
+
+        var code = block.code.join("\n");
             
-        return compiled;
+        code = block.pre(code, block, doc); 
+
+        var newText = code;
+        var counter = 0;
+        while(newText) {
+            counter += 1;
+            code = newText;
+            newText = oneSub(code, doc);
+            code = block.during(code, block, doc, counter);
+        }
+        
+        code = block.post(code, block, doc); 
+
+        block.compiled = code; 
+
+        return code;
     }
 
-The objects pre and post are objects filled by the directives for pre and post compilation phases. 
+There are three hooks for processing: pre, post, and during. The during object takes in an extra parameter that states which phase the process is in. 
 
 
 ### Matching block, multi-level
@@ -207,7 +225,7 @@ Note that we do want the heading to be inlined for this though one could write i
 We will implement more directives. Directives will be recognized as, at the start of a line, as all caps and a matching word. This may be conflict, but seems unlikely. A space in front would defeat the regex. Periods are also allowed as in constants. At least two capital letters are required.
 
     function (line, doc) {     
-      var reg = /^([A-Z][A-Z\.]*[A-Z])\s*(.*)$/;
+      var reg = /^([A-Z][A-Z\.]*[A-Z])(?:$|\s+(.*)$)/;
       var match = reg.exec(line);
       if (match) {
         if (directives.hasOwnProperty(match[1])) {
@@ -252,9 +270,7 @@ The structure consists of blocks that are themselves objects with an array of co
         blocks : {},
         cur : _"Current structure",
         defaultProcessors : _"Default processors",
-        files : [],
-        pre : {}, 
-        post : {}
+        files : []
       };
       doc.processors = [].concat(doc.defaultProcessors);
       var lines = md.split("\n");
@@ -282,8 +298,7 @@ We have an array of code lines, the array of full lines, sub directive headings,
     {
       code : [],
       full : [],
-      subdire : [],
-      prop : {}
+      subdire : []
     }
 
 
@@ -330,6 +345,14 @@ For new global blocks, we use the heading string as the block name.
       var level, oldLevel, cur, name;
       var head = /^(\#+)\s*(.+)$/;
       var match = head.exec(line);
+      var pre = function (code, block, doc) {return code.trim();};
+      var post = function (code, block, doc) {
+        block.compiled = code; 
+        return code;
+      };
+      var during = function (code, block, doc, counter) {
+        return code;
+      };
       if (match) {
         name = match[2].trim();
         oldLevel = doc.level || 0;
@@ -342,10 +365,12 @@ For new global blocks, we use the heading string as the block name.
         
         doc.blocks[name] = cur; 
         doc.cur = cur; 
+        doc.cur.name = name;
         doc.level = level;
         doc.name = name;        
-        doc.pre[name] = function (code, doc) {return code;};
-        doc.post[name] = function (code, doc) {return code;};
+        cur.pre =  pre;
+        cur.post = post;
+        cur.during = during;
         // new processors for each section
         doc.processors = [].concat(doc.defaultProcessors);
         
@@ -363,10 +388,16 @@ Here we want to change the current block to take the current part, but it needs 
 
         if (level >= oldLevel +2) {
             level = oldLevel; 
+            cur.parent = doc.cur.parent|| doc.cur;
+
             doc.cur = cur; 
-            doc.blocks[doc.name].subdire.push(cur);
+            cur.parent.subdire.push(cur);
             return true;
         }
+
+##### Directive heading running
+
+A directive section needs to have the outer full substitution loop done separately because it is 
 
 
 ### Plain parser
@@ -383,6 +414,7 @@ This is a default. It means there is nothing special about the line. So we simpl
 Open the file to read and then read it, parse the lines,  piece them together, save file. 
 
     /*global require, process, console*/
+    /*jslint evil:true*/
 
     _"Load modules"
 
@@ -474,9 +506,9 @@ The command is `FILE fname.ext` where fname.ext is the filename and extension to
 Run the compiled code through JSBeautify 
 
     function (options, doc) {
-       var post = doc.post[doc.name];
-       doc.post[doc.name] = function (code, doc) {
-           code = post(code, doc);
+       var post = doc.cur.post;
+       doc.cur.post = function (code, block, doc) {
+           code = post(code, block, doc);
            return beautify(code, options ||{ indent_size: 2, "jslint_happy": true } );
        };
     }
@@ -487,9 +519,9 @@ Run the compiled code through JSBeautify
 Run the compiled code through JSHint and output the results to console.
 
     function (options, doc) {
-       var post = doc.post[doc.name];
-       doc.post[doc.name] = function (code, doc) {
-           code = post(code, doc);
+       var post = doc.cur.post;
+       doc.cur.post = function (code, block, doc) {
+           code = post(code, block, doc);
            jshint(code, options ||{ } );
            var log = [], err;
            for (var i = 0; i < jshint.errors.length; i += 1) {
@@ -500,11 +532,6 @@ Run the compiled code through JSHint and output the results to console.
            return code;
        };
     }
-
-
-### NPM module
-
-Take in module name and place a global require variable at top of
 
 
 ## Make files
