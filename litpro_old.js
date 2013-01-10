@@ -1,13 +1,6 @@
-#!/usr/bin/env node
 /*global process, require, console*/
-var program = require('commander');
 var fs = require('fs');
-var lp = require('./lib/literate-programming');
-program
-    .version('0.1')
-    .option('-d --dir', 'Root directory')
-    .parse(process.argv);
-program.root = dir;
+var lp = require('literate-programming_old');
 var save = function (files, dir) {
     if (dir) {
         process.chdir(dir);

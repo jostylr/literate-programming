@@ -163,13 +163,18 @@ Here we define the loop, get the result and format it appropriately. n is alread
 
 ## Stand alone page
 
+Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.com/a-minimal-html-document-html5-edition/)
 
     <!DOCTYPE html>
     <html lang="en">
       <head>
         <meta charset="utf-8">
         <title>Log and Factorial</title>
-        <link rel="stylesheet" href="style.css">
+
+SCRIPTEDWRITING
+<link rel="stylesheet" href="style.css">
+<script src="script" async defer></script>
+
       </head>
       <body>
         _"Structure"
