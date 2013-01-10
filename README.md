@@ -17,4 +17,4 @@ lp2: Multiple files, substitutions using  _"My code block"
 lp3: Macros: test, debug, fiddle with parameters, examples. Project stuff?
 lp4: In-Browser editor? 
 ## LICENSE
-MIT-LICENSE:  [](https://github.com/jostylr/literate-programming/blob/master/LICENSE-MIT)
+[MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE-MIT)
