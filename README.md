@@ -51,20 +51,6 @@ You can put distracting data checks/sanitation/transformations into another bloc
 
 You can use JavaScript to script out the compilation of documents, a hybrid of static and dynamic. 
 
-## TODO
-
-An in-browser version is planned. The intent is to have it be an IDE for the literate program. 
-
-More docs.
-
-Allow for a plugin setup for directives and constants. 
-
-Add in core directives: require (plugin), load (other literate programs), version....
-
-Get command line working. 
-
-Fix up javacsript code parsing in backticks to do subs. 
-
 ## LICENSE
 
 [MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)
