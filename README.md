@@ -65,8 +65,6 @@ Get command line working.
 
 Fix up javacsript code parsing in backticks to do subs. 
 
-Allow for non-indented separate lines in code to be kept in the code. 
-
 ## LICENSE
 
 [MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)

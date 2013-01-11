@@ -3,12 +3,12 @@
 /*global process, require, console*/
 var program = require('commander');
 var fs = require('fs');
-var lp = require('./lib/literate-programming');
+var lp = require('../lib/literate-programming');
 
 program
     .version('0.1')
     .usage('[options] <file>')
-    .option('-d --dir', 'Root directory')
+    .option('-d --dir <root>', 'Root directory')
 ;
 
 program.parse(process.argv);
@@ -18,7 +18,9 @@ if ((! program.args[0]) ) {
     process.exit();
 }
 
-var dir = program.root; 
+console.log(program.args);
+
+var dir = program.dir; 
 var md = fs.readFileSync(program.args[0], 'utf8');
 
 
