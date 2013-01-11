@@ -18,8 +18,6 @@ if ((! program.args[0]) ) {
     process.exit();
 }
 
-console.log(program.args);
-
 var dir = program.dir; 
 var md = fs.readFileSync(program.args[0], 'utf8');
 

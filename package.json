@@ -20,17 +20,19 @@
       "url": "https://github.com/jostylr/literate-programming/blob/master/LICENSE-MIT"
     }
   ],
-  "main": "lib/literate-programming.j",
+  "main": "lib/literate-programming.js",
   "engines": {
-    "node": "0.8"
+    "node": ">0.6"
   },
-  "scripts": {
-  },
-  "devDependencies": {
+  "dependencies":{
+    "marked" : "~0.2.7",
+    "js-beautify": "~0.3.1",
+    "jshint" : "~0.9.1",
+    "commander" : "~1.1.1"
   },
   "keywords": ["literate programming"],
   "preferGlobal": "true",
   "bin": {
-    "litpro" : "litpro.js"
+    "literate-programming" : "bin/literate-programming.js"
   }
 }
