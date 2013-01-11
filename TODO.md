@@ -11,5 +11,5 @@ Get command line working.
 
 Fix up javacsript code parsing in backticks to do subs. 
 
-Raw directive to yield the whole block unchanged. 
+Turn doc and block into instances. 
 
