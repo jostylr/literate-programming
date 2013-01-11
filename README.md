@@ -18,7 +18,7 @@ The command installed is literate-programming and it has some command flags and 
 will create the files specified in sample.md
 
 ### Command flags
-_"Command arguments doc"
+Currently there is only one flag: -d or --dir  with a directory that specifies the root directory where the compiled files go.
 
 
 ## Document syntax
