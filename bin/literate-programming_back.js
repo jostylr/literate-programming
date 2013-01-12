@@ -3,7 +3,7 @@
 /*global process, require, console*/
 var program = require('commander');
 var fs = require('fs');
-var lp = require('../lib/literate-programming');
+var lp = require('../lib/literate-programming_back');
 
 program
     .version('0.1')

@@ -10,6 +10,5 @@ Add in core directives: require (plugin), load (other literate programs), versio
 Get command line working. 
 
 Fix up javacsript code parsing in backticks to do subs. 
-
-Turn doc and block into instances. 
+ 
 
