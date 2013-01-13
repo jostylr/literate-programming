@@ -5,6 +5,8 @@ This post is about computing factorials via the logarithm. We use loops to compu
 
 ## Structure
 
+MD marked(1)
+
     _"Introduction"
 
     _"Computing 1000!"
@@ -15,12 +17,13 @@ This post is about computing factorials via the logarithm. We use loops to compu
 
     _"Comments"
 
-MD.HTML 1
 FILE logs.htm
 
 ## Introduction
 
 Introduce the problem
+
+MD
 
     # Big Factorial? Log it down to size
 
@@ -41,6 +44,8 @@ Introduce the problem
 ## Computing 1000!
 
 Here we work out step by step how to compute out 1000!
+
+MD
 
     ## Solution
     Using logarithms, I claim $1000! \approx 4.02\times 10^{2567}$. 
@@ -67,6 +72,8 @@ Here we work out step by step how to compute out 1000!
 
 ## Comments
 
+MD
+
     ##Conclusion
     Factorials are large. For example, suffling a deck of cards leads to about $52! \approx 8.13 \times 10^{67}$ different possible outcomes. That is a number with 67 digits. To put that into perspective, the number of estimated molecules in the observed universe is about $10^{80}$. 
 
@@ -78,6 +85,8 @@ Here we work out step by step how to compute out 1000!
 
 Here we give a little calculator to compute factorials of large size. Could even get larger using Stirling's approximation stuff:  (x – 1/2) log(x) – x  + (1/2) log(2 π)  from [Endeavor](http://www.johndcook.com/blog/2010/08/16/how-to-compute-log-factorial/)
 
+MD marked(1)
+
     ## Factorial Computer
 
     To use, put in a positive integer.
@@ -85,11 +94,12 @@ Here we give a little calculator to compute factorials of large size. Could even
     __"HTML calculator"
 
 
-MD.HTML 1
-
 ## Behind the scenes
 
 Give an editable code block that can be edited and run.
+
+
+MD marked(1)
 
     ## Working code
 
@@ -101,23 +111,23 @@ Give an editable code block that can be edited and run.
 
     Feel free to modify the code to see how it works. 
 
-MD.HTML 1
 
 
-## HTML calculator
+## Calculator
 
 We need an input box and a way to run it. We will have a button that implements it.
+
+HTML
 
     <input type="text" name="n" id="n"></input><button id="computeFactorial">Compute!</button>
     
     <div id="factorial"></div>
 
-    _"JS Calculator"
-
-
-### JS Calculator
+    _"|js|wrap(pre, hide, run)"
 
 We will attach a function to the click action 
+
+JS
 
     $("#computeFactorial").click(function () {
         var n = $("#n").val();
@@ -126,12 +136,12 @@ We will attach a function to the click action
       $("#factorial").text(n+"! = " + ) );      
     });
 
-JS.PRE 0, hide, run
-
 
 ### Check n
 
 We need to make sure that n is a positive integer.
+
+JS
 
     if ((n < 0) || (Math.floor(n) !== n) ) {
         $("#factorial).text("Input a positive integer");
@@ -140,15 +150,17 @@ We need to make sure that n is a positive integer.
 
 ## Code block for factorial
 
+JS wrap(oo, pre, editable, runnable)
 
     var n = 1000;
     _"Common factorial"
 
-JS.PRE 0, editable, runnable
 
 ## Common factorial
 
 Here we define the loop, get the result and format it appropriately. n is already defined as its definition differs. 
+
+JS
 
     var lf = 0;
     //sum ove the logs
@@ -164,6 +176,9 @@ Here we define the loop, get the result and format it appropriately. n is alread
 ## Stand alone page
 
 Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.com/a-minimal-html-document-html5-edition/)
+
+
+HTML
 
     <!DOCTYPE html>
     <html lang="en">
