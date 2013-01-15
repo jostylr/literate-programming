@@ -21,7 +21,6 @@ if ((! program.args[0]) ) {
 var dir = program.dir; 
 var md = fs.readFileSync(program.args[0], 'utf8');
 
-
 var save = function (files, dir) {
     if (dir) {
         process.chdir(dir);
