@@ -182,14 +182,14 @@ JS
         cur.code[cur.type].push(match[1]);
         return true;
 
-      _"|emptyline"
+      _"|Add empty line"
         
       } else {
         return false;
       }
     }
 
-JS emptyline
+JS Add empty line
 
 Added the following clause to add empty lines to the code. Stuff before and after the code block is probably trimmed, but in between extra lines could be added. This was to enable blank lines being there which is important for markdown and other markup languages. 
 
@@ -232,25 +232,27 @@ We will implement more directives. Directives will be recognized as, at the star
 
 The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
 
-### Switch type
+### Switch type 
 
-Here is the function for switching the type of code block one is parsing. 
+Here is the function for switching the type of code block one is parsing. The syntax is the type (alread parsed and passed in) and then name of the block followed by pipes for the different functions to act on it. If there is no name, then use a pipe anyway. Examples:  `JS for running | run  ` or  `JS | hint`
+
+Anything works for the name.
 
 Will need to make a more refined options parser at some point. 
 
     function (type, options) {
         var doc = this;
         var cur = doc.cur;
+
         type = type.toLowerCase(); 
         if (typeof options === "undefined") {
             options = "";
         }
-        var namereg = /^([A-Za-z]+)(?:\s+(.*)|$)/;
-        var match = options.match(namereg);
-        if (match) {
-            // there is a name
-            cur.type = match[1].toLowerCase()+"."+type;
-            options = match[2];
+        options = options.split("|");
+        var name = options.shift();
+        if (name) {
+            name.trim();
+            cur.type = name.toLowerCase()+"."+type;
         } else {
             cur.type = "."+type;
         }
@@ -259,10 +261,27 @@ Will need to make a more refined options parser at some point.
             cur.code[cur.type] = doc.makeCode();
         }
 
-And now we work on get the options to parse. Require letters followed by a parenthetical expression. These functions first argument should be either 0 as pre, 1-whatever for acting on during, or oo for afer. The rest of the arguments are passed on. If no argument or it does not match one of these, then post is default. 
+And now we work on get the options to parse. The syntax is an optional number to indicate when to process (0 for pre, 1+ for during, nothing for post), followed by whatever until parentheses, followed by optional arguments separated by commas. Examples: `0 marked (great, file)` and `marked` and `marked awesome(great)`
 
         
-        var funname, funmatch = /([a-zA-Z]+)\(([^)]*)\)\s*(.*)/;
+        var funmatch, funreg = /^(\d*)\s*([^(]+)(?:\(([^)]*)\))?$/;
+        var i, n = options.length, option;
+        for (i = 0; i < n; i += 1) {
+            option = options[i].trim();
+            funmatch = option.match(funreg);
+            if (funmatch === null ) {
+                doc.log("Failed parsing (" + name +" ): " + option);
+                continue;
+            }
+            if (funmatch[1] === "0") {
+                //add to pre
+            } else if (funmatch[1] ) {
+                // add to during
+            } else {
+                //add to post
+            }
+        }
+    /*        
         while ( (options) && ( (match = options.match(funmatch) ) !== null) ) {
 
             funname = match[1].toUpperCase();
@@ -275,6 +294,7 @@ And now we work on get the options to parse. Require letters followed by a paren
             }
             options = match[3];
         }
+    */
 
     }
 
@@ -1466,6 +1486,13 @@ Using  VARS to write down the variables being used at the top of the block. Then
 For IDE, implement: https://github.com/mleibman/SlickGrid
 
 For diff saving: http://prettydiff.com/diffview.js  from http://stackoverflow.com/questions/3053587/javascript-based-diff-utility
+
+
+For grid data input:  https://github.com/mleibman/SlickGrid
+
+For scroll syncing https://github.com/sakabako/scrollMonitor
+
+
 
 
 ### Testbed
