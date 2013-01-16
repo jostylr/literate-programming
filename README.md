@@ -20,7 +20,6 @@ will create the files specified in sample.md
 ### Command flags
 Currently there is only one flag: -d or --dir  with a directory that specifies the root directory where the compiled files go.
 
-
 ## Document syntax
 
 A literate program is a markdown document with some special conventions. 
