@@ -66,7 +66,7 @@ This module takes in a literate program as a string of markdown and possibly som
 It takes the string and makes a document that has the markdown parsed out into various blocks. The parsing is down line-by-line. The two main calls are `lineparser` which parses the lines, creating the document,  and the `makeFiles` command which will compile the blocks in the `files` array to a full string that can then be saved or whatever (that's what the command line does). 
 
 
-JS  
+JS  |jshint() | jstidy
 
     /*global require, module*/
     /*jslint evil:true*/
@@ -189,9 +189,10 @@ JS
       }
     }
 
-JS Add empty line
 
 Added the following clause to add empty lines to the code. Stuff before and after the code block is probably trimmed, but in between extra lines could be added. This was to enable blank lines being there which is important for markdown and other markup languages. 
+
+JS Add empty line 
 
       } else if (line.match(/^\s*$/)  ) {
         var carr = cur.code[cur.type];
@@ -202,22 +203,30 @@ Added the following clause to add empty lines to the code. Stuff before and afte
 
 
 
+
 ## Directives parser
 
-We will implement more directives. Directives will be recognized as, at the start of a line, as all caps and a matching word. This may be conflict, but seems unlikely. A space in front would defeat the regex. Periods are also allowed in constants. At least two capital letters are required.
+A directive will be recognized as, at the start of a line, as all caps and a matching word. This may conflict with some uses, but it seems unlikely since if there is no matching directive, then the original is left untouched. 
+
+A space in front would defeat the regex as well. Periods are also allowed. At least two capital letters are required.
+
+A directive could also be a type switch command. This is either a recognized type or it should start with a period. While the post directive part of a directive is passed on freely to the directive function, the post type text should be of a specific form, namely,  a name for the section followed by a pipe string of commands, all of which is optional. 
+
+
+The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
+
+
+JS
 
     function (line, doc) {
-      var fileext = /^\.([A-Z]+)(?:$|\s+(.*)$)/;
-      var match = fileext.exec(line);
-      if (match) {
-        doc.switchType(match[1], match[2]); 
-        return true;
-      }
+
+        _"|period triggers match" 
+
       var reg = /^([A-Z][A-Z\.]*[A-Z])(?:$|\s+(.*)$)/;
       match = reg.exec(line);
       if (match) {
         if (doc.directives.hasOwnProperty(match[1])) {
-            doc.directives[match[1]](match[2], doc);
+            doc.directives[match[1]].call(doc, match[2]);
             return true;
         } else if (doc.types.hasOwnProperty(match[1].toLowerCase()) ){
             doc.switchType(match[1], match[2]);
@@ -230,7 +239,19 @@ We will implement more directives. Directives will be recognized as, at the star
       }
     }
 
-The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
+The starting period for a type change trigger may or may not be followed by capitals. Any . starting a line will be interpreted as a type switch. 
+
+
+JS period triggers match
+
+      var fileext = /^\.([A-Z]*)(?:$|\s+(.*)$)/;
+      var match = fileext.exec(line);
+      if (match) {
+        doc.switchType(match[1], match[2]); 
+        return true;
+      }
+
+
 
 ### Switch type 
 
@@ -238,7 +259,9 @@ Here is the function for switching the type of code block one is parsing. The sy
 
 Anything works for the name.
 
-Will need to make a more refined options parser at some point. 
+May need to make a more refined options parser at some point. 
+
+JS main
 
     function (type, options) {
         var doc = this;
@@ -261,42 +284,61 @@ Will need to make a more refined options parser at some point.
             cur.code[cur.type] = doc.makeCode();
         }
 
+        var codearr = cur.code[cur.type];
+
+        var passin = {doc:doc, block:cur, type:type, name:name}; // for command stuff
+
+        _"|Parse options"
+
+    }
+
+JS Parse options
+
 And now we work on get the options to parse. The syntax is an optional number to indicate when to process (0 for pre, 1+ for during, nothing for post), followed by whatever until parentheses, followed by optional arguments separated by commas. Examples: `0 marked (great, file)` and `marked` and `marked awesome(great)`
 
         
-        var funmatch, funreg = /^(\d*)\s*([^(]+)(?:\(([^)]*)\))?$/;
+        var funname, ind, funargs, match, funreg = /^(\d*)\s*([^(]+)(?:\(([^)]*)\))?$/;
         var i, n = options.length, option;
         for (i = 0; i < n; i += 1) {
             option = options[i].trim();
-            funmatch = option.match(funreg);
-            if (funmatch === null ) {
+            match = option.match(funreg);
+            if (match === null ) {
                 doc.log("Failed parsing (" + name +" ): " + option);
                 continue;
             }
-            if (funmatch[1] === "0") {
-                //add to pre
-            } else if (funmatch[1] ) {
-                // add to during
-            } else {
-                //add to post
-            }
-        }
-    /*        
-        while ( (options) && ( (match = options.match(funmatch) ) !== null) ) {
 
-            funname = match[1].toUpperCase();
-            if (doc.directives.hasOwnProperty(funname) ) {
-                doc.directives[funname](match[2],  doc);
-                //.call( {doc:doc, cur:cur, type:type}, match[2].split(",").trim())
-               
-            } else {
-                doc.log.push("No such directive: " + funname + " " + type + " "+ options);
-            }
-            options = match[3];
-        }
-    */
+            funname = match[2].trim();
 
-    }
+            if (match[3]) {
+                funargs = match[3].split(",").trim();
+            } else {
+                funargs = [];
+            }
+
+            _"|Add command"
+        }
+
+JS Add command
+
+The setup is that the code array has a property named commands which is an associative array of arrays. Each array contains a function and an arguments array that will be used to work on the code (see Full Substition). The doc.commands object has the list of active functions that can be named and used. 
+
+            if (match[1]) {
+                ind = parseInt(match[1], 10);
+            } else {
+                ind = "Infinity";
+            }
+
+            if ( doc.commands.hasOwnProperty(funname) ) {
+                
+                if (codearr.commands.hasOwnProperty(ind) ) {
+                    codearr.commands[ind].push([doc.commands[funname], funargs, passin]);
+                }  else {
+                   codearr.commands[ind] = [[doc.commands[funname], funargs, passin]];
+                }             
+            }
+
+
+I toyed with categorizing the commands by type, but since the different transformations by change its type and it is even harder to figure out with the substituion pipes, it seems best to use a global namespace. 
 
 ## Subsection Headings
 
@@ -455,47 +497,41 @@ We have just created the doc object. Now we take it and merge it in with the opt
 
     Doc.prototype.defaultProcessors = _"Default processors";
 
-    Doc.prototype.switchType = _"Switch type";
+    Doc.prototype.switchType = _"Switch type|main";
 
     Doc.prototype.makeCode = _"Make code block";
 
-
-    Doc.prototype.pre = function (code) { //, block, doc) {
+    Doc.prototype.trimCode = [function (code) {
         return code.trim();
-    };
+    }, [], {}];
 
-    Doc.prototype.post = function (code) { //, block) { //, doc) {
-        return code;
-    };
-
-    Doc.prototype.during = function (code){  //, block, doc, counter) {
-        return code;
-    };
 
 #### Doc commander
 
-We need to write a parser for the commands argument. It takes in something between the pipes as well as the code, block. 
+This takes in array of commands to execute on the code. Each element of the array is [function, args, calling object]
 
-    function (command, code, block) {
-        var doc = this;
-        var reg = /([A-Za-z]+)\s*\( ([^)]*)\)/;
-        var match = reg.exec(command);
-        var args;
-        command = match[1];
-        if (typeof doc[command] === "function" ) {
-            args = match[2].split(",").trim();
-            doc.commands[command].apply({code: code, block:block, doc:doc}, args);
-        } else {
-            return code; 
-        }   
-    } 
+JS
+
+    function (commands, code) {
+        var i, n=commands.length, command; 
+        for (i = 0; i < n; i += 1) {
+            command = commands[i];
+ 
+            code = command[0].call(command[2], code, command[1]);  //if performance is issue, check here
+        }
+
+        return code;
+    }
 
 #### Default doc commands
 
 
-    {"eval" : function () {
-            return eval(this.code);
-        }
+     { "eval" : function (code) {
+                    return eval(code);
+        },
+        "jshint" : _"JSHint|main",
+        "jstidy" : _"JSTidy",
+        "marked" : _"Marked"
     }
 
 #### Make code block
@@ -505,9 +541,7 @@ We need an array with some extra methods.
     function () {
         var doc = this;
         var ret = [];
-        ret.pre = doc.pre;
-        ret.post = doc.post;
-        ret.during = doc.during;
+        ret.commands = {0: [ doc.trimCode ]};
         return ret;
     }
 
@@ -560,6 +594,7 @@ For evaling, no substitutions are done. It is just straight, one line code. If e
         var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|([A-Z][A-Z.]*[A-Z]))/g;
         var rep = [];
         var match, ret, type, pieces, where, comp, ctype, ext;
+        _"Pipe processor|vars.js"
 
         var blocks = doc.blocks;
 
@@ -663,6 +698,7 @@ Possibilities for matching type:
 
 
     if (type) {
+        type = type.toLowerCase();
         ret = comp[type] || 
             comp["."+type] || 
             comp[type+"."+ext] || comp[type+"."];
@@ -686,12 +722,57 @@ Possibilities for matching type:
         }
     }
 
+    _"Pipe processor|main.js"
+
+
+    ret =  doc.commander(comarr, ret); 
+
+
+
+#### Pipe processor
+
+NEED  to write substring pipe processor
+
+command is of the form {} this object with block and doc..., and then the code and then the args
+
+
+
+JS vars
+
+    var com, cmatch, funname, funargs, comreg = /^\s*([^(]+)(?:\(([^)]*)\))?$/, comarr, passin;
+
+
+JS main
+
+    comarr = [];
+    passin = {doc:doc, block:block, name: where+type};  //? what is needed for this?
     while (pieces.length >0) {
-       ret =  doc.commands(pieces.shift(), ret, block); 
+
+        com = pieces.shift();
+
+        cmatch = com.match(comreg);
+
+        if (com === null) {
+            doc.log("No match " + com);
+            continue;
+        }
+
+        funname = cmatch[2].trim();
+
+        if (cmatch[3]) {
+            funargs = cmatch[3].split(",").trim();
+        } else {
+            funargs = [];
+        }
+
+
+        if ( doc.commands.hasOwnProperty(funname) ) {
+            comarr.push([doc.commands[funname], funargs, passin]);
+        } else {
+            doc.log("Issue with " + com);
+        }
+
     }
-
-
-
 
 ### The full substitution 
 
@@ -715,11 +796,13 @@ Check if already compiled. If so, return that.
 
 Cycle through the named code blocks, doing pre compiles
 
-        for (name in block.code) {
 
+        for (name in block.code) {
             blockCode  = block.code[name];
             code[name] = blockCode.join("\n");
-            code[name] = blockCode.pre(code[name], block, doc);
+            if (blockCode.commands.hasOwnProperty(0) ) {
+                code[name] = doc.commander(blockCode.commands[0], code[name]); 
+            }
         
         }
 
@@ -732,7 +815,12 @@ Loop through all the names in each loop over substitution runs. This allows for 
                 counter += 1;
                 for (name in code) {
                     go += doc.oneSub(code, name, block);
-                    code[name] = block.code[name].during(code[name], block, doc, counter);
+
+                    blockCode  = block.code[name];
+                    
+                    if (blockCode.commands.hasOwnProperty(counter) ) {
+                        code[name] = doc.commander(blockCode.commands[counter], code[name]); 
+                    }      
                 }
             }
         
@@ -740,7 +828,11 @@ Loop through the names one more time to get any post compile directives.
 
 
         for (name in code) {
-            code[name] = block.code[name].post(code[name], block, doc); 
+            blockCode  = block.code[name];
+                    
+            if (blockCode.commands.hasOwnProperty("Infinity") ) {
+                code[name] = doc.commander(blockCode.commands["Infinity"], code[name]); 
+            }      
             block.compiled[name] = code[name]; 
         }
 
@@ -861,7 +953,11 @@ Create the object that holds the directives. It will contain object names for an
 
 
     { 
-        "FILE" : _"File directive",
+        "FILE" : _"File directive"
+    }
+
+
+.IGNORE 
         "RAW" : _"Raw directive",
 
 Below should be split off
@@ -882,7 +978,8 @@ Below should be split off
      
 The command is `FILE fname.ext` where fname.ext is the filename and extension to use. 
 
-    function (options, doc) {
+    function (options) {
+        var doc = this; 
         options = options.trim();
         var match = options.match(/^(\S+)\s*(.*)$/);
         if (match) {
@@ -994,77 +1091,85 @@ It runs immediately upon encountering. One probably wants to do some options par
     }
 
 
-### JS tidy
+### JSTidy
 
 Run the compiled code through JSBeautify 
 
-    function (options, doc) {
-       var post = doc.cur.post;
-       doc.cur.post = function (code, block, doc) {
-           code = post(code, block, doc);
-           return beautify(code, options ||{ indent_size: 2, "jslint_happy": true } );
-       };
+JS
+
+    function (code, options) {
+        options = options.join(",").trim();
+        return beautify(code, options ||{ indent_size: 2, "jslint_happy": true } );
     }
    
 Needs js-beautify installed: `npm install js-beautify`
 
-### JS hint
+### JSHint
 
 Run the compiled code through JSHint and output the results to console.
 
-    function (options, doc) {
-       var post = doc.cur.post;
-       doc.cur.post = function (code, block, doc) {
-           code = post(code, block, doc);
-           jshint(code, options ||{ } );
-           var data = jshint.data();
-           block.jshint = {data:data, errors: [], implieds :[], unused :[]};
-           var lines = code.split("\n");
-           var log = [], err, i;
-           for (i = 0; i < jshint.errors.length; i += 1) {
-               err = jshint.errors[i];
-               log.push("E "+ err.line+","+err.character+": "+err.reason +
-                "  "+ lines[err.line-1]);
-                block.jshint.errors.push({"line#": err.line, character: err.character, reason: err.reason, line: lines[err.line-1]} );
-           }
-           if (data.hasOwnProperty("implieds") ) {
-             for (i = 0; i < data.implieds.length; i += 1) {
-                 err = data.implieds[i];
-                 log.push("Implied Gobal "+ err.line+": "+err.name +
-                "  "+ lines[err.line[0]-1]);
-                  block.jshint.implieds.push({"line#": err.line, name:err.name, line: lines[err.line[0]-1]} );
+JS main
 
-             }            
-           }
-          if (data.hasOwnProperty("unused") ) {
-             for (i = 0; i < data.unused.length; i += 1) {
-                 err = data.unused[i];
-                 log.push("Unused "+ err.line+": "+err.name +
-                "  "+ lines[err.line-1]);
-                block.jshint.unused.push({"line#": err.line, name:err.name, line: lines[err.line-1]} );
+    function (code) {
+        var doc = this.doc;
+        var block = {};  //currently not stored anywhere
 
-             }            
-           }
+        jshint(code, options ||{ } );
+        var data = jshint.data();
+
+        _"|jshint logging"
 
 
-           if (log.length > 0 ) {
-             log = ("!! JSHint:" + block.file+"\n"+log.join("\n"));
-           } else {
-             log = ("JSHint CLEAN: " + block.file);
-           }
+        if (log.length > 0 ) {
+         log = ("!! JSHint:" + this.name+"\n"+log.join("\n"));
+        } else {
+         log = ("JSHint CLEAN: " + this.name);
+        }
 
-           doc.log.push(log);
-           return code;
-       };
+        doc.log.push(log);
+        return code;
     }
 
 Needs jshint installed: `npm install jshint`   
+
+JS jshint logging
+
+        block.jshint = {data:data, errors: [], implieds :[], unused :[]};
+        var lines = code.split("\n");
+        var log = [], err, i;
+        for (i = 0; i < jshint.errors.length; i += 1) {
+           err = jshint.errors[i];
+           log.push("E "+ err.line+","+err.character+": "+err.reason +
+            "  "+ lines[err.line-1]);
+            block.jshint.errors.push({"line#": err.line, character: err.character, reason: err.reason, line: lines[err.line-1]} );
+        }
+        if (data.hasOwnProperty("implieds") ) {
+         for (i = 0; i < data.implieds.length; i += 1) {
+             err = data.implieds[i];
+             log.push("Implied Gobal "+ err.line+": "+err.name +
+            "  "+ lines[err.line[0]-1]);
+              block.jshint.implieds.push({"line#": err.line, name:err.name, line: lines[err.line[0]-1]} );
+
+         }            
+        }
+        if (data.hasOwnProperty("unused") ) {
+         for (i = 0; i < data.unused.length; i += 1) {
+             err = data.unused[i];
+             log.push("Unused "+ err.line+": "+err.name +
+            "  "+ lines[err.line-1]);
+            block.jshint.unused.push({"line#": err.line, name:err.name, line: lines[err.line-1]} );
+
+         }            
+        }
+
 
 ### Marked
 
 Run the text through the marked script to get html. Need to escape out underscored substitutions. 
     
-    function (options, doc) {
+    function (code, options) {
+
+        var block = this.block;
 
         var lpsnip = [], mathsnip = [];
 
@@ -1086,22 +1191,18 @@ Run the text through the marked script to get html. Need to escape out underscor
             return mathsnip[parseInt(number, 10)];
         };
 
-        var modify = function (code, block, doc, options) {
-            code = code.replace(/\_+(\"[^"]+\"|\`[^`]+\`)/g, masklit); 
-            code = code.replace(/\$\$[^$]+\$\$|\$[^$\n]+\$|\\\(((?:[^\\]|\\(?!\)))+)\\\)|\\\[((?:[^\\]|\\(?!\]))+)\\\]/g, maskmath);
-            code = marked(code);
-            if (options.length > 0) {
-                var elem = options[0];
-                options = options.slice(1);
-                _"Create attribute list"
-                code = "<" + elem + " "+attributes+">"+code+"</"+elem+">";
-            }
-            code = code.replace(/LITPROSNIP(\d+)/g, unmasklit);
-            code = code.replace(/MATHSNIP(\d+)/g, unmaskmath);
-            return code;
-        };
-
-        _"Options on when"
+        code = code.replace(/\_+(\"[^"]+\"|\`[^`]+\`)/g, masklit); 
+        code = code.replace(/\$\$[^$]+\$\$|\$[^$\n]+\$|\\\(((?:[^\\]|\\(?!\)))+)\\\)|\\\[((?:[^\\]|\\(?!\]))+)\\\]/g, maskmath);
+        code = marked(code);
+        if (options.length > 0) {
+            var elem = options[0];
+            options = options.slice(1);
+            _"Create attribute list"
+            code = "<" + elem + " "+attributes+">"+code+"</"+elem+">";
+        }
+        code = code.replace(/LITPROSNIP(\d+)/g, unmasklit);
+        code = code.replace(/MATHSNIP(\d+)/g, unmaskmath);
+        return code;
 
     }
 
@@ -1119,7 +1220,6 @@ Encapsulate code into a Pre code element. Escape characters if necessary. Need t
             return "<pre " + attributes + "><code>"+code+"</code></pre>";
         };
 
-        _"Options on when"
 
     }  
 
@@ -1140,44 +1240,6 @@ And to undo the escapes:
     code = code.replace(/\&amp\;/g, "&");
 
 
-### Options on when
-
-When to process the text can be dependent. A common idiom will be to have a number as the first option which will say on which entry. It should be either -1 (pre), 0 (post), or a positive integer for during. If it does not fit that pattern, then a default of 0 for post is assumed. We assume there is a function in the environment named modify is assumed to work on the code and returns the new code text. 
-
-    options = options.split(",") || [];
-
-    if (options.length === 0) {
-        options.push(0);
-    } 
-
-    var tempnum, tempmod; 
-
-    if ( (tempnum = parseInt(options[0], 10) ) == options[0] ) {
-        if (tempnum  === -1) {
-            tempmod = doc.cur.pre;
-            doc.cur.pre = function (code, block, doc) {
-                code = tempmod(code, block, doc);
-                code = modify(code, block, doc, options.slice(1));
-                return code;
-            };
-        } else if (tempnum > 0) {
-            tempmod = doc.cur.during;
-            doc.cur.during = function (code, block, doc, counter) {
-                code = tempmod(code, block, doc, counter);
-                if (counter === tempnum) {
-                    code = modify(code, block, doc, options.slice(1));
-                }
-                return code;
-            };
-        } else {
-            tempmod = doc.cur.post;
-            doc.cur.post = function (code, block, doc) {
-                code = tempmod(code, block, doc);
-                code = modify(code, block, doc, options.slice(1));
-                return code;
-            };    
-        }
-    }
 
 ### Create attribute list
 
@@ -1213,7 +1275,7 @@ So the plan is to go through each item in files. Call the full substitute method
         var doc = this;
         var compiled = doc.compiled = {};
         var files = doc.files;
-        var fname, blockname, text, ext, type, ret, ctype, comp;
+        var fname, blockname,  ext, type, ret, ctype, comp;
         for (var i = 0; i < files.length; i  += 1) {
             fname = files[i][0];
             blockname = files[i][1];

@@ -5,7 +5,7 @@ This post is about computing factorials via the logarithm. We use loops to compu
 
 ## Structure
 
-MD marked(1)
+MD |1 marked
 
     _"Introduction"
 
@@ -85,7 +85,7 @@ MD
 
 Here we give a little calculator to compute factorials of large size. Could even get larger using Stirling's approximation stuff:  (x – 1/2) log(x) – x  + (1/2) log(2 π)  from [Endeavor](http://www.johndcook.com/blog/2010/08/16/how-to-compute-log-factorial/)
 
-MD marked(1)
+MD | 1 marked 
 
     ## Factorial Computer
 
@@ -99,7 +99,7 @@ MD marked(1)
 Give an editable code block that can be edited and run.
 
 
-MD marked(1)
+MD | 1 marked
 
     ## Working code
 
