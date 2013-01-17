@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>Log and Factorial</title>
-
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 
   </head>
   <body>
@@ -12,7 +12,7 @@
 <p>Factorials get too big too fast. For example, $69! \approx 1.7\times 10^{98}$ is the maximum factorial a calculator can handle. And Google maxes out around 170!
 
 </p>
-<p>The issue is that the numbers 
+<p>The issue is that the numbers get too big for the computer to store in memory in its default way to store numbers. s
 
 </p>
 <h2>Key Insight</h2>
@@ -56,26 +56,22 @@ $$1000! \approx  10^{0.6046} \times 10^{2567} \approx 4.02 \times 10^{2567}$$
 <p>To use, put in a positive integer.
 
 </p>
-<p><input type="text" name="n" id="n"></input><button id="computeFactorial">Compute!</button>
-
-<div id="factorial"></div>
-
-<pre id='JS_Calculator' class='hide run' ><code>$("#computeFactorial").click(function () {
+<p>$("#computeFactorial").click(function () {
     var n = $("#n").val();
-    if ((n &amp;lt; 0) || (Math.floor(n) !== n) ) {
-    $("#factorial).text("Input a positive integer");
+    if ((n < 0) || (Math.floor(n) !== n) ) {
+    $("#factorial").text("Input a positive integer");
 }
     var lf = 0;
 //sum ove the logs
 var i; 
-for (i = 0; i &amp;lt; n; i += 1) {
+for (i = 0; i < n; i += 1) {
   lf += Math.log(i+1);
 }
 var lf10 = lf/Math.LN10;
 var text = n + "! = " + 
-    ( lf10 &amp;lt; 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10)
-  $("#factorial").text(n+"! = " + ) );      
-});</code></pre></p>
+    ( lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10) );
+  $("#factorial").text(text );      
+});</p>
 
 
 </p>
@@ -83,16 +79,15 @@ var text = n + "! = " +
 <p>Would you like to play around with the code that generated this? Try editing the follow code block:
 
 </p>
-<p><pre id='Code_block_for_factorial' class='editable runnable' ><code>var n = 1000;
+<p><pre id='code_block_for_factorial' class='editable runnable' ><code>var n = 1000;
 var lf = 0;
 //sum ove the logs
-var i; 
-for (i = 0; i &amp;lt; n; i += 1) {
-  lf += Math.log(i+1);
+var i;
+for (i = 0; i < n; i += 1) {
+  lf += Math.log(i + 1);
 }
-var lf10 = lf/Math.LN10;
-var text = n + "! = " + 
-    ( lf10 &amp;lt; 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10)</code></pre>
+var lf10 = lf / Math.LN10;
+var text = n + "! = " + (lf10 < 6 ? Math.round(Math.pow(10, lf10)) : Math.pow(10, lf10 - Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10));</code></pre>
 
 </p>
 <p>This is the implementation described above. We first compute the some of the logarithms, then we compute the logarithm relative to 10. The final line is just an attempt to present the result nicely. 

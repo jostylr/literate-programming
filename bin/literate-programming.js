@@ -27,6 +27,7 @@ var save = function (files, dir) {
     }
     for (var name in files) {
         // name, text
+
       console.log(name + " saved");
       fs.writeFileSync(name, files[name][0], 'utf8');
     }

@@ -477,7 +477,7 @@ We have just created the doc object. Now we take it and merge it in with the opt
 
         this.commander = _"Doc commander";
 
-        this.commands = _"Default doc commands";
+        this.commands = _"Core doc commands";
 
         this.constants = {};
 
@@ -523,16 +523,7 @@ JS
         return code;
     }
 
-#### Default doc commands
 
-
-     { "eval" : function (code) {
-                    return eval(code);
-        },
-        "jshint" : _"JSHint|main",
-        "jstidy" : _"JSTidy",
-        "marked" : _"Marked"
-    }
 
 #### Make code block
 
@@ -745,7 +736,7 @@ JS vars
 JS main
 
     comarr = [];
-    passin = {doc:doc, block:block, name: where+type};  //? what is needed for this?
+    passin = {doc:doc, block:block, name: where+type};  
     while (pieces.length >0) {
 
         com = pieces.shift();
@@ -757,10 +748,10 @@ JS main
             continue;
         }
 
-        funname = cmatch[2].trim();
+        funname = cmatch[1].trim();
 
         if (cmatch[3]) {
-            funargs = cmatch[3].split(",").trim();
+            funargs = cmatch[2].split(",").trim();
         } else {
             funargs = [];
         }
@@ -1074,20 +1065,18 @@ They often involve processing the compiled text and probably use various other m
 
 
 
-### Prototype of Directive
+## Core doc commands
 
-It runs immediately upon encountering. One probably wants to do some options parsing and then have something that works on doc.cur.pre/during/post 
 
-    function (options, doc) {
-        //post/pre/during
-       var post = doc.cur.post;
-       doc.cur.post = function (code, block, doc) {
-           code = post(code, block, doc);
-           code = //something awesome happens here
-           return code;
-       };
-
-        // no return
+     { "eval" : function (code) {
+                    return eval(code);
+        },
+        "jshint" : _"JSHint|main",
+        "jstidy" : _"JSTidy",
+        "marked" : _"Marked",
+        "wrap" : _"Wrap",
+        "escape" : _"Escape",
+        "unescape" : _"Unescape"
     }
 
 
@@ -1117,6 +1106,7 @@ JS main
         jshint(code, options ||{ } );
         var data = jshint.data();
 
+        console.log(code);
         _"|jshint logging"
 
 
@@ -1139,6 +1129,7 @@ JS jshint logging
         var log = [], err, i;
         for (i = 0; i < jshint.errors.length; i += 1) {
            err = jshint.errors[i];
+           if (!err) {continue;}
            log.push("E "+ err.line+","+err.character+": "+err.reason +
             "  "+ lines[err.line-1]);
             block.jshint.errors.push({"line#": err.line, character: err.character, reason: err.reason, line: lines[err.line-1]} );
@@ -1208,36 +1199,46 @@ Run the text through the marked script to get html. Need to escape out underscor
 
 Needs marked installed: `npm install marked`   
 
-### JS Pre
+### Wrap
 
-Encapsulate code into a Pre code element. Escape characters if necessary. Need to test. 
+Encapsulate the code into an html element.
 
-    function (options, doc) {
+    function (code, options) {
+        var block = this.block;
 
-        var modify = function (code, block, doc, options) {
-            _"Create attribute list"
-            _"Escape code"
-            return "<pre " + attributes + "><code>"+code+"</code></pre>";
-        };
+        var element = options.shift();
+
+        _"Create attribute list"
+
+        return "<" + element + " " + attributes + "><code>"+code+"</code></"+element+ ">";
 
 
     }  
 
-#### Escape code
+## Escape 
 
-Replace <> with their equivalents. 
+Escape the given code to be safe in html, e.g., javascript into an html pre element. 
 
-    code = code.replace(/</g, "&lt;");
-    code = code.replace(/>/g, "&gt;");
-    code = code.replace(/\&/g, "&amp;");
+Replace `<>&` with their equivalents. 
 
-#### Unescape code
+
+    function (code) {
+        code = code.replace(/</g, "&lt;");
+        code = code.replace(/>/g, "&gt;");
+        code = code.replace(/\&/g, "&amp;");
+        return code;
+    }
+
+## Unescape 
 
 And to undo the escapes: 
 
-    code = code.replace(/\&lt\;/g, "<");
-    code = code.replace(/\&gt\;/g, ">");
-    code = code.replace(/\&amp\;/g, "&");
+    function (code) {
+        code = code.replace(/\&lt\;/g, "<");
+        code = code.replace(/\&gt\;/g, ">");
+        code = code.replace(/\&amp\;/g, "&");
+        return code;
+    }
 
 
 
@@ -1281,7 +1282,6 @@ So the plan is to go through each item in files. Call the full substitute method
             blockname = files[i][1];
             comp = doc.fullSub(doc.blocks[blockname]);
             _"Get correct text block"
-
             compiled[fname] = [ret, blockname];
         }
     }
@@ -1315,6 +1315,14 @@ type needs to be rethought out. need some piping.
     } else {
         // try the extension from this type or try the no extension
        ret = comp[fname] || comp["."+ext] || comp["."];
+       // if still nothing, then grab a random block (probably just one)
+       if (!ret) {
+            for (ctype in comp) {
+                ret = comp[ctype];
+                break;
+            }
+
+       }
     }
 
 
@@ -1410,6 +1418,7 @@ Given array of name and text, save the file. dir will change the directory where
         }
         for (var name in files) {
             // name, text
+
           console.log(name + " saved");
           fs.writeFileSync(name, files[name][0], 'utf8');
         }

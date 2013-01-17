@@ -5,7 +5,7 @@ This post is about computing factorials via the logarithm. We use loops to compu
 
 ## Structure
 
-MD |1 marked
+MD main |1 marked
 
     _"Introduction"
 
@@ -17,7 +17,7 @@ MD |1 marked
 
     _"Comments"
 
-FILE logs.htm
+FILE logs.htm main
 
 ## Introduction
 
@@ -32,7 +32,7 @@ MD
     
     Factorials get too big too fast. For example, $69! \approx 1.7\times 10^{98}$ is the maximum factorial a calculator can handle. And Google maxes out around 170!
 
-    The issue is that the numbers 
+    The issue is that the numbers get too big for the computer to store in memory in its default way to store numbers. s
 
     ## Key Insight 
     
@@ -91,7 +91,14 @@ MD | 1 marked
 
     To use, put in a positive integer.
 
-    __"HTML calculator"
+    __"Calculator | <html>
+    <head>
+        <title></title>
+    </head>
+    <body>
+    
+    </body>
+    </html>"
 
 
 ## Behind the scenes
@@ -123,7 +130,7 @@ HTML
     
     <div id="factorial"></div>
 
-    _"|js|wrap(pre, hide, run)"
+    __"|js|jshint|escape|wrap(pre, hide, run)"
 
 We will attach a function to the click action 
 
@@ -133,7 +140,7 @@ JS
         var n = $("#n").val();
         _"Check n"
         _"Common factorial"
-      $("#factorial").text(n+"! = " + ) );      
+      $("#factorial").text(text );      
     });
 
 
@@ -144,13 +151,13 @@ We need to make sure that n is a positive integer.
 JS
 
     if ((n < 0) || (Math.floor(n) !== n) ) {
-        $("#factorial).text("Input a positive integer");
+        $("#factorial").text("Input a positive integer");
     }
 
 
 ## Code block for factorial
 
-JS wrap(oo, pre, editable, runnable)
+JS | jshint| jstidy |wrap(pre, editable, runnable)
 
     var n = 1000;
     _"Common factorial"
@@ -170,7 +177,8 @@ JS
     }
     var lf10 = lf/Math.LN10;
     var text = n + "! = " + 
-        ( lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10) 
+        ( lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10) );
+
     
 
 ## Stand alone page
@@ -185,6 +193,7 @@ HTML
       <head>
         <meta charset="utf-8">
         <title>Log and Factorial</title>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 
 SCRIPTEDWRITING
 <link rel="stylesheet" href="style.css">
