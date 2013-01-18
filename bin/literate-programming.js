@@ -21,21 +21,32 @@ if ((! program.args[0]) ) {
 var dir = program.dir; 
 var md = fs.readFileSync(program.args[0], 'utf8');
 
-var save = function (files, dir) {
+var save = function (doc, dir) {
     if (dir) {
         process.chdir(dir);
     }
-    for (var name in files) {
-        // name, text
-
-      console.log(name + " saved");
-      fs.writeFileSync(name, files[name][0], 'utf8');
+    var files = doc.files;
+    console.log(files);
+    var file, block, fname, compiled, text;  
+    var i, n = files.length;
+    for (i=0; i < n; i+= 1) {
+        file = files[i];
+        console.log(file[1]);
+        block = doc.blocks[file[1]];
+        fname = file[0]
+        if (block) {
+            compiled = block.compiled; 
+            text = doc.getBlock(compiled, file[2], fname);
+            fs.writeFileSync(fname, text, 'utf8');
+            doc.log(fname + " saved");
+        } else {
+            doc.log("No block "+file[1] + " for file " + fname);
+        } 
     }
-
 };
  
 
 var doc = lp.compile(md);
-save(doc.compiled, dir); 
+save(doc, dir); 
 
-console.log(doc.log.join("\n\n"));
+console.log(doc.logarr.join("\n\n"));

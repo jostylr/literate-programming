@@ -21,7 +21,7 @@ In addition, a jump of two levels or more in the heading yields heading directiv
 
 One should also be able to run JavaScript code directly in the interpreter. I think a decent convention would be underscore backtick code  backtick.        
 
-    _`javascript code`
+    _ `javascript code`
 
 The eval output (last evaluated value) is what is placed in the code to replace the backtick call.
 
@@ -77,9 +77,7 @@ JS  |jshint() | jstidy
 
 
 
-    _"Utility Trim"
-    _"Raw String"
-    _"Apply Trim"
+    _"Utilities"
     
     module.exports.compile = function (md, options) {
 
@@ -92,12 +90,13 @@ JS  |jshint() | jstidy
         var lineparser = _"Parse lines";      
 
         Doc.prototype.lineparser = lineparser;
-        Doc.prototype.makeFiles = _"Make files";
+        Doc.prototype.getBlock = _"Get correct code block|main.js";
+        Doc.prototype.compileNow = _"Compile time";
 
         var doc = lineparser(md, options);
         
-        doc.makeFiles();
- 
+        doc.compileNow();
+
         return doc;
     };
 
@@ -204,7 +203,7 @@ JS Add empty line
 
 
 
-## Directives parser
+### Directives parser
 
 A directive will be recognized as, at the start of a line, as all caps and a matching word. This may conflict with some uses, but it seems unlikely since if there is no matching directive, then the original is left untouched. 
 
@@ -340,38 +339,18 @@ The setup is that the code array has a property named commands which is an assoc
 
 I toyed with categorizing the commands by type, but since the different transformations by change its type and it is even harder to figure out with the substituion pipes, it seems best to use a global namespace. 
 
-## Subsection Headings
-
-
-Subsection headings refer to the higher level previous code block. One can write "#### Test"   (cap not matters) to write a test section for "## Great code".  This allows for the display of the markdown to have these sections hidden by default. 
-Some possibilities as above, but also a doc type for writing user documentation. The literate programming is the developer's documentation, but how to use whatever can be written from within as well. 
-
-By going two extra levels, we can recognize levels for testing and so forth without polluting the global namespace. Two levels could be those, such as examples, that should be for general review while three levels could be for edge case test cases, hidden by default. 
-
-## Chunk headings
-
-Parse out the section headings. These constitute "#+" followed by a name. Grab what follows. Parse code blocks indicated by 4 spaces in. One block per section reported, but can be broken up. Stitched together in sequence. 
-
-To do this programmatically, we will split the whole text by newlines. At each line, analyze whether there is a "#" starting it--if so, get text after for name of section. At each line, check if there are four spaces. If so, add the line of code to the block. 
-
-Each subheading is nested in the one above. So we need structures that hold the block and heading hierarchy.
-
-
- 
-
-
-
-
 
 ### Head parser
 
 We recognize a heading by the start of a line having '#'. We count the number of sharps, let's call it level. The old level is oldLevel.
 
-If level <= oldLevel +1, then we have a new subsection of code.
+If level <= oldLevel +1, then we have a new section of code. Other than logical presentation, there is no actual implication of different header levels. 
 
 If level >= oldLevel +2, then this is a Heading Directive and we try to match it with a directive. It feeds directly into the oldLevel section and is not globally visible. 
 
 For new global blocks, we use the heading string as the block name. We lower case the whole name to avoid capitalization issues (it was really annoying!)
+
+JS
 
     function (line, doc) {
       var level, oldLevel, cur, name, cname;
@@ -382,7 +361,7 @@ For new global blocks, we use the heading string as the block name. We lower cas
         oldLevel = doc.level || 0;
         level = match[1].length;
 
-        _"Remove empty code blocks"
+        _"|Remove empty code blocks"
 
         cur = new Block();
         cur.name = name;
@@ -391,7 +370,7 @@ For new global blocks, we use the heading string as the block name. We lower cas
 
 
         // this shortcircuits if it is a directive heading
-        _"Directive heading" 
+        _"|Directive heading" 
                 
         doc.blocks[name] = cur; 
         doc.cur = cur; 
@@ -407,7 +386,7 @@ For new global blocks, we use the heading string as the block name. We lower cas
 
 In the above, we are defining the default processors again fresh. This prevents any kind of manipulations from leaking from one section to another. It could be a performance penalty, but probably not a big deal. Garbage collection should remove old processors. 
 
-#### Remove empty code blocks
+JS Remove empty code blocks
 
     cur = doc.cur; 
     for (cname in cur.code) {
@@ -419,7 +398,7 @@ In the above, we are defining the default processors again fresh. This prevents 
 
 This suffered from having empty lines put into the code block. Solution: do not add empty lines unless there is a non-empty line of code before it.
 
-#### Directive heading
+JS Directive heading
 
 Here we want to change the current block to take the current part, but it needs to be added to the parent's subdire
 
@@ -434,44 +413,41 @@ This will hide all blocks that have +2 level change or higher. Need to implment 
             return true;
         }
 
+Subsection headings refer to the higher level previous code block. One can write "#### Test"   (caps do not matter) to write a test section for "## Great code".  This allows for the display of the markdown to have these sections hidden by default.
+ 
 
 
 ### Plain parser
 
-This is a default. It means there is nothing special about the line. So we simply add it to the current full block.
+It means there is nothing special about the line. So we simply add it to the plain block because, why not?
 
+JS
     function (line, doc) {
       doc.cur.plain.push(line);
       return true;
     }
 
-### Merge in options
-
-In order to have more custom behavior, such as linking in behavior for visual editing, we want to be able to pass in options to the functions. 
-
-We have just created the doc object. Now we take it and merge it in with the options object. 
-
-    if (options) {
-        var key;
-        for (key in options) {
-            this[key] = options[key];
-        }
-    }
 
 
 ## Constructors 
 
+We have a few prototypes we use. The main one is the Doc constructor which is what a literate programming string gets turned into. 
+
+We also create a Block object for each section of a literate program. Within that block, we have code blocks created which are augmented arrays and not a proper prototyped object. 
+
 ### Document constructor
+
+JS
 
     Doc = function (options) {
         this.blocks = {};
         this.cur = new Block();
         this.files = [];
-        this.log = [];
+        this.logarr = [];
         this.subtimes = 0;
         this.type = ".";
 
-        this.types = {js: 1, md: 1, html: 1, css: 1}; 
+        this.types = _"|Types"; 
 
         this.directives = _"Directives";
 
@@ -485,7 +461,7 @@ We have just created the doc object. Now we take it and merge it in with the opt
         this.processors = [].concat(this.defaultProcessors);
       
 
-        _"Merge in options"
+        _"|Merge in options"
 
         return this;
     };
@@ -504,6 +480,35 @@ We have just created the doc object. Now we take it and merge it in with the opt
     Doc.prototype.trimCode = [function (code) {
         return code.trim();
     }, [], {}];
+
+    Doc.prototype.log = function (text) {this.logarr.push(text);};
+
+
+JS Merge in options
+
+In order to have more custom behavior, such as linking in behavior for visual editing, we want to be able to pass in options to the functions. 
+
+We have just created the doc object. Now we take it and merge it in with the options object. 
+
+    if (options) {
+        var key;
+        for (key in options) {
+            this[key] = options[key];
+        }
+    }
+
+JS Types
+
+We use file extensions as keys and we provide the mime type for the kind which may be useful for CodeMirror and the IDE or for serving content directly from a server without files or ???
+
+    {
+        "" : "text/plain",
+        js: "text/javascript", 
+        json: "application/json", 
+        md: "text/x-markdown", 
+        html: "text/html", 
+        css: "text/css"
+    }    
 
 
 #### Doc commander
@@ -527,7 +532,9 @@ JS
 
 #### Make code block
 
-We need an array with some extra methods.
+We need an array of the code lines and a property that holds any processing functions to use during the substitution phase.
+
+JS
 
     function () {
         var doc = this;
@@ -538,6 +545,10 @@ We need an array with some extra methods.
 
 
 ### Block constructor
+
+This just creates a basic structore for a block that corresponds to a heading and the rest. The code property is the most useful and it is an object whose keys correspond to the name.type of each code block, each block being an array of lines as created in "Make code block".
+
+JS
 
     Block = function () {
 
@@ -551,7 +562,156 @@ We need an array with some extra methods.
 
 
 
-## Compiling the document 
+## Compile Time
+
+We now want to assemble all the code. This function takes in a parsed lp doc and compiles each block. It will visit each block and run the fullSub method. 
+
+Most likely, most blocks will be called within another's block compile method, but that's okay as the result is stored and short circuits the loop. 
+
+Originally, only blocks called by FILE were compiled, but with this approach it allows for experimental blocks to be compiled with linting/testing results before being folded into the main code. Another pipe directive such as `0 nocompile` could shortcircuit the compile phase. 
+
+JS main
+
+    function () {
+        var doc = this;
+
+        var blockname; 
+        for (blockname in doc.blocks) {
+            doc.fullSub(doc.blocks[blockname]);
+        }
+    }
+
+
+
+### Get correct code block
+
+Each compiled block has an associative array whose keys are internal names. They may be explicitly set, such as `JS main` becomes `main.js`.  But they might also be no name or even no extension. 
+
+So this is a function that takes in a compiled block, the internal name and the requester's name and tries to find the right segment of text. 
+
+
+We need to get the right block of text. First we check if there is a request from the file directive. If not, then see if we can get the extension.
+
+1. internal is the full name and a good match. Safest _"|jack.js"
+1. Check if there is only one block. If so, return it. 
+2. See if internal is a known extension. Check main.ext and .ext.  _"|js". Would not match jack.js. Does work with no extension as well as internal would be "" and match type "".
+3. internal is the name, but without extension. Common. See if requester's extension with name matches something. If not, try default extension and then ".". If none of that works, then see if anything matches the name.   _"|jack"  becomes jack.js if looked at from cool.js block. Also checked is jack.
+4. If all that fails, then loop through the keys trying to match text. Unpredictable.
+5. If none of that works, then look for a key of main. 
+6. If that fails, grab something.
+
+
+JS main
+    
+    function (block, internal, requester) {
+        var doc = this;
+    
+        internal = internal.toLowerCase();
+        requester = requester.toLowerCase();
+
+        // an exact match! yay!
+        if (block.hasOwnProperty(internal)) {
+            return block[internal];
+        }
+
+        var keys = Object.keys(block);
+
+        // just one key
+        if (keys.length === 1) {
+            return block[keys[0]];
+        }
+
+        if (doc.types.hasOwnProperty(internal)) {
+            // main.js
+            if (block.hasOwnProperty("main."+internal) ) {
+                return block["main."+internal];
+            }            
+            // .js
+            if (block.hasOwnProperty(internal) ) {
+                return block["."+internal];
+            }
+        }
+
+        _"|filter internal"
+
+        if (newkeys.length === 1) {
+            return block[newkeys[0]];
+        }
+
+        if (newkeys.length === 0) {
+            doc.log("Name not found: " + internal + " requested from " + requester + keys.join(","));
+            return "";
+        }
+
+        //so we have multiple matches to internal (internal could be "")
+        // get extension from requester
+
+       var ext = (requester.split(".")[1] || "").trim().toLowerCase();
+
+        _"|filter ext"
+
+
+        if (extkeys.length === 1) {
+            return block[extkeys[0]];
+        }
+
+        var finalkeys;
+        if (extkeys.length > 0 ) {
+            finalkeys = extkeys;
+        } else {
+            finalkeys = newkeys;
+        }
+
+        _"|Filter main"
+
+        if (morekeys.length > 0) {
+            return block[morekeys[0]];
+        }
+
+        // pick shortest one which could be the empty name
+        return block[ finalkeys.sort(function (a,b) {
+            if (a.length < b.length) {
+                return -1;
+            } else {
+                return 1;
+            } 
+        })[0]];
+
+    }
+
+JS Filter internal
+
+
+        // try and find a match for the internal
+        var newkeys = keys.filter(function (val) {
+            if (val.match(internal) ) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+
+JS Filter ext
+
+        var extkeys = newkeys.filter(function(val) {
+            if (val.match(ext) ) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+JS Filter main
+
+        var morekeys = finalkeys.filter(function (val) {
+            if (val.match("main") ) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
 
 ## Line analysis
 
@@ -584,7 +744,7 @@ For evaling, no substitutions are done. It is just straight, one line code. If e
 
         var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|([A-Z][A-Z.]*[A-Z]))/g;
         var rep = [];
-        var match, ret, type, pieces, where, comp, ctype, ext;
+        var match, ret, type, pieces, where, comp;
         _"Pipe processor|vars.js"
 
         var blocks = doc.blocks;
@@ -677,44 +837,9 @@ Either the substitution specifies the bit to insert or we use the current name's
 The bit between the first pipe and second pipe (if any) should be the type and type only. 
 
  
-    type = pieces.shift();
-
-    ext = name.split(".")[1].trim().toLowerCase();
-
-Possibilities for matching type:
-1. type is the full name and a good match. Safest _"|jack.js"
-2. type is the extension. So we add "." and see if that works _"|js". Would not match jack.js
-3. type is the name, but with extension. Use the default extension of the type or just a dot,  _"|jack"  becomes jack.js if looked at in cool.js block. Also checked is jack.
-4. If all that fails, then loop through the keys trying to match text. Unpredictable.
-
-
-    if (type) {
-        type = type.toLowerCase();
-        ret = comp[type] || 
-            comp["."+type] || 
-            comp[type+"."+ext] || comp[type+"."];
-        if (!ret) {
-            for (ctype in comp) {
-                if (ctype.match(type) ) {
-                    ret = comp[ctype];
-                    break;
-                }
-            }
-        }
-    } else {
-        // try the extension from this type or try the no extension
-       ret = comp["."+ext] || comp["."];
-    }
-
-    // grab something!
-    if (!ret) {
-        for (ctype in comp) {
-            ret = comp[ctype];
-        }
-    }
+    ret = doc.getBlock(comp, pieces.shift() || "", name || ""); 
 
     _"Pipe processor|main.js"
-
 
     ret =  doc.commander(comarr, ret); 
 
@@ -967,17 +1092,24 @@ Below should be split off
 
 #### File directive
      
-The command is `FILE fname.ext` where fname.ext is the filename and extension to use. 
+The command is `FILE fname.ext | block name | internal name ` where fname.ext is the filename and extension to use. 
 
     function (options) {
         var doc = this; 
-        options = options.trim();
-        var match = options.match(/^(\S+)\s*(.*)$/);
-        if (match) {
-            doc.files.push([match[1], doc.name, match[2]]);
-            doc.cur.file = match[1];        
+        console.log(options);
+        options = (options || "").split("|").trim();
+                console.log(options);
+        if (options[0] === "") {
+            doc.log("No file name for file: "+options.join[" | "]+","+ doc.name);
+            return false;
         } else {
-            doc.log("No file name for file: "+options+","+ doc.name);
+            if (!options[1]) {
+                options[1] = doc.name;
+            }
+            if (!options[2]) {
+                options[2] = "";
+            }
+            doc.files.push(options);            
         }
     }
 
@@ -1106,7 +1238,6 @@ JS main
         jshint(code, options ||{ } );
         var data = jshint.data();
 
-        console.log(code);
         _"|jshint logging"
 
 
@@ -1116,7 +1247,7 @@ JS main
          log = ("JSHint CLEAN: " + this.name);
         }
 
-        doc.log.push(log);
+        doc.log(log);
         return code;
     }
 
@@ -1265,69 +1396,17 @@ We want to create an attribute list for html elements. The convention is that ev
     attributes = "id='"+id+"' " + "class='"+klass.join(" ")+"' "+ attributes;
 
 
+## Utilities
 
-## Make files
+Here we define some utility functions: 
 
-We now want to assemble all the code. This function takes in a parsed lp doc and uses the files array to know which files to make and how to weave them together. 
-
-So the plan is to go through each item in files. Call the full substitute method on it and then save it. 
-
-    function () {
-        var doc = this;
-        var compiled = doc.compiled = {};
-        var files = doc.files;
-        var fname, blockname,  ext, type, ret, ctype, comp;
-        for (var i = 0; i < files.length; i  += 1) {
-            fname = files[i][0];
-            blockname = files[i][1];
-            comp = doc.fullSub(doc.blocks[blockname]);
-            _"Get correct text block"
-            compiled[fname] = [ret, blockname];
-        }
-    }
-
-The pre and post functions are hooks for running sections of code at appropriate times. They are implemented using directives.
+    _"String Trim"
+    _"Raw String"
+    _"Array Trim"
+    _"Object Keys"
 
 
-### Get correct text block
-
-We need to get the right block of text. First we check if there is a request from the file directive. If not, then see if we can get the extension.
-
-Probably should refactor this to be a function as it is used elsewhere as well.
-
-type needs to be rethought out. need some piping.
-
-    type = files[i][2];
-    ext = fname.split(".");
-    ext = ext[ext.length -1].trim();
-    if (type) {
-        ret = comp[type] || 
-            comp["."+type] || 
-            comp[type+"."+ext] || comp[type+"."];
-        if (!ret) {
-            for (ctype in comp) {
-                if (ctype.match(type) ) {
-                    ret = comp[ctype];
-                    break;
-                }
-            }
-        }
-    } else {
-        // try the extension from this type or try the no extension
-       ret = comp[fname] || comp["."+ext] || comp["."];
-       // if still nothing, then grab a random block (probably just one)
-       if (!ret) {
-            for (ctype in comp) {
-                ret = comp[ctype];
-                break;
-            }
-
-       }
-    }
-
-
-
-### Utility Trim
+### String Trim
 
 This was lifted from JavaScript the Definitive Guide: 
 
@@ -1338,7 +1417,7 @@ This was lifted from JavaScript the Definitive Guide:
        return this.replace(/^\s+|\s+$/g, ""); // Regular expression magic
     };
 
-### Apply Trim 
+### Array Trim 
 
 Trims all objects with a trim function in an array and returns a copy. Mainly used here for post-split cleanup.
 
@@ -1363,6 +1442,26 @@ This code is for dealing with using replace with arbitrary strings. The dollar s
         return function () {return ret;};
     };
 
+### Object Keys
+
+Found at [SO](http://stackoverflow.com/questions/18912/how-to-find-keys-of-a-hash)
+
+Note this is on Object, not Object.prototype to avoid enumeration issues. 
+
+    if(!Object.keys) {
+        Object.keys = function(o){
+           if (o !== Object(o)) {
+              throw new TypeError('Object.keys called on non-object');
+            }
+           var ret=[],p;
+           for(p in o) {
+                if(Object.prototype.hasOwnProperty.call(o,p)) {
+                    ret.push(p);
+                }
+            }
+           return ret;
+        };
+    }
 
 
 ## Cli 
@@ -1384,7 +1483,7 @@ This is the command line file. It loads the literate programming document, sends
 _"Load file"
 
     var doc = lp.compile(md);
-    save(doc.compiled, dir); 
+    save(doc, dir); 
 
 
     _"Cli log"
@@ -1412,25 +1511,37 @@ No need to worry about async here so we use the sync version of [readFile](http:
     
 Given array of name and text, save the file. dir will change the directory where to place it. This should be the root directory of all the files. Use the filenames to do different directories. 
 
-    function (files, dir) {
+    function (doc, dir) {
         if (dir) {
             process.chdir(dir);
         }
-        for (var name in files) {
-            // name, text
-
-          console.log(name + " saved");
-          fs.writeFileSync(name, files[name][0], 'utf8');
+        var files = doc.files;
+        console.log(files);
+        var file, block, fname, compiled, text;  
+        var i, n = files.length;
+        for (i=0; i < n; i+= 1) {
+            file = files[i];
+            console.log(file[1]);
+            block = doc.blocks[file[1]];
+            fname = file[0]
+            if (block) {
+                compiled = block.compiled; 
+                text = doc.getBlock(compiled, file[2], fname);
+                fs.writeFileSync(fname, text, 'utf8');
+                doc.log(fname + " saved");
+            } else {
+                doc.log("No block "+file[1] + " for file " + fname);
+            } 
         }
-
     }
+
 
 
 ### Cli log
 
 This is where we report the logs. 
 
-    console.log(doc.log.join("\n\n"));
+    console.log(doc.logarr.join("\n\n"));
 
 ### Command line options
 
@@ -1564,29 +1675,11 @@ For grid data input:  https://github.com/mleibman/SlickGrid
 For scroll syncing https://github.com/sakabako/scrollMonitor
 
 
-
-
-### Testbed
-
-CSS
-
-    p {color:red}
-
-JS 
-    $('p').blink();
-
-HTML
-
-    <p>Argh</p>
-
-
-This would also give 
-
 ## NPM package
 
 The requisite npm package file.
 
-JSON
+JSON | jshint
 
     {
       "name": "literate-programming",
@@ -1628,7 +1721,7 @@ JSON
     }
 
 FILE package.json
-JS.HINT
+
 
 ## LICENSE-MIT
 
