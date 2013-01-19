@@ -603,7 +603,7 @@ We need to get the right block of text. First we check if there is a request fro
 
 JS main
     
-    function (block, internal, requester) {
+    function (block, internal, requester, bname) {
         var doc = this;
     
         internal = internal.toLowerCase();
@@ -639,7 +639,7 @@ JS main
         }
 
         if (newkeys.length === 0) {
-            doc.log("Name not found: " + internal + " requested from " + requester + keys.join(","));
+            doc.log("Name not found: " + internal + " requested from " + requester + " of " + bname);
             return "";
         }
 
@@ -837,7 +837,7 @@ Either the substitution specifies the bit to insert or we use the current name's
 The bit between the first pipe and second pipe (if any) should be the type and type only. 
 
  
-    ret = doc.getBlock(comp, pieces.shift() || "", name || ""); 
+    ret = doc.getBlock(comp, pieces.shift() || "", name || "", block.name); 
 
     _"Pipe processor|main.js"
 
@@ -1113,22 +1113,6 @@ The command is `FILE fname.ext | block name | internal name ` where fname.ext is
         }
     }
 
-#### Raw directive
-
-Ignore the code bit and give back the raw full block. Mainly useful for markdown documents. 
-
-To do this, we take out the code that would have been parsed in the pre mode. It loops once, doing nothing. Then in the post, we return the full portion. 
-
-    function (options, doc) {
-       doc.cur.pre = function () {
-            return ""; 
-       };
-
-       doc.cur.post = function (code, block) {
-           return block.plain.join("\n");
-       };
-    }
-
 
 #### Load directive
 
@@ -1208,7 +1192,10 @@ They often involve processing the compiled text and probably use various other m
         "marked" : _"Marked",
         "wrap" : _"Wrap",
         "escape" : _"Escape",
-        "unescape" : _"Unescape"
+        "unescape" : _"Unescape",
+        "nocompile" : _"No Compile",
+        "raw" : _"Raw",
+        "clean raw" : _"Clean Raw"
     }
 
 
@@ -1346,7 +1333,7 @@ Encapsulate the code into an html element.
 
     }  
 
-## Escape 
+#### Escape 
 
 Escape the given code to be safe in html, e.g., javascript into an html pre element. 
 
@@ -1360,7 +1347,7 @@ Replace `<>&` with their equivalents.
         return code;
     }
 
-## Unescape 
+#### Unescape 
 
 And to undo the escapes: 
 
@@ -1372,8 +1359,7 @@ And to undo the escapes:
     }
 
 
-
-### Create attribute list
+#### Create attribute list
 
 We want to create an attribute list for html elements. The convention is that everything that does not have an equals sign is a class name. So we will string them together and throw them into the class, making sure each is a single word. The others we throw in as is. The id of the element is the block name though it can be overwritten with id="whatever". Options is an array that has the attributes.
 
@@ -1394,6 +1380,50 @@ We want to create an attribute list for html elements. The convention is that ev
         }
     }
     attributes = "id='"+id+"' " + "class='"+klass.join(" ")+"' "+ attributes;
+
+### No Compile
+
+This prevents the compilation of the block. Mostly used with 0 in front to avoid problematic compilation. It does this by returning an empty string. Pretty simple. 
+
+    function () {
+        return "";
+    }
+
+### Raw
+
+This returns the joined text of the full block. Probably called by another block. 
+
+    function () {
+        var block = this.block;
+
+        return block.full.join("\n");
+    }
+
+### Clean Raw
+
+This is like raw, but it removes any Directives, and it removes one space from the start of a line that would otherwise match a directive or header. 
+
+    function () {
+        var block = this.block;
+        var full = block.full;
+        var i, n = full.length, ret = [], line;
+        console.log(full);
+        for (i = 0; i < n; i += 1) {
+            line = full[i];
+            if (line.match(/^(?:\#|\.[A-Z]|[A-Z]{2})/) ) {
+                console.log("match", line);
+                continue;
+            }
+            if (line.match(/^ (?:\#|[A-Z.])/) ) {
+                console.log(line, line.slice(1));
+                ret.push(line.slice(1));
+            } else {
+                console.log("its cool", line);
+                ret.push(line);
+            }
+        }
+        return (ret.join("\n")).trim();
+    }
 
 
 ## Utilities
@@ -1526,7 +1556,7 @@ Given array of name and text, save the file. dir will change the directory where
             fname = file[0]
             if (block) {
                 compiled = block.compiled; 
-                text = doc.getBlock(compiled, file[2], fname);
+                text = doc.getBlock(compiled, file[2], fname, block.name);
                 fs.writeFileSync(fname, text, 'utf8');
                 doc.log(fname + " saved");
             } else {
@@ -1579,7 +1609,6 @@ I always have to look up the RegEx stuff. Here I created regexs and used their [
 
 ## README
 
-MD
 
     literate-programming
     ====================
@@ -1587,8 +1616,6 @@ MD
     Write a program using markdown to write out your thoughts and the bits of code that go with those thoughts. This program weaves the bits together into usable fiels. 
 
     ## Installation
-
-    This is not yet operational, but soon: 
 
         npm install -g literate-programming
 
@@ -1643,7 +1670,8 @@ FILE README.md
 ## TODO
 
 FILE TODO.md
-RAW
+
+MD | clean raw
 
 An in-browser version is planned. The intent is to have it be an IDE for the literate program. 
 
@@ -1684,7 +1712,7 @@ JSON | jshint
     {
       "name": "literate-programming",
       "description": "A literate programming compile script. Write your program in markdown.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "homepage": "https://github.com/jostylr/literate-programming",
       "author": {
         "name": "James Taylor",
@@ -1741,6 +1769,8 @@ FILE LICENSE
 
 
 ## The Docs
+
+MD | 0 nocompile
 
 Here we write the basic docs for the user.
 

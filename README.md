@@ -5,8 +5,6 @@ Write a program using markdown to write out your thoughts and the bits of code t
 
 ## Installation
 
-This is not yet operational, but soon: 
-
     npm install -g literate-programming
 
 ## Using

@@ -36,7 +36,7 @@ var save = function (doc, dir) {
         fname = file[0]
         if (block) {
             compiled = block.compiled; 
-            text = doc.getBlock(compiled, file[2], fname);
+            text = doc.getBlock(compiled, file[2], fname, block.name);
             fs.writeFileSync(fname, text, 'utf8');
             doc.log(fname + " saved");
         } else {
