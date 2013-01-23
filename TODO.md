@@ -1,6 +1,6 @@
 Make sure file has pipe stuff.
 
-Explore constants, macros, and subdirectives. 
+Explore constants and macros.
 
 Cleanup this program. Halfway done. 
 

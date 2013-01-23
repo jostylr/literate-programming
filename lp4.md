@@ -342,11 +342,7 @@ I toyed with categorizing the commands by type, but since the different transfor
 
 ### Head parser
 
-We recognize a heading by the start of a line having '#'. We count the number of sharps, let's call it level. The old level is oldLevel.
-
-If level <= oldLevel +1, then we have a new section of code. Other than logical presentation, there is no actual implication of different header levels. 
-
-If level >= oldLevel +2, then this is a Heading Directive and we try to match it with a directive. It feeds directly into the oldLevel section and is not globally visible. 
+We recognize a heading by the start of a line having '#'. 
 
 For new global blocks, we use the heading string as the block name. We lower case the whole name to avoid capitalization issues (it was really annoying!)
 
@@ -367,10 +363,6 @@ JS
         cur.name = name;
         cur.type = doc.type;    
         cur.code[cur.type] = doc.makeCode();
-
-
-        // this shortcircuits if it is a directive heading
-        _"|Directive heading" 
                 
         doc.blocks[name] = cur; 
         doc.cur = cur; 
@@ -397,24 +389,6 @@ JS Remove empty code blocks
 
 
 This suffered from having empty lines put into the code block. Solution: do not add empty lines unless there is a non-empty line of code before it.
-
-JS Directive heading
-
-Here we want to change the current block to take the current part, but it needs to be added to the parent's subdire
-
-This will hide all blocks that have +2 level change or higher. Need to implment automatic running of subdire blocks. Might change this to seek a match for a directive heading. Or could use it to hide blocks; so look for substitution 
-
-        if (level >= oldLevel +2) {
-            level = oldLevel; 
-            cur.parent = doc.cur.parent|| doc.cur;
-
-            doc.cur = cur; 
-            cur.parent.subdire.push(cur);
-            return true;
-        }
-
-Subsection headings refer to the higher level previous code block. One can write "#### Test"   (caps do not matter) to write a test section for "## Great code".  This allows for the display of the markdown to have these sections hidden by default.
- 
 
 
 ### Plain parser
@@ -555,7 +529,6 @@ JS
         this.code = {};
         this.full = [];
         this.plain = [];
-        this.subdire = [];
 
         return this;
     };
@@ -1663,7 +1636,7 @@ MD | clean raw
 
 Make sure file has pipe stuff.
 
-Explore constants, macros, and subdirectives. 
+Explore constants and macros.
 
 Cleanup this program. Halfway done. 
 
