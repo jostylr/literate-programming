@@ -60,7 +60,7 @@ $$1000! \approx  10^{0.6046} \times 10^{2567} \approx 4.02 \times 10^{2567}$$
 
 <div id="factorial"></div>
 
-<undefined id='calculator' class='' >$("#computeFactorial").click(function () {
+<div class='hide run'>$("#computeFactorial").click(function () {
     var n = $("#n").val();
     if ((n &amp;lt; 0) || (Math.floor(n) !== n) ) {
     $("#factorial").text("Input a positive integer");
@@ -75,7 +75,7 @@ var lf10 = lf/Math.LN10;
 var text = n + "! = " + 
     ( lf10 &amp;lt; 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10) );
   $("#factorial").text(text );      
-});</undefined></p>
+});</div></p>
 
 
 </p>
@@ -83,7 +83,7 @@ var text = n + "! = " +
 <p>Would you like to play around with the code that generated this? Try editing the follow code block:
 
 </p>
-<p><pre id='code_block_for_factorial' class='editable runnable' >var n = 1000;
+<p><pre class='editable runnable'><code id='awe' color='red'>var n = 1000;
 var lf = 0;
 //sum ove the logs
 var i;
@@ -91,7 +91,7 @@ for (i = 0; i < n; i += 1) {
   lf += Math.log(i + 1);
 }
 var lf10 = lf / Math.LN10;
-var text = n + "! = " + (lf10 < 6 ? Math.round(Math.pow(10, lf10)) : Math.pow(10, lf10 - Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10));</pre>
+var text = n + "! = " + (lf10 < 6 ? Math.round(Math.pow(10, lf10)) : Math.pow(10, lf10 - Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10));</code></pre>
 
 </p>
 <p>This is the implementation described above. We first compute the some of the logarithms, then we compute the logarithm relative to 10. The final line is just an attempt to present the result nicely. 

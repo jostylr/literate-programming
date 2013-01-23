@@ -874,7 +874,7 @@ JS main
 
         funname = cmatch[1].trim();
 
-        if (cmatch[3]) {
+        if (cmatch[2]) {
             funargs = cmatch[2].split(",").trim();
         } else {
             funargs = [];
@@ -1279,9 +1279,8 @@ JS jshint logging
 
 Run the text through the marked script to get html. Need to escape out underscored substitutions. 
     
-    function (code, options) {
+    function (code) {
 
-        var block = this.block;
 
         var lpsnip = [], mathsnip = [];
 
@@ -1306,12 +1305,6 @@ Run the text through the marked script to get html. Need to escape out underscor
         code = code.replace(/\_+(\"[^"]+\"|\`[^`]+\`)/g, masklit); 
         code = code.replace(/\$\$[^$]+\$\$|\$[^$\n]+\$|\\\(((?:[^\\]|\\(?!\)))+)\\\)|\\\[((?:[^\\]|\\(?!\]))+)\\\]/g, maskmath);
         code = marked(code);
-        if (options.length > 0) {
-            var elem = options[0];
-            options = options.slice(1);
-            _"Create attribute list"
-            code = "<" + elem + " "+attributes+">"+code+"</"+elem+">";
-        }
         code = code.replace(/LITPROSNIP(\d+)/g, unmasklit);
         code = code.replace(/MATHSNIP(\d+)/g, unmaskmath);
         return code;
@@ -1320,23 +1313,7 @@ Run the text through the marked script to get html. Need to escape out underscor
 
 Needs marked installed: `npm install marked`   
 
-### Wrap
-
-Encapsulate the code into an html element.
-
-    function (code, options) {
-        var block = this.block;
-
-        var element = options.shift();
-
-        _"Create attribute list"
-
-        return "<" + element + " " + attributes + ">"+code+"</"+element+ ">";
-
-
-    }  
-
-#### Escape 
+### Escape 
 
 Escape the given code to be safe in html, e.g., javascript into an html pre element. 
 
@@ -1350,7 +1327,7 @@ Replace `<>&` with their equivalents.
         return code;
     }
 
-#### Unescape 
+### Unescape 
 
 And to undo the escapes: 
 
@@ -1362,27 +1339,41 @@ And to undo the escapes:
     }
 
 
-#### Create attribute list
 
-We want to create an attribute list for html elements. The convention is that everything that does not have an equals sign is a class name. So we will string them together and throw them into the class, making sure each is a single word. The others we throw in as is. The id of the element is the block name though it can be overwritten with id="whatever". Options is an array that has the attributes.
+### Wrap
 
-    var i, option, attributes = "", klass = [], temp, 
-        id = block.name.replace(/\s/g, "_"); // id may not contain spaces
+Encapsulate the code into an html element.
+
+    function (code, options) {
+
+        var element = options.shift();
+
+        _"|Create attribute list"
+
+        return "<" + element + " " + attributes + ">"+code+"</"+element+ ">";
+
+
+    }  
+
+
+JS Create attribute list
+
+We want to create an attribute list for html elements. The convention is that everything that does not have an equals sign is a class name. So we will string them together and throw them into the class, making sure each is a single word. The others we throw in as is. 
+
+    var i, option, attributes = [], klass = [];
+
     for (i = 0; i < options.length; i += 1) {
         option = options[i];
         if ( option.indexOf("=") !== -1 ) {
-            // attribute found, check if id
-            temp = option.split(/\s+/);
-            if (temp[0] === "id" && temp[1] === "=") {
-                id = temp[2];
-            } else {
-                attributes += option;
-            }
+            attributes.push(option);
         } else { // class
             klass.push(option.trim());
         }
     }
-    attributes = "id='"+id+"' " + "class='"+klass.join(" ")+"' "+ attributes;
+    if (klass.length > 0 ) {
+       attributes.push("class='"+klass.join(" ")+"'");
+    }
+    attributes = attributes.join(" ");
 
 ### No Compile
 

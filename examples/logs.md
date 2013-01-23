@@ -123,7 +123,7 @@ HTML
     
     <div id="factorial"></div>
 
-    __"|js|jshint|escape|wrap(pre, hide, run)"
+    __"|js|jshint|escape|wrap(div, hide, run)"
 
 We will attach a function to the click action 
 
@@ -150,7 +150,7 @@ JS
 
 ## Code block for factorial
 
-JS | jshint| jstidy |wrap(pre, editable, runnable)
+JS | jshint| jstidy |wrap(code, id='awe', color='red')|wrap(pre, editable, runnable)
 
     var n = 1000;
     _"Common factorial"
