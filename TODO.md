@@ -1,3 +1,9 @@
+Make sure file has pipe stuff.
+
+Explore constants, macros, and subdirectives. 
+
+Cleanup this program. Halfway done. 
+
 An in-browser version is planned. The intent is to have it be an IDE for the literate program. 
 
 More docs.
@@ -16,6 +22,7 @@ _"|trim.js" instead of Apply trim block
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
 
     var [insert string of comma separated variables]; // name of block 
+
 
 
 For IDE, implement: https://github.com/mleibman/SlickGrid

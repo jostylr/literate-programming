@@ -17,7 +17,7 @@ MD main |1 marked
 
     _"Comments"
 
-FILE logs.htm main
+FILE logs.htm ||main
 
 ## Introduction
 
@@ -32,7 +32,7 @@ MD
     
     Factorials get too big too fast. For example, $69! \approx 1.7\times 10^{98}$ is the maximum factorial a calculator can handle. And Google maxes out around 170!
 
-    The issue is that the numbers get too big for the computer to store in memory in its default way to store numbers. s
+    The issue is that the numbers get too big for the computer to store in memory in its default way to store numbers.
 
     ## Key Insight 
     
@@ -91,14 +91,7 @@ MD | 1 marked
 
     To use, put in a positive integer.
 
-    __"Calculator | <html>
-    <head>
-        <title></title>
-    </head>
-    <body>
-    
-    </body>
-    </html>"
+    __"Calculator | html"
 
 
 ## Behind the scenes

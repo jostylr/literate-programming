@@ -26,12 +26,10 @@ var save = function (doc, dir) {
         process.chdir(dir);
     }
     var files = doc.files;
-    console.log(files);
     var file, block, fname, compiled, text;  
     var i, n = files.length;
     for (i=0; i < n; i+= 1) {
         file = files[i];
-        console.log(file[1]);
         block = doc.blocks[file[1]];
         fname = file[0]
         if (block) {
@@ -49,4 +47,4 @@ var save = function (doc, dir) {
 var doc = lp.compile(md);
 save(doc, dir); 
 
-console.log(doc.logarr.join("\n\n"));
+console.log(doc.logarr.join("\n"));

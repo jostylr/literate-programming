@@ -570,7 +570,7 @@ Most likely, most blocks will be called within another's block compile method, b
 
 Originally, only blocks called by FILE were compiled, but with this approach it allows for experimental blocks to be compiled with linting/testing results before being folded into the main code. Another pipe directive such as `0 nocompile` could shortcircuit the compile phase. 
 
-JS main
+JS
 
     function () {
         var doc = this;
@@ -776,7 +776,6 @@ For evaling, no substitutions are done. It is just straight, one line code. If e
                 _"Substitute parsing"
 
                 rep.push([match[0], ret]);
-                //console.log(ret);
                                
             } else if (match[3]) {
                 // code
@@ -823,7 +822,7 @@ There is a match, but the level is not yet ready  for full substitution
 We need to regard against infinite recursion of substituting. We do this by having a maximum loop limit. 
 
         if (doc.subtimes >= doc.maxsub) {
-            console.log("maxed out", block.name);
+            doc.log("maxed out", block.name);
             return false;
         } else {
             doc.subtimes += 1;
@@ -1096,9 +1095,7 @@ The command is `FILE fname.ext | block name | internal name ` where fname.ext is
 
     function (options) {
         var doc = this; 
-        console.log(options);
         options = (options || "").split("|").trim();
-                console.log(options);
         if (options[0] === "") {
             doc.log("No file name for file: "+options.join[" | "]+","+ doc.name);
             return false;
@@ -1207,7 +1204,12 @@ JS
 
     function (code, options) {
         options = options.join(",").trim();
-        return beautify(code, options ||{ indent_size: 2, "jslint_happy": true } );
+        if (options) {
+            options = JSON.parse(options);
+        } else {
+            options = { indent_size: 2, "jslint_happy": true };
+        }
+        return beautify(code, options);
     }
    
 Needs js-beautify installed: `npm install js-beautify`
@@ -1216,25 +1218,26 @@ Needs js-beautify installed: `npm install js-beautify`
 
 Run the compiled code through JSHint and output the results to console.
 
+!! Need to think through options.
+
 JS main
 
     function (code) {
         var doc = this.doc;
         var block = {};  //currently not stored anywhere
 
-        jshint(code, options ||{ } );
+        jshint(code);
         var data = jshint.data();
 
         _"|jshint logging"
 
 
         if (log.length > 0 ) {
-         log = ("!! JSHint:" + this.name+"\n"+log.join("\n"));
+         doc.log ("!! JSHint:" + this.block.name+"\n"+log.join("\n"));
         } else {
-         log = ("JSHint CLEAN: " + this.name);
+         doc.log("JSHint CLEAN: " + this.block.name);
         }
 
-        doc.log(log);
         return code;
     }
 
@@ -1328,7 +1331,7 @@ Encapsulate the code into an html element.
 
         _"Create attribute list"
 
-        return "<" + element + " " + attributes + "><code>"+code+"</code></"+element+ ">";
+        return "<" + element + " " + attributes + ">"+code+"</"+element+ ">";
 
 
     }  
@@ -1407,18 +1410,14 @@ This is like raw, but it removes any Directives, and it removes one space from t
         var block = this.block;
         var full = block.full;
         var i, n = full.length, ret = [], line;
-        console.log(full);
         for (i = 0; i < n; i += 1) {
             line = full[i];
             if (line.match(/^(?:\#|\.[A-Z]|[A-Z]{2})/) ) {
-                console.log("match", line);
                 continue;
             }
             if (line.match(/^ (?:\#|[A-Z.])/) ) {
-                console.log(line, line.slice(1));
                 ret.push(line.slice(1));
             } else {
-                console.log("its cool", line);
                 ret.push(line);
             }
         }
@@ -1546,12 +1545,10 @@ Given array of name and text, save the file. dir will change the directory where
             process.chdir(dir);
         }
         var files = doc.files;
-        console.log(files);
         var file, block, fname, compiled, text;  
         var i, n = files.length;
         for (i=0; i < n; i+= 1) {
             file = files[i];
-            console.log(file[1]);
             block = doc.blocks[file[1]];
             fname = file[0]
             if (block) {
@@ -1571,7 +1568,7 @@ Given array of name and text, save the file. dir will change the directory where
 
 This is where we report the logs. 
 
-    console.log(doc.logarr.join("\n\n"));
+    console.log(doc.logarr.join("\n"));
 
 ### Command line options
 
@@ -1673,6 +1670,12 @@ FILE TODO.md
 
 MD | clean raw
 
+Make sure file has pipe stuff.
+
+Explore constants, macros, and subdirectives. 
+
+Cleanup this program. Halfway done. 
+
 An in-browser version is planned. The intent is to have it be an IDE for the literate program. 
 
 More docs.
@@ -1693,6 +1696,7 @@ Using  VARS to write down the variables being used at the top of the block. Then
     var [insert string of comma separated variables]; // name of block 
 
 
+
 For IDE, implement: https://github.com/mleibman/SlickGrid
 
 For diff saving: http://prettydiff.com/diffview.js  from http://stackoverflow.com/questions/3053587/javascript-based-diff-utility
@@ -1701,6 +1705,8 @@ For diff saving: http://prettydiff.com/diffview.js  from http://stackoverflow.co
 For grid data input:  https://github.com/mleibman/SlickGrid
 
 For scroll syncing https://github.com/sakabako/scrollMonitor
+
+
 
 
 ## NPM package
