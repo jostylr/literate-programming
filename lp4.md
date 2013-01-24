@@ -1607,7 +1607,9 @@ Here we define what the various configuration options are.
     var md = fs.readFileSync(program.args[0], 'utf8');
 
 
-Currently there is only one flag: -d or --dir  with a directory that specifies the root directory where the compiled files go. 
+MD doc
+    
+    Currently there is only one flag: -d or --dir  with a directory that specifies the root directory where the compiled files go. 
 
 
 
@@ -1640,7 +1642,7 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
     will create the files specified in sample.md
 
     ### Command flags
-    _"Command arguments doc"
+    _"Command line options|doc"
 
 
     ## Document syntax
