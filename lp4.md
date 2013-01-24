@@ -442,7 +442,7 @@ JS
 
     Doc.prototype.maxsub = 1e5;
 
-    Doc.prototype.oneSub = _"Line analysis";
+    Doc.prototype.oneSub = _"One cycle of substitution|main";
     Doc.prototype.fullSub = _"The full substitution";
 
     Doc.prototype.defaultProcessors = _"Default processors";
@@ -686,7 +686,76 @@ JS Filter main
         });
 
 
-## Line analysis
+
+### The full substitution 
+
+This compiles a block to its fullly substituted values.
+
+JS
+
+    function fullSub (block) {
+        var doc = this;
+        var name ; 
+        var  code={}, blockCode;
+
+
+Check if already compiled. If so, return that.
+
+        if (block.hasOwnProperty("compiled") ) {
+            return block.compiled;
+        } else {
+            block.compiled = {};
+        }
+
+Cycle through the named code blocks, doing pre compiles
+
+
+        for (name in block.code) {
+            blockCode  = block.code[name];
+            code[name] = blockCode.join("\n");
+            if (blockCode.commands.hasOwnProperty(0) ) {
+                code[name] = doc.commander(blockCode.commands[0], code[name]); 
+            }
+        
+        }
+
+Loop through all the names in each loop over substitution runs. This allows for subbing in at just the right moment.
+
+
+            var counter = 0, go=1;
+            while (go) {
+                go = 0;
+                counter += 1;
+                for (name in code) {
+                    go += doc.oneSub(code, name, block);
+
+                    blockCode  = block.code[name];
+                    
+                    if (blockCode.commands.hasOwnProperty(counter) ) {
+                        code[name] = doc.commander(blockCode.commands[counter], code[name]); 
+                    }      
+                }
+            }
+        
+Loop through the names one more time to get any post compile directives. 
+
+
+        for (name in code) {
+            blockCode  = block.code[name];
+                    
+            if (blockCode.commands.hasOwnProperty("Infinity") ) {
+                code[name] = doc.commander(blockCode.commands["Infinity"], code[name]); 
+            }      
+            block.compiled[name] = code[name]; 
+        }
+
+
+        return block.compiled;
+    }
+
+ 
+
+## One cycle of substitution
 
 So we have three basic things that we might see in code that the compiler needs to do something about:
 
@@ -698,24 +767,25 @@ This is a method of a doc; it takes in a string for the code and the current blo
 
 We run through the code string, matching block name/js code block/constant. We note the location, get the replacement text, and continue on. We also keep a look out for multi-level, preparing to reduce the level. 
 
-Once all matches are found, we replace the text in the code block. 
+Once all matches are found, we replace the text in the code block. We use the custom rawString method on strings to avoid the customary [replacement string](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/String/replace#Specifying_a_string_as_a_parameter) replacement semantics 
 
 We return 1 if there was a replacement, 0 if not.
 
 For evaling, no substitutions are done. It is just straight, one line code. If evaling a block is needed use _"block to run|eval"
 
+JS main
 
     function oneSub (codeBlocks, name, block) {
         
         var doc = this;
 
-        _"Max sub limit"
+        _"|Max sub limit"
         
 
         var code = codeBlocks[name];
 
 
-        var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|([A-Z][A-Z.]*[A-Z]))/g;
+        var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)])\))?))/g;
         var rep = [];
         var match, ret, type, pieces, where, comp;
         _"Pipe processor|vars.js"
@@ -723,47 +793,9 @@ For evaling, no substitutions are done. It is just straight, one line code. If e
         var blocks = doc.blocks;
 
         while ( (match = reg.exec(code) ) !== null ) {
-            
-            //multi-level 
-        
-            if (match[2]) {
-                
-                //split off the piping
-                pieces = match[2].split("|").trim();
-                where = pieces.shift().toLowerCase(); 
-
-                if (where) {
-                    if (doc.blocks.hasOwnProperty(where) ){
-                        _"Matching block, multi-level"
-                        comp = doc.fullSub(blocks[where]);
-                    } else {
-                        // no block to substitute; ignore
-                        continue;
-                    }
-                } else {
-                    // use the code already compiled in codeBlocks
-                    _"Matching block, multi-level"
-                    comp = codeBlocks;
-                }
-                    
-                _"Substitute parsing"
-
-                rep.push([match[0], ret]);
-                               
-            } else if (match[3]) {
-                // code
-                _"Matching block, multi-level"
-                
-                rep.push([match[0], eval(match[3])]);
-
-            } else {
-                // constant
-                if (doc.constants.hasOwnProperty(match[4])) {
-                  rep.push([match[0], doc.constants[match[4]]]);
-                }
-            }
-
+            _"|Process a match"
         }
+
         //do the replacements or return false
         if (rep.length > 0) {
             for (var i = 0; i < rep.length; i += 1) {
@@ -779,18 +811,7 @@ For evaling, no substitutions are done. It is just straight, one line code. If e
         }
     }
         
-We need the function fullSub which runs through the code repeatedly until all substitutions are made. 
-
-### Matching block, multi-level
-
-There is a match, but the level is not yet ready  for full substitution
-
-                    if (match[1] && match[1].length > 1) {
-                        rep.push([match[0], match[0].slice(1)]);
-                        continue;
-                    }
-
-### Max sub limit
+JS Max sub limit
 
 We need to regard against infinite recursion of substituting. We do this by having a maximum loop limit. 
 
@@ -801,12 +822,70 @@ We need to regard against infinite recursion of substituting. We do this by havi
             doc.subtimes += 1;
         }
 
-### Substitute parsing
+
+JS Process a match
+
+When we have a match requiring a substitution, we call fullSub which will run all of the compile cycles for what is called. 
+
+The match could match a substitution block `match[2]`, an eval block `match[3]`, or a macro `match[4]`.  For a substitution block, it could either be external (`where`) or local.
+
+For each valid match, we add a replacement string on the array rep for replacement after all matches have been analyzed. 
+
+    if (match[2]) {
+        
+        //split off the piping
+        pieces = match[2].split("|").trim();
+        where = pieces.shift().toLowerCase(); 
+
+        if (where) {
+            if (doc.blocks.hasOwnProperty(where) ){
+                _"|Matching block, multi-level"
+                comp = doc.fullSub(blocks[where]);
+            } else {
+                // no block to substitute; ignore
+                continue;
+            }
+        } else {
+            // use the code already compiled in codeBlocks
+            _"|Matching block, multi-level"
+            comp = codeBlocks;
+        }
+            
+        _"|Substitute parsing"
+
+        rep.push([match[0], ret]);
+                       
+    } else if (match[3]) {
+        // code
+        _"|Matching block, multi-level"
+        
+        rep.push([match[0], eval(match[3])]);
+
+    } else {
+        // constant
+        if (doc.constants.hasOwnProperty(match[4])) {
+          rep.push([match[0], doc.constants[match[4]](match[5])]);
+        }
+    }
 
 
-Either the substitution specifies the bit to insert or we use the current name's type to pull an unnamed bit from the same text. If nothing, we continue. 
 
-The bit between the first pipe and second pipe (if any) should be the type and type only. 
+JS Matching block, multi-level
+
+There is a match, but the level is not yet ready  for full substitution
+
+                    if (match[1] && match[1].length > 1) {
+                        rep.push([match[0], match[0].slice(1)]);
+                        continue;
+                    }
+
+
+JS Substitute parsing
+
+
+Either the substitution specifies the name.type to insert or we use the current name's type to pull an unnamed bit from the same text. If nothing, we continue. 
+
+The bit between the first pipe and second pipe (if any) should be the type and type only. We shift the pieces to get the type and the rest should be commands to process. 
 
  
     ret = doc.getBlock(comp, pieces.shift() || "", name || "", block.name); 
@@ -817,13 +896,15 @@ The bit between the first pipe and second pipe (if any) should be the type and t
 
 
 
-#### Pipe processor
+### Pipe processor
 
-NEED  to write substring pipe processor
+This will process the pipe commands. 
 
-command is of the form {} this object with block and doc..., and then the code and then the args
+A pipe command will be any non-parenthetical (and non-pipe) string of characters followed by an optional set of parentheses with arguments to be passed in. 
 
+If there is such a command, it is invoked with a this object of {doc, block, name} where name is the name.type of the sub-code block in block. Its arguments are the stuff in parentheses split on commas. 
 
+This is a very simple setup which hopefully will suffice for most needs. 
 
 JS vars
 
@@ -862,80 +943,13 @@ JS main
 
     }
 
-### The full substitution 
-
-This compiles a block to its fullly substituted values.
-
-JS
-
-    function fullSub (block) {
-        var doc = this;
-        var name ; 
-        var  code={}, blockCode;
-
-
-Check if already compiled. If so, return that.
-
-        if (block.hasOwnProperty("compiled") ) {
-            return block.compiled;
-        } else {
-            block.compiled = {};
-        }
-
-Cycle through the named code blocks, doing pre compiles
-
-
-        for (name in block.code) {
-            blockCode  = block.code[name];
-            code[name] = blockCode.join("\n");
-            if (blockCode.commands.hasOwnProperty(0) ) {
-                code[name] = doc.commander(blockCode.commands[0], code[name]); 
-            }
-        
-        }
-
-Loop through all the names in each loop over substitution runs. This allows for subbing in at just the right moment. By using another code block with its own substitution, probably just about anything is possible. I think. Need to think up an example. 
-
-
-            var counter = 0, go=1;
-            while (go) {
-                go = 0;
-                counter += 1;
-                for (name in code) {
-                    go += doc.oneSub(code, name, block);
-
-                    blockCode  = block.code[name];
-                    
-                    if (blockCode.commands.hasOwnProperty(counter) ) {
-                        code[name] = doc.commander(blockCode.commands[counter], code[name]); 
-                    }      
-                }
-            }
-        
-Loop through the names one more time to get any post compile directives. 
-
-
-        for (name in code) {
-            blockCode  = block.code[name];
-                    
-            if (blockCode.commands.hasOwnProperty("Infinity") ) {
-                code[name] = doc.commander(blockCode.commands["Infinity"], code[name]); 
-            }      
-            block.compiled[name] = code[name]; 
-        }
-
-
-        return block.compiled;
-    }
-
-There are three hooks for processing: pre, post, and during. The during object takes in an extra parameter that states which phase the process is in. 
 
 
 ###### Example
 
-awe is already joned and so it can be fed into marked immediately and consumed.
+awe is already done and so it can be fed into marked immediately and consumed.
 
-cool gets markedup after pre and then the eq is substituted in and in the second round it all is done. 
+cool gets markedup before the first substitution and then the eq is substituted in and in the second round it all is done. 
 
 long takes three loops to compile. in the first loop, it is marked. in the second loop, long gets equation subbed in. in the third loop, it is installed. 
 
@@ -999,6 +1013,8 @@ This should be a good format. Let's say it is in a section called cool. Then we 
 
 ## Recommendations
 
+### Functions 
+
 A lot of the literate programming for JavaScript might involve creating functions. One could just write it as 
 
     function name (parameters) {
@@ -1020,18 +1036,10 @@ or one could write
 Note that we do want the heading to be inlined for this though one could write it on separate lines. 
 
 
+### Loops
 
+One can also take out the innards of a loop and replace it with a heading block. This allows one to see better the flow of the surrounding code without having to invoke a function on every loop (which can be both a performance penalty and a bit awkward (say if break or continue are required). 
 
-
-
-
-### File instead
-
-Could have directives on the line so FILE name  jshint  jstidy   or FILE name jsmin or this can also be a place to run the tests and not save if they fail or save to some other place. 
-
-## Plugin functionality
-
-Here we map out how to dynamically load directives, constants, and heading directives. We also establish automatically loaded files that can be suppressed by command line options. 
 
 
 ## Directives
@@ -1044,20 +1052,7 @@ Create the object that holds the directives. It will contain object names for an
         "FILE" : _"File directive"
     }
 
-
-.IGNORE 
-        "RAW" : _"Raw directive",
-
-Below should be split off
-
-
-        "JS.TIDY" : _"JS tidy",
-        "JS.HINT" : _"JS hint",
-        "MD.HTML" : _"Marked",
-        "MARKED" : _"Marked",
-        "JS.PRE" : _"JS Pre"
-    }
-
+!! Need LOAD (another lp), USE (more directives, constants), SET (constant, value) 
 
 ### Core directvies
 
@@ -1555,9 +1550,8 @@ Here we define what the various configuration options are.
     var dir = program.dir; 
     var md = fs.readFileSync(program.args[0], 'utf8');
 
-#### Command arguments doc
 
-    Currently there is only one flag: -d or --dir  with a directory that specifies the root directory where the compiled files go. 
+Currently there is only one flag: -d or --dir  with a directory that specifies the root directory where the compiled files go. 
 
 
 
@@ -1567,6 +1561,7 @@ I always have to look up the RegEx stuff. Here I created regexs and used their [
 
 [MDN RegExp page](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/RegExp)
 
+Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 
 ## README
 
@@ -1640,7 +1635,6 @@ Explore constants and macros.
 
 Cleanup this program. Halfway done. 
 
-An in-browser version is planned. The intent is to have it be an IDE for the literate program. 
 
 More docs.
 
@@ -1659,18 +1653,17 @@ Using  VARS to write down the variables being used at the top of the block. Then
 
     var [insert string of comma separated variables]; // name of block 
 
+ ## IDE
 
+An in-browser version is planned. The intent is to have it be an IDE for the literate program. 
 
 For IDE, implement: https://github.com/mleibman/SlickGrid
 
 For diff saving: http://prettydiff.com/diffview.js  from http://stackoverflow.com/questions/3053587/javascript-based-diff-utility
 
-
-For grid data input:  https://github.com/mleibman/SlickGrid
-
 For scroll syncing https://github.com/sakabako/scrollMonitor
 
-
+Note that code mirror will be the editor. A bit on the new multi-view of documents:  http://marijnhaverbeke.nl/blog/codemirror-shared-documents.html
 
 
 ## NPM package
@@ -1682,7 +1675,7 @@ JSON | jshint
     {
       "name": "literate-programming",
       "description": "A literate programming compile script. Write your program in markdown.",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "homepage": "https://github.com/jostylr/literate-programming",
       "author": {
         "name": "James Taylor",
@@ -1735,148 +1728,3 @@ TEXT
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 FILE LICENSE
-
-
-
-## The Docs
-
-MD | 0 nocompile
-
-Here we write the basic docs for the user.
-
-    lp3 is the third iteration of the literate programming attempt by jostylr. It handles multiple files, substitutions, macros, and subheading directives. 
-
-    To run this, the basic command is
-
-        node lp3.js file.md
-    
-    where file.md is the literate program to be parsed.
-
-    The literate program has multiple sections that get weaved together. 
-
-    _"Directives Doc"
-
-    _"Substitution Doc"
-
-    _"Subheading directives Doc"
-
-    _"Further information on literate programming"
-
-
- //FILE: lp3Doc.md
-
-### Further information on literate programming
-
-
-
-
-
-
-## Directive Implementation
-
-* FILE already present; puts the code block and its substitutions in a file. regex?
-* ADD take this code block and add it to another codeblock. Specify pre, post, and a possible priority level. 
-* DEBUG Some debugging output code. 
-* RETURN returns control to other code block
-* LOAD give file name, location, section to import, version number. Create a literate program manager kind of thing like npm. Have tests that run to make sure compatible. Could do latest if it passes and works back until working version or something. 
-* MODULE grab a module from a repository:  install command, link to repo/other comments
-* COMMAND write a command line snippet that will be run. SECURITY problem. 
-* VERSION gives a version label to the section. Semantics is the version number followed by any comments about it. 
-* AFTER/BEFORE/REPLACE takes in section name, regex string to match and will place the code block after the match/before the match/instead of the match respectively. It will do 
-
-
-### JavaScript Directives
-
-* VARS A list of the variables for the snippet of interest. This is mainly to deal with loop variables. 
-* HEREVARS places the variables of a section there. It can be a comma separated list of headings; the vars will be placed in that order.
-* SET/TEST/RESULT is a test code for snippets. SET will set variable values for multiple tests, TEST will then run the snippet and RESULT checks it. 
-
-In all of these a parenthetical right after the term will link it to that section. Otherwise, it relates to the current code block section. 
-
-TEST for example could have some code above it (with substitutions) and then TEST will create one (many) tests of that code block. To get back to the rest of the code block, use RETURN. 
-
-### Directives object
-
-    { 
-      ADD : _"Add",
-      DEBUG : _"Debug",
-      FIDDLE : _"Fiddle",
-      RETURN : _"Return",
-      LOAD : _"Load",
-      MODULE : _"Module",
-      REQUIRE : _"Require",
-      VERSION : _"Version
-    }
-    
-
-### Load 
-
-The load directive allows one to load another literate program. This means one has to specify a location (file system or url), a version number, and a section heading to start the grabbing/compiling. One should detect looping, with failure as the probable result. 
-
-MODULE npm, semver, [semver](https://github.com/isaacs/node-semver)
-
-    
-##### DOC
-
-The LOAD directive is of the form LOAD: (section heading), (path or URL), (number and dots for version as in [npm's versioning](https://npmjs.org/doc/json.html#version) )
-
-What it does is find the literate program specified, check versioning/tests, compile the code, and leave it as an otherwise normal block in the named section. 
-
-In the file, there can be a directive about versions. There can be multiple versions.
-
-##### EXAMPLE
-
-Let's assume there is an example.md literate program with a section "Test Me". Then in a descriptive fashion, we would wax on about what we are using and why and whatever. Then the directive:
-
-    LOAD: "Test Me", https://github.com/jostylr/literateprogramming/lp1.md, 4.2 
- 
-"Test Me" should have a directive VERSION:4.2
-
-Then we could write some test code to confirm the behavior. 
-
-### Add
-
-Take this code block and add it to another codeblock. Specify pre, post, and a possible priority level. 
-
-    function (params, current) {
-      params = params.split(',');
-      var block = params[0];
-      var type = params[1];
-      if ( (type !== "pre") && (type !== "post") ) {
-        error(current, type);
-      }
-      var number = params[2] || 1;
-      number = parseFloat(number);
-      if (blocks.hasOwnProperty(block) ) {
-        blocks[block][type].push([number, current]);
-      } else {
-        blocks[block] = [];
-      }
-    }
-
-
-##### DOC
-
-The format is  `ADD: "block name", "pre|post", "?#"`  where we are adding the current block to the given block name. We put it before/after depending on pre/post. If there is a number, then the larger it is, the further away from the given code block it is relative to other adders. A default of 1 is assumed. 
-
-
-### Debug
-
-This is a place that can input debugging code.
-
-    function (params, current) {
-      if (debug) {
-
-      }
-    }
-
-
-* DEBUG Some debugging output code. 
-* FIDDLE Something that allows one to specify different parameters and generate multiple compiles/runs or something. 
-* RETURN returns control to other code block
-* LOAD give file name, location, section to import, version number. Create a literate program manager kind of thing like npm. Have tests that run to make sure compatible. Could do latest if it passes and works back until working version or something. 
-* MODULE different than LOAD. It loads a npm module or whatever is specfied. 
-* REQUIRE is a marker for where to place modules for that section of code. All MODULEs are placed at that point, in the order they are seen.
-* VERSION gives a version label to the section. Semantics is the version number followed by any comments about it. 
-
-
