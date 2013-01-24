@@ -1133,6 +1133,9 @@ do some parsing and loading
 
 This is to load up various directives, constants, etc. It can be either a literate program with optional entry point(s) or a js file that compiles to an object whose keys can then be a list that adds. The object would have "whatever key" : [ {type: {object} } ]; the value can be a singleton instead of an array.
 
+
+
+
 #### Version directive
 
 Version control directive for the literate program. Generally at the base of the first intro block. This would be useful for setting up a npm-like setup. 
