@@ -11,6 +11,8 @@ MD main |1 marked
 
     _"Computing 1000!"
 
+    _"Table of Factorials"
+
     __"Factorial for all"
 
     __"Behind the scenes"
@@ -67,6 +69,7 @@ MD
 
     Therefore, 
     $$1000! \approx  10^{0.6046} \times 10^{2567} \approx 4.02 \times 10^{2567}$$
+
 
 
 
@@ -128,12 +131,13 @@ HTML
 We will attach a function to the click action 
 
 JS
-
+    /*global $*/
     $("#computeFactorial").click(function () {
         var n = $("#n").val();
         _"Check n"
         _"Common factorial"
-      $("#factorial").text(text );      
+        var text = n + "! = " + nf;
+        $("#factorial").text(text );      
     });
 
 
@@ -150,7 +154,7 @@ JS
 
 ## Code block for factorial
 
-JS | jshint| jstidy |wrap(code, id='awe', color='red')|wrap(pre, editable, runnable)
+JS | jshint| jstidy |wrap(code, id='awe', data-fake="awesome in full")|wrap(pre, editable, runnable)
 
     var n = 1000;
     _"Common factorial"
@@ -162,15 +166,50 @@ Here we define the loop, get the result and format it appropriately. n is alread
 
 JS
 
-    var lf = 0;
+    var lf = 0, nf;
     //sum ove the logs
     var i; 
     for (i = 0; i < n; i += 1) {
       lf += Math.log(i+1);
     }
     var lf10 = lf/Math.LN10;
-    var text = n + "! = " + 
-        ( lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10) );
+    nf = lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10);
+
+
+
+## Table of Factorials
+
+It might be nice to see a variety of factorials. We'll do a cresendo of 1, 5, 10, 50, 100, 500, ....
+
+MD |1 marked 
+    ## A few factorials
+
+    To see the growth of the factorial, let's compute a few of them. 
+
+    __"|Factorial Table| eval "
+
+JS Factorial Table |jshint
+
+    var i = 1;
+    var fact = function (n) {
+        _"Common factorial||indent(4,4)"
+        return [n, nf, lf10];
+    };
+    var tarr = [];
+    while (i < 1e6) {
+        i *= 5;
+        tarr.push(fact(i));
+        i *= 2;                 
+       tarr.push(fact(i));
+    }
+    var ret = "<table><tr><th>n</th><th>n!</th><th>\\(\\log_{10}(n!)\\)</th></tr>\n";
+    var n = tarr.length, row;
+    for (i = 0; i < n; i += 1 ) {
+        row = tarr[i];
+        ret += "<tr><td>"+row[0]+"</td><td>"+row[1]+"</td><td>"+row[2].toPrecision(3)+"</td></tr>";
+    }
+    ret += "</table>";
+    return ret; 
 
     
 
@@ -186,9 +225,16 @@ HTML
       <head>
         <meta charset="utf-8">
         <title>Log and Factorial</title>
+
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 
-SCRIPTEDWRITING
+ JQUERY 
+ SW.CSS
+ SW.JS
+ MATHJAX
+ TANGLE.JS
+
+
 <link rel="stylesheet" href="style.css">
 <script src="script" async defer></script>
 

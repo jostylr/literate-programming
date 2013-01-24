@@ -1149,9 +1149,8 @@ They often involve processing the compiled text and probably use various other m
 ## Core doc commands
 
 
-     { "eval" : function (code) {
-                    return eval(code);
-        },
+
+     { "eval" : _"Eval",
         "jshint" : _"JSHint|main",
         "jstidy" : _"JSTidy",
         "marked" : _"Marked",
@@ -1160,9 +1159,63 @@ They often involve processing the compiled text and probably use various other m
         "unescape" : _"Unescape",
         "nocompile" : _"No Compile",
         "raw" : _"Raw",
-        "clean raw" : _"Clean Raw"
+        "clean raw" : _"Clean Raw",
+        "indent" : _"Indent", 
+        "log" : _"Log"
     }
 
+
+### Eval
+
+The eval function will use a function to protect var declarations from polluting the global scope. It does not prevent global access. Maybe a "use strict" version, but need to experiment and think of use case need. 
+
+This means each evally code should end with a return as to what to return. Seems nicer anyway.
+
+JS
+
+    function (code) {
+        return eval("(function(){"+code+"})()");
+    }
+
+### Indent 
+
+To be able to indent the code in the final production (for appearance or say in Python), we can use this function. It takes two possible arguments: first line indent and rest indent. If just one number, it applies to the rest.
+
+JS
+
+    function (code, options) {
+        var begin, middle, doc = this.doc;
+        if (options.length === 2) {
+            begin = Array(parseInt(options[0],10)+1).join(" ");
+            middle = "\n"+Array(parseInt(options[1],10)+1).join(" ");
+        } else if (options.length === 1) {
+            begin = "";
+            middle = "\n"+Array(parseInt(options[0],10)+1).join(" ");
+        } else {
+            doc.log("Error in " + this.name +" in call to indent. Please use one or two numbers as argumetns only.");
+            return code;
+        }
+        code = begin+code.replace("\n", middle);
+        return code;
+    }
+
+### Log
+
+This allows one to output the compiled code of a block to the doc log and probably to console log evenutally. Optional argument of a first line name. The default is the name.type
+
+
+JS
+
+    function (code, options) {
+        var doc = this.doc;
+        var name = this.name;
+        if (options[0]) {
+            doc.log(options[0]+"\n"+code);
+        } else {
+           doc.log(name + ":\n" + code);
+        }
+        return code;
+    }
 
 ### JSTidy
 
