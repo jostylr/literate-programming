@@ -4,6 +4,9 @@
 
 This is the fourth cycle of literate programming. Here, we augment substitution lines to play a more active role in the processing of the parts. We also add in switch typing/naming within a block. 
 
+VERSION Literate Programming | 0.2.1
+
+REQUIRE ./test
 
 ## How to write a literate program
 
@@ -66,6 +69,8 @@ This module takes in a literate program as a string of markdown and possibly som
 It takes the string and makes a document that has the markdown parsed out into various blocks. The parsing is down line-by-line. The two main calls are `lineparser` which parses the lines, creating the document,  and the `makeFiles` command which will compile the blocks in the `files` array to a full string that can then be saved or whatever (that's what the command line does). 
 
 
+This current uses the filesystem to load external programs. This needs to be refactored, but it will require some async rejiggering.
+
 JS  |jshint() | jstidy
 
     /*global require, module*/
@@ -75,30 +80,25 @@ JS  |jshint() | jstidy
     var jshint = require('jshint').JSHINT;
     var marked = require('marked');
 
+    var fs = require('fs');
 
 
     _"Utilities"
-    
-    module.exports.compile = function (md, options) {
 
-        var Block, Doc; 
-        
-        _"Document constructor"
 
-        _"Block constructor"
+    var Block, Doc, repo = {plugins : {}, litpro :{} }; 
 
-        var lineparser = _"Parse lines";      
 
-        Doc.prototype.lineparser = lineparser;
-        Doc.prototype.getBlock = _"Get correct code block|main.js";
-        Doc.prototype.compileNow = _"Compile time";
 
-        var doc = lineparser(md, options);
-        
-        doc.compileNow();
+    _"Document constructor"
 
-        return doc;
-    };
+    _"Block constructor"
+
+    module.exports.Doc = Doc;
+
+
+We also need a repository for files that are loaded up, both literate programs and plugins. The same repo will be seen in all instances of Doc; this prevents multiple uploading and parsing of the same file. I see no reason for not having it globally accessible. 
+
 
 
 
@@ -126,24 +126,24 @@ The Document consists mostly of blocks constructed by the Block constructor. The
 
 JS
 
-    function (lp, options) {
-      var i, line, nn; 
-      var doc = new Doc(options); 
+    function () {
+        var doc = this;
+        var i, line, nn; 
 
-      var lines = md.split("\n");
-      doc.cur.level = 0; 
-      var n = lines.length;
-      for (i = 0; i < n; i += 1) {
-        line = lines[i];
-        nn = doc.processors.length;
-        for (var ii = 0; ii < nn; ii += 1) {
-            if (doc.processors[ii](line, doc) ) {
-                doc.cur.full.push(line);
-                break;
+        var lines = doc.litpro.split("\n");
+        doc.cur.level = 0; 
+        var n = lines.length;
+        for (i = 0; i < n; i += 1) {
+            line = lines[i];
+            nn = doc.processors.length;
+            for (var ii = 0; ii < nn; ii += 1) {
+                if (doc.processors[ii](line, doc) ) {
+                    doc.cur.full.push(line);
+                    break;
+                }
             }
         }
-      }
-      return doc;
+        return doc;
     }
 
 Each processor, corresponding to the 4 types mentioned above, will check to see if the line matches its type. If so, they do their default action, return true, the line is stored in the full block for posterity, and the other processors are skipped. 
@@ -222,10 +222,12 @@ JS
         _"|period triggers match" 
 
       var reg = /^([A-Z][A-Z\.]*[A-Z])(?:$|\s+(.*)$)/;
+      var options;
       match = reg.exec(line);
       if (match) {
         if (doc.directives.hasOwnProperty(match[1])) {
-            doc.directives[match[1]].call(doc, match[2]);
+            options = (match[2] || "").split("|").trim();
+            doc.directives[match[1]].call(doc, options);
             return true;
         } else if (doc.types.hasOwnProperty(match[1].toLowerCase()) ){
             doc.switchType(match[1], match[2]);
@@ -413,7 +415,9 @@ We also create a Block object for each section of a literate program. Within tha
 
 JS
 
-    Doc = function (options) {
+    Doc = function (md, options) {
+
+        this.litpro = md; 
         this.blocks = {};
         this.cur = new Block();
         this.files = [];
@@ -426,16 +430,17 @@ JS
         this.directives = _"Directives";
 
         this.commander = _"Doc commander";
-
         this.commands = _"Core doc commands";
 
-        this.constants = {};
+        this.macros = {};
 
+        this.repo = repo; // defined in module scope; 
 
         this.processors = [].concat(this.defaultProcessors);
       
 
         _"|Merge in options"
+
 
         return this;
     };
@@ -456,6 +461,12 @@ JS
     }, [], {}];
 
     Doc.prototype.log = function (text) {this.logarr.push(text);};
+
+    Doc.prototype.parseLines = _"Parse lines";
+
+    Doc.prototype.getBlock = _"Get correct code block|main.js";
+    
+    Doc.prototype.compile = _"Compile time";
 
 
 JS Merge in options
@@ -535,6 +546,7 @@ JS
 
 
 
+
 ## Compile Time
 
 We now want to assemble all the code. This function takes in a parsed lp doc and compiles each block. It will visit each block and run the fullSub method. 
@@ -552,6 +564,7 @@ JS
         for (blockname in doc.blocks) {
             doc.fullSub(doc.blocks[blockname]);
         }
+        return doc;
     }
 
 
@@ -785,9 +798,9 @@ JS main
         var code = codeBlocks[name];
 
 
-        var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)])\))?))/g;
+        var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
         var rep = [];
-        var match, ret, type, pieces, where, comp;
+        var match, ret, type, pieces, where, comp, lower, args;
         _"Pipe processor|vars.js"
 
         var blocks = doc.blocks;
@@ -799,9 +812,13 @@ JS main
         //do the replacements or return false
         if (rep.length > 0) {
             for (var i = 0; i < rep.length; i += 1) {
-                code = code.replace(rep[i][0], rep[i][1].rawString());
+                if (typeof rep[i][1] === "string" ) {
+                  code = code.replace(rep[i][0], rep[i][1].rawString());
+                } else {
+                  doc.log( rep[i][0], rep[i][1]);
+                  return 0;
+                }
             }
-
             codeBlocks[name] = code; 
 
             return 1; 
@@ -863,8 +880,10 @@ For each valid match, we add a replacement string on the array rep for replaceme
 
     } else {
         // constant
-        if (doc.constants.hasOwnProperty(match[4])) {
-          rep.push([match[0], doc.constants[match[4]](match[5])]);
+        lower = match[4].toLowerCase();
+        args = (match[5]|| "").split(',').trim();
+        if (doc.macros.hasOwnProperty(lower)) {
+          rep.push([match[0], doc.macros[lower].apply(doc, args)]);
         }
     }
 
@@ -1045,25 +1064,27 @@ One can also take out the innards of a loop and replace it with a heading block.
 ## Directives
 
 
-Create the object that holds the directives. It will contain object names for any directives that need to be instituted. Each of the values should be a function that takes in the material on the line post-command and the doc which gives access to the current block and name. 
+Create the object that holds the directives. It will contain object names for any directives that need to be instituted. Each of the values should be a function that takes in the material on the line post-command and the doc (as this) which gives access to the current block and name. 
+
+The parser is in "Directives parser".  It passes the options after splitting and trimming them as pipes. 
 
 
     { 
-        "FILE" : _"File directive"
+        "FILE" : _"File directive",
+        "VERSION" : _"Version directive",
+        "LOAD" : _"Load directive|main",
+        "REQUIRE" : _"Require directive",
+        "SET" : _"Set Constant directive",
+        "DEFINE" : _"Define Macro directive"
     }
 
-!! Need LOAD (another lp), USE (more directives, constants), SET (constant, value) 
 
-### Core directvies
-
-
-#### File directive
+### File directive
      
 The command is `FILE fname.ext | block name | internal name ` where fname.ext is the filename and extension to use. 
 
     function (options) {
         var doc = this; 
-        options = (options || "").split("|").trim();
         if (options[0] === "") {
             doc.log("No file name for file: "+options.join[" | "]+","+ doc.name);
             return false;
@@ -1079,10 +1100,42 @@ The command is `FILE fname.ext | block name | internal name ` where fname.ext is
     }
 
 
-#### Load directive
+### Load directive
 
 This is to load other literate programs. It can compile them and save the files in the root directory (no arguments on LOAD) or it can start in a section and return the compiled version as the return value of that block. If multiple LOADs used in the same section, they get concatenated together. The Loading takes place immediately if no section, otherwise it starts in the compile phase. 
 
+JS Main
+ 
+    
+    function (options) {
+        var doc = this;
+        var name = options.shift();
+        if (! name) {
+            doc.log("Error in REQUIRE. Please give just the filename " + options.join(" | ") );
+            return false;            
+        }
+        if ( doc.repo.plugins.hasOwnProperty(name) ) {
+            doc.update(doc.repo.plugins[name], options); 
+            return true;
+        }
+        var file; 
+        try {
+            file = fs.readFileSync(name, 'utf8');
+        } catch (e) {
+            doc.log("Issue with REQUIRE: " + name + " " + options + " " + e.message );
+            return false;
+        }
+        var bits;
+        bits = eval(file);
+        doc.repo.plugins[name] = bits; 
+        doc.update(bits, options);
+
+    }
+
+LOAD Awesome | 1.2.0 | file:// or http:// or https://
+
+
+JS Ignore 
 
     function (options, doc) {
         options = options.split(","); 
@@ -1107,7 +1160,7 @@ This is to load other literate programs. It can compile them and save the files 
     };
 
 
-##### Parse and load file
+#### Parse and load file
 
 
         var fname = option[0].trim();
@@ -1129,23 +1182,101 @@ do some parsing and loading
 
 
 
-#### Require directive
+### Require directive
 
-This is to load up various directives, constants, etc. It can be either a literate program with optional entry point(s) or a js file that compiles to an object whose keys can then be a list that adds. The object would have "whatever key" : [ {type: {object} } ]; the value can be a singleton instead of an array.
+This is to load up macros, commands, and directives.
+
+The file should be a node module that exports 
+
+
+REQUIRE file  | entry | entry ...
+
+
+    function (options) {
+        var doc = this;
+        var name = options.shift();
+        if (! name) {
+            doc.log("Error in REQUIRE. Please give a module filename " + options.join(" | ") );
+            return false;            
+        }
+        var bits;
+        try {
+            bits = require(name);
+        } catch (e) {
+            doc.log("Issue with REQUIRE: " + name + " " + options + " " + e.message );
+            return false;
+        }
+        var bit;
+        if (options.length === 0) {
+            for (bit in bits) {
+                _"|bit check and run"            
+            }
+        } else {
+            var i, n = options.length;
+            for (i = 0; i < n; i += 1) {
+                bit = options[i];
+                _"|bit check and run"
+            }
+        }
+    }
+
+JS bit check and run
+
+    if ( (bits.hasOwnProperty(bit)) && (typeof bits[bit] === "function")) {
+      bits[bit](doc); //each one is responsible for modifying
+    }
 
 
 
 
-#### Version directive
+### Version directive
+
 
 Version control directive for the literate program. Generally at the base of the first intro block. This would be useful for setting up a npm-like setup. 
 
-### Default directives
+    function (options) {
+        var doc = this;
+        doc.version = {name: (options[0] || ""), version : (options[1] || "0.0.0") };
+    }
 
-These are directives that are generally used, but whose loading can be turned off with a command line flag. They are hosted in a separate file. 
+     
+### Set Constant directive
 
-They often involve processing the compiled text and probably use various other modules. 
+Here we set constants as macros. If NAME is the name of a macro, either NAME or NAME() will return the value
 
+    function (options) {
+        var doc = this;
+        if (options.length === 2) {
+            var name = options[0].toLowerCase();
+            doc.macros[name] = function () {
+                return options[1];
+            };
+        } else {
+            doc.log("Error with SET directive. Need exactly 2 arguments.");
+        }
+    }
+
+### Define Macro directive 
+
+This is where we implement defining macros in the literate program. This may be rare. Probably they are already defined in a load-in file. The setup will be that the macro will be that there is exactly one code block in the section, it is already done, and we use that as the code of the function. 
+
+The arguments for the Function object will be the shifted options and the code block of the section. Note DEFINE should be at the end of the section. No substitutions as this is all done before compilation which is what allows the macros to be useful. 
+
+Example:   `DEFINE darken | color | percent`  and in the code block above it is some code that works on color and percent to return a darkened version of color. The `this` is the document object. 
+
+    function (options) {
+        var doc = this;
+        var cur = doc.cur;
+        var code;
+        var fname = options.shift().toLowerCase();
+        if (!fname) {
+            doc.log("Error with DEFINE directive. Need a name.");
+            return false; 
+        }
+        code = cur.code[cur.type].join("\n");
+        var args = options.join(",");
+        doc.macros[fname] = new Function(args, code);
+    }
 
 
 
@@ -1517,16 +1648,14 @@ This is the command line file. It loads the literate programming document, sends
     /*global process, require, console*/
     var program = require('commander');
     var fs = require('fs');
-    var lp = require('../lib/literate-programming');
+    var Doc = require('../lib/literate-programming').Doc;
 
     _"Command line options"
 
-
     var save = _"Save files";
  
-_"Load file"
+    var doc = (new Doc(md)).parseLines().compile();
 
-    var doc = lp.compile(md);
     save(doc, dir); 
 
 
@@ -1535,20 +1664,6 @@ _"Load file"
 FILE bin/literate-programming.js
 JS.HINT
 
-
-### Load file
-
-Get the filename from the command line arguments. It should be third item in [proccess.argv](http://nodejs.org/api/process.html#process_process_argv).  
-
-No need to worry about async here so we use the sync version of [readFile](http://nodejs.org/api/fs.html#fs_fs_readfilesync_filename_encoding).
-
-    var filename = process.argv[2];
-    if (!filename) {
-        console.log("Usage: litpro file-to-compile optional:directory-to-place-result");
-        process.exit();
-    }
-    var dir = process.argv[3];
-    var md = fs.readFileSync(filename, 'utf8');
 
 
 ### Save files
@@ -1689,24 +1804,14 @@ MD | clean raw
 
 Make sure file has pipe stuff.
 
-Explore constants and macros.
-
-Cleanup this program. Halfway done. 
-
+This current uses the filesystem to load external programs. This needs to be refactored, but it will require some async rejiggering.
 
 More docs.
-
-Allow for mutlitple code blocks in one block; each mini block should either add something to the whole or it could contribute to another kind; so one bit could be html, one bit could be css and one could be js and another markdown. ???
 
 Allow for a plugin setup for directives and constants. 
 
 Add in core directives: require (plugin), load (other literate programs), version....
-
-Fix up javacsript code parsing in backticks to do subs. 
  
-
-_"|trim.js" instead of Apply trim block
-
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
 
     var [insert string of comma separated variables]; // name of block 
@@ -1726,14 +1831,14 @@ Note that code mirror will be the editor. A bit on the new multi-view of documen
 
 ## NPM package
 
-The requisite npm package file.
+The requisite npm package file. _`doc.version.version`
 
 JSON | jshint
 
     {
       "name": "literate-programming",
       "description": "A literate programming compile script. Write your program in markdown.",
-      "version": "0.2.1",
+      "version": "",
       "homepage": "https://github.com/jostylr/literate-programming",
       "author": {
         "name": "James Taylor",

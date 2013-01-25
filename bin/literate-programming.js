@@ -3,7 +3,7 @@
 /*global process, require, console*/
 var program = require('commander');
 var fs = require('fs');
-var lp = require('../lib/literate-programming');
+var Doc = require('../lib/literate-programming').Doc;
 
 program
     .version('0.1')
@@ -43,8 +43,8 @@ var save = function (doc, dir) {
     }
 };
  
+var doc = (new Doc(md)).parseLines().compile();
 
-var doc = lp.compile(md);
 save(doc, dir); 
 
 console.log(doc.logarr.join("\n"));

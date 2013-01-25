@@ -2,6 +2,7 @@
 
 This post is about computing factorials via the logarithm. We use loops to compute it. 
 
+VERSION Factorial | 0.1.0
 
 ## Structure
 
@@ -16,6 +17,7 @@ MD main |1 marked
     __"Factorial for all"
 
     __"Behind the scenes"
+
 
     _"Comments"
 
@@ -211,6 +213,12 @@ JS Factorial Table |jshint
     ret += "</table>";
     return ret; 
 
+## Jquery version
+
+    return '<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/' + 
+        v + '/jquery.min.js"></script>';
+
+DEFINE jquery | v
     
 
 ## Stand alone page
@@ -225,14 +233,12 @@ HTML
       <head>
         <meta charset="utf-8">
         <title>Log and Factorial</title>
+        JQUERY(1.9.0)
 
-        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 
- JQUERY 
  SW.CSS
  SW.JS
  MATHJAX
- TANGLE.JS
 
 
 <link rel="stylesheet" href="style.css">
