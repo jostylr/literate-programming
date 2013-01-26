@@ -6,7 +6,6 @@ This is the fourth cycle of literate programming. Here, we augment substitution 
 
 VERSION Literate Programming | 0.2.1
 
-REQUIRE ./test
 
 ## How to write a literate program
 
@@ -143,11 +142,16 @@ JS
                 }
             }
         }
+
+        _"Head parser|Remove empty code blocks"
+
         return doc;
     }
 
 Each processor, corresponding to the 4 types mentioned above, will check to see if the line matches its type. If so, they do their default action, return true, the line is stored in the full block for posterity, and the other processors are skipped. 
 
+
+The substitution is to make sure the final block is also trimmed. 
 
 ### Default processors
 
@@ -272,7 +276,7 @@ JS main
         if (typeof options === "undefined") {
             options = "";
         }
-        options = options.split("|");
+        options = options.split("|").trim();
         var name = options.shift();
         if (name) {
             name.trim();
@@ -351,7 +355,7 @@ For new global blocks, we use the heading string as the block name. We lower cas
 JS
 
     function (line, doc) {
-      var level, oldLevel, cur, name, cname;
+      var level, oldLevel, cur, name;
       var head = /^(\#+)\s*(.+)$/;
       var match = head.exec(line);
       if (match) {
@@ -382,15 +386,18 @@ In the above, we are defining the default processors again fresh. This prevents 
 
 JS Remove empty code blocks
 
-    cur = doc.cur; 
-    for (cname in cur.code) {
-        if (cur.code[cname].length === 0) {
-            delete cur.code[cname];
+We do not want empty code blocks left. So we delete them just before we are going to move onto a new processing section. 
+
+    var cname;
+    var old = doc.cur; 
+    for (cname in old.code) {
+        if (old.code[cname].length === 0) {
+            delete old.code[cname];
         }
     }
 
 
-This suffered from having empty lines put into the code block. Solution: do not add empty lines unless there is a non-empty line of code before it.
+This suffered from having empty lines put into the code block. Solution: do not add empty lines in "code parser" unless there is a non-empty line of code before it. Has an issue that this does not apply to the final block as it refers to the previous block. 
 
 
 ### Plain parser
@@ -800,7 +807,7 @@ JS main
 
         var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
         var rep = [];
-        var match, ret, type, pieces, where, comp, lower, args;
+        var match, ret, type, pieces, where, comp, lower, args, otherdoc;
         _"Pipe processor|vars.js"
 
         var blocks = doc.blocks;
@@ -854,13 +861,21 @@ For each valid match, we add a replacement string on the array rep for replaceme
         pieces = match[2].split("|").trim();
         where = pieces.shift().toLowerCase(); 
 
+
         if (where) {
-            if (doc.blocks.hasOwnProperty(where) ){
-                _"|Matching block, multi-level"
-                comp = doc.fullSub(blocks[where]);
+            where = where.split("::");
+            if (where.length === 2) {
+                _"|other documents"
             } else {
-                // no block to substitute; ignore
-                continue;
+                where = where[0];
+                // this doc
+                if (doc.blocks.hasOwnProperty(where) ){
+                    _"|Matching block, multi-level"
+                    comp = doc.fullSub(blocks[where]);
+                } else {
+                    // no block to substitute; ignore
+                    continue;
+                }
             }
         } else {
             // use the code already compiled in codeBlocks
@@ -912,6 +927,25 @@ The bit between the first pipe and second pipe (if any) should be the type and t
     _"Pipe processor|main.js"
 
     ret =  doc.commander(comarr, ret); 
+
+
+JS Other documents
+
+This is how to pull in blocks from other literate programs.
+
+    if (doc.repo.hasOwnProperty(where[0]) ) {
+        otherdoc = doc.repo[where[0]];
+        if (otherdoc.blocks.hasOwnProperty(where[1]) ) {
+            comp = otherdoc.blocks[where[1]].compiled; 
+        } else {
+            doc.log("No such block " + where[1] + " in literate program " + where[0]);
+            continue;
+        }
+    } else {
+        doc.log("No such literate program loaded: " + where[0]);
+        continue;
+    }
+
 
 
 
@@ -1102,83 +1136,46 @@ The command is `FILE fname.ext | block name | internal name ` where fname.ext is
 
 ### Load directive
 
-This is to load other literate programs. It can compile them and save the files in the root directory (no arguments on LOAD) or it can start in a section and return the compiled version as the return value of that block. If multiple LOADs used in the same section, they get concatenated together. The Loading takes place immediately if no section, otherwise it starts in the compile phase. 
+This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block | internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is  LOAD file | shortname
+
+Need to enact the pipe syntax.  
 
 JS Main
  
     
     function (options) {
         var doc = this;
-        var name = options.shift();
-        if (! name) {
-            doc.log("Error in REQUIRE. Please give just the filename " + options.join(" | ") );
+        var fname = options.shift();
+        if (! fname) {
+            doc.log("Error in LOAD. Please give a filename " + options.join(" | ") );
             return false;            
         }
-        if ( doc.repo.plugins.hasOwnProperty(name) ) {
-            doc.update(doc.repo.plugins[name], options); 
-            return true;
+        var name = options.shift();
+        if (!name) {
+            name = fname;
+        }
+        if ( doc.repo.hasOwnProperty(name) ) {
+            // done
+            if (doc.repo[name] === true) {
+                doc.log("Possible loop in LOAD. " + fname + " ( " + name + " )");
+            }
+            return true; 
+        } else {
+            //temporary holding measure to prevent loops. 
+            doc.repo[name] = true;
         }
         var file; 
         try {
-            file = fs.readFileSync(name, 'utf8');
+            file = fs.readFileSync(fname, 'utf8');
         } catch (e) {
-            doc.log("Issue with REQUIRE: " + name + " " + options + " " + e.message );
+            doc.log("Issue with REQUIRE: " + fname + " " + name + " " + e.message );
+            delete doc.repo[name] ;
             return false;
         }
-        var bits;
-        bits = eval(file);
-        doc.repo.plugins[name] = bits; 
-        doc.update(bits, options);
+
+        doc.repo[name] = (new Doc(file)).parseLines().compile();
 
     }
-
-LOAD Awesome | 1.2.0 | file:// or http:// or https://
-
-
-JS Ignore 
-
-    function (options, doc) {
-        options = options.split(","); 
-        if (options.length > 1) {
-
-            var pre = doc.cur.post;
-            doc.cur.pre = function (code, block, doc) {
-                code = pre(code, block, doc);
-                _"Parse and load file"
-
-               var section = options[1].trim();
-               var code += exdoc.fullSub(section, exdoc); 
-
-               return code;    
-            };
-        } else {
-            _"Parse and load file";
-
-            exdoc.
-
-        }
-    };
-
-
-#### Parse and load file
-
-
-        var fname = option[0].trim();
-        if (fname) {
-            if (doc.hasOwnProperty("external") ) {
-                if (doc.external.hasOwnPropety(fname) ) {
-
-                }
-            } else {
-                doc.external = {};
-            }
-
-do some parsing and loading
-
-            doc.external[fname] = exdoc;
-            //hackery!
-            exdoc.fullSub = doc.fullSub;
-            exdoc.oneSub = doc.oneSub;
 
 
 
@@ -1188,8 +1185,8 @@ This is to load up macros, commands, and directives.
 
 The file should be a node module that exports 
 
-
-REQUIRE file  | entry | entry ...
+ 
+ REQUIRE file  | entry | entry ...
 
 
     function (options) {
@@ -1671,6 +1668,7 @@ JS.HINT
 Given array of name and text, save the file. dir will change the directory where to place it. This should be the root directory of all the files. Use the filenames to do different directories. 
 
     function (doc, dir) {
+        process.chdir(originalroot);
         if (dir) {
             process.chdir(dir);
         }
@@ -1708,7 +1706,9 @@ Here we define what the various configuration options are.
     program
         .version('0.1')
         .usage('[options] <file>')
-        .option('-d --dir <root>', 'Root directory')
+        .option('-d --dir <root>', 'Root directory for output')
+        .option('-c --change <root>',  'Root directory for input')
+        .option('-r --root <root>', 'Change root directory for both input and output')
     ;
 
     program.parse(process.argv);
@@ -1718,7 +1718,13 @@ Here we define what the various configuration options are.
         process.exit();
     }
 
-    var dir = program.dir; 
+    var dir = program.dir || program.root; 
+    var indir = program.change || program.root;
+    var originalroot = process.cwd();
+    if (indir) {
+        process.chdir(indir);
+    }
+
     var md = fs.readFileSync(program.args[0], 'utf8');
 
 

@@ -8,7 +8,9 @@ var Doc = require('../lib/literate-programming').Doc;
 program
     .version('0.1')
     .usage('[options] <file>')
-    .option('-d --dir <root>', 'Root directory')
+    .option('-d --dir <root>', 'Root directory for output')
+    .option('-c --change <root>',  'Root directory for input')
+    .option('-r --root <root>', 'Change root directory for both input and output')
 ;
 
 program.parse(process.argv);
@@ -18,10 +20,17 @@ if ((! program.args[0]) ) {
     process.exit();
 }
 
-var dir = program.dir; 
+var dir = program.dir || program.root; 
+var indir = program.change || program.root;
+var originalroot = process.cwd();
+if (indir) {
+    process.chdir(indir);
+}
+
 var md = fs.readFileSync(program.args[0], 'utf8');
 
 var save = function (doc, dir) {
+    process.chdir(originalroot);
     if (dir) {
         process.chdir(dir);
     }

@@ -4,11 +4,20 @@ This post is about computing factorials via the logarithm. We use loops to compu
 
 VERSION Factorial | 0.1.0
 
+REQUIRE /test.js | fake
+
+LOAD great.md  | fake lit
+
+`literate-programming -d examples examples/logs.md`
+
+
 ## Structure
 
 MD main |1 marked
 
     _"Introduction"
+
+    _"fake lit::first"
 
     _"Computing 1000!"
 
@@ -226,7 +235,6 @@ DEFINE jquery | v
 Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.com/a-minimal-html-document-html5-edition/)
 
 
-HTML
 
     <!DOCTYPE html>
     <html lang="en">
