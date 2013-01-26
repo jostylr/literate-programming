@@ -1183,7 +1183,7 @@ JS Main
 
 This is to load up macros, commands, and directives.
 
-The file should be a node module that exports 
+The file should be a node module that exports functions that take in the doc and do something to it. 
 
  
  REQUIRE file  | entry | entry ...
@@ -1198,6 +1198,9 @@ The file should be a node module that exports
         }
         var bits;
         try {
+            if (name[0] === "/") {
+                name = process.cwd()+name;
+            }
             bits = require(name);
         } catch (e) {
             doc.log("Issue with REQUIRE: " + name + " " + options + " " + e.message );
