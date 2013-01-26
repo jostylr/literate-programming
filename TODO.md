@@ -1,12 +1,10 @@
 Make sure file has pipe stuff.
 
-This current uses the filesystem to load external programs. This needs to be refactored, but it will require some async rejiggering.
+Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
+
 
 More docs.
 
-Allow for a plugin setup for directives and constants. 
-
-Add in core directives: require (plugin), load (other literate programs), version....
  
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
 

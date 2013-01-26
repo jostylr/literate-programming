@@ -4,7 +4,7 @@
 
 This is the fourth cycle of literate programming. Here, we augment substitution lines to play a more active role in the processing of the parts. We also add in switch typing/naming within a block. 
 
-VERSION Literate Programming | 0.2.1
+VERSION literate-programming | 0.3.0
 
 
 ## How to write a literate program
@@ -72,7 +72,7 @@ This current uses the filesystem to load external programs. This needs to be ref
 
 JS  |jshint() | jstidy
 
-    /*global require, module*/
+    /*global require, module, process*/
     /*jslint evil:true*/
 
     var beautify = require('js-beautify').js_beautify;
@@ -226,14 +226,15 @@ JS
         _"|period triggers match" 
 
       var reg = /^([A-Z][A-Z\.]*[A-Z])(?:$|\s+(.*)$)/;
-      var options;
+      var options, name;
       match = reg.exec(line);
       if (match) {
-        if (doc.directives.hasOwnProperty(match[1])) {
+        name = match[1].toLowerCase();
+        if (doc.directives.hasOwnProperty(name)) {
             options = (match[2] || "").split("|").trim();
-            doc.directives[match[1]].call(doc, options);
+            doc.directives[name].call(doc, options);
             return true;
-        } else if (doc.types.hasOwnProperty(match[1].toLowerCase()) ){
+        } else if (doc.types.hasOwnProperty(name) ){
             doc.switchType(match[1], match[2]);
             return true;   
         } else {
@@ -475,6 +476,9 @@ JS
     
     Doc.prototype.compile = _"Compile time";
 
+    Doc.prototype.makeConstants = _"|Make constants";
+
+    Doc.prototype.wrapVal = _"|Wrap values in function";
 
 JS Merge in options
 
@@ -501,6 +505,25 @@ We use file extensions as keys and we provide the mime type for the kind which m
         html: "text/html", 
         css: "text/css"
     }    
+
+JS Make constants
+
+    function (obj) {
+        var doc = this;
+        var name;
+        for (name in obj) {
+            doc.macros[name] = doc.wrapVal(obj[name]);
+        }
+
+    }
+
+JS Wrap values in function
+
+    function (val) {
+        return function () {
+            return val;
+        };
+    }
 
 
 #### Doc commander
@@ -1102,14 +1125,15 @@ Create the object that holds the directives. It will contain object names for an
 
 The parser is in "Directives parser".  It passes the options after splitting and trimming them as pipes. 
 
+We use lower case for the keys to avoid accidental matching with macros. 
 
     { 
-        "FILE" : _"File directive",
-        "VERSION" : _"Version directive",
-        "LOAD" : _"Load directive|main",
-        "REQUIRE" : _"Require directive",
-        "SET" : _"Set Constant directive",
-        "DEFINE" : _"Define Macro directive"
+        "file" : _"File directive",
+        "version" : _"Version directive",
+        "load" : _"Load directive|main",
+        "require" : _"Require directive",
+        "set" : _"Set Constant directive",
+        "define" : _"Define Macro directive"
     }
 
 
@@ -1168,7 +1192,7 @@ JS Main
         try {
             file = fs.readFileSync(fname, 'utf8');
         } catch (e) {
-            doc.log("Issue with REQUIRE: " + fname + " " + name + " " + e.message );
+            doc.log("Issue with LOAD: " + fname + " " + name + " " + e.message );
             delete doc.repo[name] ;
             return false;
         }
@@ -1236,7 +1260,9 @@ Version control directive for the literate program. Generally at the base of the
 
     function (options) {
         var doc = this;
-        doc.version = {name: (options[0] || ""), version : (options[1] || "0.0.0") };
+
+        doc.makeConstants({vname: (options[0] || ""), 
+                version : (options[1] || "0.0.0")});
     }
 
      
@@ -1813,13 +1839,11 @@ MD | clean raw
 
 Make sure file has pipe stuff.
 
-This current uses the filesystem to load external programs. This needs to be refactored, but it will require some async rejiggering.
+Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
+
 
 More docs.
 
-Allow for a plugin setup for directives and constants. 
-
-Add in core directives: require (plugin), load (other literate programs), version....
  
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
 
@@ -1845,9 +1869,9 @@ The requisite npm package file. _`doc.version.version`
 JSON | jshint
 
     {
-      "name": "literate-programming",
+      "name": "VNAME",
       "description": "A literate programming compile script. Write your program in markdown.",
-      "version": "",
+      "version": "VERSION",
       "homepage": "https://github.com/jostylr/literate-programming",
       "author": {
         "name": "James Taylor",
