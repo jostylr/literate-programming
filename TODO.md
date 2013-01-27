@@ -5,6 +5,7 @@ Split commands, etc. into own module using require system. this should be loaded
 
 More docs.
 
+make it async. so track the status and be able to abort/restart
  
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
 
@@ -21,3 +22,5 @@ For diff saving: http://prettydiff.com/diffview.js  from http://stackoverflow.co
 For scroll syncing https://github.com/sakabako/scrollMonitor
 
 Note that code mirror will be the editor. A bit on the new multi-view of documents:  http://marijnhaverbeke.nl/blog/codemirror-shared-documents.html
+
+explore using node to run stuff between browser/lit pro/python:r:tex:sage...

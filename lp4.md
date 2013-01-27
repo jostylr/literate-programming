@@ -7,6 +7,11 @@ This is the fourth cycle of literate programming. Here, we augment substitution 
 VERSION literate-programming | 0.3.0
 
 
+## Directory structure
+
+
+FILE LICENSE | license-mit | | clean raw
+
 ## How to write a literate program
 
 Use markdown. Each heading is a new block and can be referenced by using _"title". This substitution has more features, documented below. 
@@ -480,6 +485,8 @@ JS
 
     Doc.prototype.wrapVal = _"|Wrap values in function";
 
+    Doc.prototype.piping = _"Pipe processor";
+
 JS Merge in options
 
 In order to have more custom behavior, such as linking in behavior for visual editing, we want to be able to pass in options to the functions. 
@@ -831,7 +838,6 @@ JS main
         var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
         var rep = [];
         var match, ret, type, pieces, where, comp, lower, args, otherdoc;
-        _"Pipe processor|vars.js"
 
         var blocks = doc.blocks;
 
@@ -947,9 +953,8 @@ The bit between the first pipe and second pipe (if any) should be the type and t
  
     ret = doc.getBlock(comp, pieces.shift() || "", name || "", block.name); 
 
-    _"Pipe processor|main.js"
+    ret =  doc.piping.call({doc:doc, block:block, name: where+(type|| "")}, pieces, ret );
 
-    ret =  doc.commander(comarr, ret); 
 
 
 JS Other documents
@@ -982,40 +987,50 @@ If there is such a command, it is invoked with a this object of {doc, block, nam
 
 This is a very simple setup which hopefully will suffice for most needs. 
 
-JS vars
+JS 
+    
+    function (pieces, code){
 
-    var com, cmatch, funname, funargs, comreg = /^\s*([^(]+)(?:\(([^)]*)\))?$/, comarr, passin;
+        var doc = this.doc;
+        var passin = this;
 
 
-JS main
+        var com, cmatch, funname, funargs, comreg = /^\s*([^(]+)(?:\(([^)]*)\))?$/, comarr;
 
-    comarr = [];
-    passin = {doc:doc, block:block, name: where+type};  
-    while (pieces.length >0) {
+        comarr = [];
 
-        com = pieces.shift();
+        console.log(pieces, code.slice(0,20), this.name);
 
-        cmatch = com.match(comreg);
+        while (pieces.length >0) {
 
-        if (com === null) {
-            doc.log("No match " + com);
-            continue;
+            com = pieces.shift();
+
+            cmatch = com.match(comreg);
+
+
+            if (com === null) {
+                doc.log("No match " + com);
+                continue;
+            }
+
+            funname = cmatch[1].trim();
+
+            if (cmatch[2]) {
+                funargs = cmatch[2].split(",").trim();
+            } else {
+                funargs = [];
+            }
+
+
+            if ( doc.commands.hasOwnProperty(funname) ) {
+                comarr.push([doc.commands[funname], funargs, passin]);
+            } else {
+                doc.log("Issue with " + com);
+            }
         }
 
-        funname = cmatch[1].trim();
-
-        if (cmatch[2]) {
-            funargs = cmatch[2].split(",").trim();
-        } else {
-            funargs = [];
-        }
-
-
-        if ( doc.commands.hasOwnProperty(funname) ) {
-            comarr.push([doc.commands[funname], funargs, passin]);
-        } else {
-            doc.log("Issue with " + com);
-        }
+        var ret = doc.commander(comarr, code); 
+        return ret;
 
     }
 
@@ -1141,6 +1156,8 @@ We use lower case for the keys to avoid accidental matching with macros.
      
 The command is `FILE fname.ext | block name | internal name ` where fname.ext is the filename and extension to use. 
 
+The rest of the options are pipe commands that get processed 
+
     function (options) {
         var doc = this; 
         if (options[0] === "") {
@@ -1160,9 +1177,8 @@ The command is `FILE fname.ext | block name | internal name ` where fname.ext is
 
 ### Load directive
 
-This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block | internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is  LOAD file | shortname
+This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block | internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is  LOAD file | shortname 
 
-Need to enact the pipe syntax.  
 
 JS Main
  
@@ -1340,6 +1356,8 @@ JS
 ### Indent 
 
 To be able to indent the code in the final production (for appearance or say in Python), we can use this function. It takes two possible arguments: first line indent and rest indent. If just one number, it applies to the rest.
+
+Add in a default indent which corresponds to where the sub block is. This happens if no number is given. 
 
 JS
 
@@ -1711,6 +1729,7 @@ Given array of name and text, save the file. dir will change the directory where
             if (block) {
                 compiled = block.compiled; 
                 text = doc.getBlock(compiled, file[2], fname, block.name);
+                text = doc.piping.call({doc:doc, block: doc.blocks[block.name], name:fname}, file.slice(3), text); 
                 fs.writeFileSync(fname, text, 'utf8');
                 doc.log(fname + " saved");
             } else {
@@ -1844,6 +1863,7 @@ Split commands, etc. into own module using require system. this should be loaded
 
 More docs.
 
+make it async. so track the status and be able to abort/restart
  
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
 
@@ -1860,6 +1880,8 @@ For diff saving: http://prettydiff.com/diffview.js  from http://stackoverflow.co
 For scroll syncing https://github.com/sakabako/scrollMonitor
 
 Note that code mirror will be the editor. A bit on the new multi-view of documents:  http://marijnhaverbeke.nl/blog/codemirror-shared-documents.html
+
+explore using node to run stuff between browser/lit pro/python:r:tex:sage...
 
 
 ## NPM package
@@ -1912,15 +1934,13 @@ FILE package.json
 
 ## LICENSE-MIT
 
-TEXT
 
-    The MIT License (MIT)
-    Copyright (c) 2013 James Taylor
+The MIT License (MIT)
+Copyright (c) 2013 James Taylor
 
-    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-FILE LICENSE

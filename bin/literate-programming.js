@@ -44,6 +44,7 @@ var save = function (doc, dir) {
         if (block) {
             compiled = block.compiled; 
             text = doc.getBlock(compiled, file[2], fname, block.name);
+            text = doc.piping.call({doc:doc, block: doc.blocks[block.name], name:fname}, file.slice(3), text); 
             fs.writeFileSync(fname, text, 'utf8');
             doc.log(fname + " saved");
         } else {
