@@ -11,6 +11,7 @@ program
     .option('-d --dir <root>', 'Root directory for output')
     .option('-c --change <root>',  'Root directory for input')
     .option('-r --root <root>', 'Change root directory for both input and output')
+    .option('-p --preview',  'Do not save the changes. Output first line of each file')
 ;
 
 program.parse(process.argv);
@@ -33,19 +34,23 @@ var save = function (doc, dir) {
     process.chdir(originalroot);
     if (dir) {
         process.chdir(dir);
-    }
+    }            
     var files = doc.files;
     var file, block, fname, compiled, text;  
     var i, n = files.length;
     for (i=0; i < n; i+= 1) {
         file = files[i];
         block = doc.blocks[file[1]];
-        fname = file[0]
+        fname = file[0];
         if (block) {
             compiled = block.compiled; 
             text = doc.getBlock(compiled, file[2], fname, block.name);
             text = doc.piping.call({doc:doc, block: doc.blocks[block.name], name:fname}, file.slice(3), text); 
-            fs.writeFileSync(fname, text, 'utf8');
+            if (program.preview) {
+                doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+            } else {      
+                fs.writeFileSync(fname, text, 'utf8');
+            }
             doc.log(fname + " saved");
         } else {
             doc.log("No block "+file[1] + " for file " + fname);

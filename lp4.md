@@ -9,8 +9,42 @@ VERSION literate-programming | 0.3.0
 
 ## Directory structure
 
+The bulk of the work is in the node module. That has all the core weaving. It also hasthe ability to load other literate programs / directives which ties it currently to the file system. 
+
+FILE lib/literate-programming.js  | the lp module | | jshint | jstidy
+
+---
+
+The literate program compiler is activated by a command line program.
+
+
+FILE bin/literate-programming.js | cli| | jshint
+
+---
+
+The standard README.
+
+FILE README.md | readme 
+
+---
+
+The requisite package file for a npm project. 
+
+FILE package.json | npm package | json | jshint
+
+---
+
+A list of growing and shrinking items todo.
+
+FILE TODO.md | todo | | clean raw
+
+---
+
+The MIT license as I think that is the standard in the node community. 
 
 FILE LICENSE | license-mit | | clean raw
+
+---
 
 ## How to write a literate program
 
@@ -75,7 +109,7 @@ It takes the string and makes a document that has the markdown parsed out into v
 
 This current uses the filesystem to load external programs. This needs to be refactored, but it will require some async rejiggering.
 
-JS  |jshint() | jstidy
+JS  
 
     /*global require, module, process*/
     /*jslint evil:true*/
@@ -103,10 +137,6 @@ JS  |jshint() | jstidy
 
 We also need a repository for files that are loaded up, both literate programs and plugins. The same repo will be seen in all instances of Doc; this prevents multiple uploading and parsing of the same file. I see no reason for not having it globally accessible. 
 
-
-
-
-FILE lib/literate-programming.js 
 
 
 ## Document parsing
@@ -1709,8 +1739,6 @@ This is the command line file. It loads the literate programming document, sends
 
     _"Cli log"
 
-FILE bin/literate-programming.js
-JS.HINT
 
 
 
@@ -1722,19 +1750,23 @@ Given array of name and text, save the file. dir will change the directory where
         process.chdir(originalroot);
         if (dir) {
             process.chdir(dir);
-        }
+        }            
         var files = doc.files;
         var file, block, fname, compiled, text;  
         var i, n = files.length;
         for (i=0; i < n; i+= 1) {
             file = files[i];
             block = doc.blocks[file[1]];
-            fname = file[0]
+            fname = file[0];
             if (block) {
                 compiled = block.compiled; 
                 text = doc.getBlock(compiled, file[2], fname, block.name);
                 text = doc.piping.call({doc:doc, block: doc.blocks[block.name], name:fname}, file.slice(3), text); 
-                fs.writeFileSync(fname, text, 'utf8');
+                if (program.preview) {
+                    doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+                } else {      
+                    fs.writeFileSync(fname, text, 'utf8');
+                }
                 doc.log(fname + " saved");
             } else {
                 doc.log("No block "+file[1] + " for file " + fname);
@@ -1754,6 +1786,7 @@ This is where we report the logs.
 
 Here we define what the various configuration options are. 
 
+The preview option is used to avoid overwriting what exists without checking first. Eventually, I will hookup a diff view. There might also be a test-safe mode which runs the tests and other stuff and will not save if they do not pass. 
 
     program
         .version('0.1')
@@ -1761,6 +1794,7 @@ Here we define what the various configuration options are.
         .option('-d --dir <root>', 'Root directory for output')
         .option('-c --change <root>',  'Root directory for input')
         .option('-r --root <root>', 'Change root directory for both input and output')
+        .option('-p --preview',  'Do not save the changes. Output first line of each file')
     ;
 
     program.parse(process.argv);
@@ -1852,15 +1886,9 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 
     [MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)
 
-FILE README.md
+
 
 ## TODO
-
-FILE TODO.md
-
-MD | clean raw
-
-Make sure file has pipe stuff.
 
 Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
 
@@ -1890,9 +1918,9 @@ explore using node to run stuff between browser/lit pro/python:r:tex:sage...
 
 ## NPM package
 
-The requisite npm package file. _`doc.version.version`
+The requisite npm package file. 
 
-JSON | jshint
+JSON 
 
     {
       "name": "VNAME",
@@ -1933,7 +1961,6 @@ JSON | jshint
       }
     }
 
-FILE package.json
 
 
 ## LICENSE-MIT

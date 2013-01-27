@@ -1,4 +1,4 @@
-Make sure file has pipe stuff.
+Organize files into a directory
 
 Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
 
