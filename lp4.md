@@ -644,6 +644,11 @@ JS main
             return block[keys[0]];
         }
 
+        // no code segments
+        if (keys.length === 0) {
+            return "";
+        }
+
         if (doc.types.hasOwnProperty(internal)) {
             // main.js
             if (block.hasOwnProperty("main."+internal) ) {
@@ -999,7 +1004,6 @@ JS
 
         comarr = [];
 
-        console.log(pieces, code.slice(0,20), this.name);
 
         while (pieces.length >0) {
 
