@@ -17,7 +17,7 @@ MD main |1 marked
 
     _"Introduction"
 
-    _"fake lit::first"
+_"fake lit::first"
 
     _"Computing 1000!"
 

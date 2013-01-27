@@ -4,7 +4,7 @@
 
 This is the fourth cycle of literate programming. Here, we augment substitution lines to play a more active role in the processing of the parts. We also add in switch typing/naming within a block. 
 
-VERSION literate-programming | 0.3.0
+VERSION literate-programming | 0.3.1
 
 
 ## Directory structure
@@ -1892,6 +1892,7 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 
 Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
 
+Have some more preview/testing options. Maybe an abort on failed test/jshint kind of stuff and/or a diff viewer. npm diff seems popular. 
 
 More docs.
 

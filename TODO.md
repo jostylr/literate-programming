@@ -1,7 +1,6 @@
-Organize files into a directory
-
 Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
 
+Have some more preview/testing options. Maybe an abort on failed test/jshint kind of stuff and/or a diff viewer. npm diff seems popular. 
 
 More docs.
 
