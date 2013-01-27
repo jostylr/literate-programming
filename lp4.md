@@ -4,7 +4,7 @@
 
 This is the fourth cycle of literate programming. Here, we augment substitution lines to play a more active role in the processing of the parts. We also add in switch typing/naming within a block. 
 
-VERSION literate-programming | 0.3.1
+VERSION literate-programming | 0.3.2
 
 
 ## Directory structure
@@ -30,7 +30,7 @@ FILE README.md | readme
 
 The requisite package file for a npm project. 
 
-FILE package.json | npm package | json | jshint
+FILE package.json | NPM package | json | jshint
 
 ---
 
@@ -1201,6 +1201,7 @@ The rest of the options are pipe commands that get processed
             if (!options[1]) {
                 options[1] = doc.name;
             }
+            options[1] = options[1].toLowerCase();
             if (!options[2]) {
                 options[2] = "";
             }
