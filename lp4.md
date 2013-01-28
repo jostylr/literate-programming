@@ -1374,7 +1374,7 @@ Here we set constants as macros. If NAME is the name of a macro, either NAME or 
         }
     }
 
-### Define Macro directive 
+### Define Macro directive
 
 This is where we implement defining macros in the literate program. This may be rare. Probably they are already defined in a load-in file. The setup will be that the macro will be that there is exactly one code block in the section, it is already done, and we use that as the code of the function. 
 
