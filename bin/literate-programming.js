@@ -37,25 +37,44 @@ var save = function (doc, dir) {
         process.chdir(dir);
     }            
     var files = doc.files;
-    var file, block, fname, compiled, text;  
+    var file, block, fname, compiled, text, litpro, headname, internal, fdoc;  
     var i, n = files.length;
     for (i=0; i < n; i+= 1) {
         file = files[i];
-        block = doc.blocks[file[1]];
         fname = file[0];
-        if (block) {
-            compiled = block.compiled; 
-            text = doc.getBlock(compiled, file[2], fname, block.name);
-            text = doc.piping.call({doc:doc, block: doc.blocks[block.name], name:fname}, file.slice(3), text); 
-            if (program.preview) {
-                doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
-            } else {      
-                fs.writeFileSync(fname, text, 'utf8');
-                doc.log(fname + " saved");
+        litpro = file[1][0];
+        headname = file[1][1];
+        internal = file[1][2];
+        if (litpro) {
+            if (doc.repo.hasOwnProperty(litpro) ) {
+                fdoc = doc.repo[litpro];
+            } else {
+                doc.log(fname + " is trying to use non-loaded literate program " + litpro);
+                continue;
             }
         } else {
-            doc.log("No block "+file[1] + " for file " + fname);
-        } 
+            fdoc = doc;
+        }
+        if (headname) {
+            if (fdoc.blocks.hasOwnProperty(headname) ) {
+                block = fdoc.blocks[headname];
+            } else {
+                doc.log(fname + " is trying to load non existent block " + headname);
+                continue;
+            }
+        } else {
+            doc.log(fname + " has no block " + litpro + " :: " + headname);
+            continue;
+        }
+        compiled = block.compiled; 
+        text = fdoc.getBlock(compiled, internal, fname, block.name);
+        text = fdoc.piping.call({doc:fdoc, block: fdoc.blocks[block.name], name:fname}, file.slice(3), text); 
+        if (program.preview) {
+            doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+        } else {      
+            fs.writeFileSync(fname, text, 'utf8');
+            doc.log(fname + " saved");
+        }
     }
 };
  

@@ -30,7 +30,7 @@ _"fake lit::first"
 
     _"Comments"
 
-FILE logs.htm ||main
+FILE logs.htm || main
 
 ## Introduction
 
@@ -105,7 +105,7 @@ MD | 1 marked
 
     To use, put in a positive integer.
 
-    __"Calculator | html"
+    __"Calculator : html"
 
 
 ## Behind the scenes
@@ -137,7 +137,7 @@ HTML
     
     <div id="factorial"></div>
 
-    __"|js|jshint|escape|wrap(div, hide, run)"
+    __":js|jshint|escape|wrap(div, hide, run)"
 
 We will attach a function to the click action 
 
@@ -197,13 +197,13 @@ MD |1 marked
 
     To see the growth of the factorial, let's compute a few of them. 
 
-    __"|Factorial Table| eval "
+    __":Factorial Table| eval "
 
 JS Factorial Table |jshint
 
     var i = 1;
     var fact = function (n) {
-        _"Common factorial||indent(4,4)"
+        _"Common factorial:|indent(4,4)"
         return [n, nf, lf10];
     };
     var tarr = [];

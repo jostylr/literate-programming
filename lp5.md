@@ -910,7 +910,7 @@ JS main
 
         var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
         var rep = [];
-        var match, ret, type, pieces, where, comp, lower, args, otherdoc;
+        var match, ret, type, pieces, where, comp, lower, args, otherdoc, litpro, internal;
 
         var blocks = doc.blocks;
 
@@ -956,30 +956,52 @@ When we have a match requiring a substitution, we call fullSub which will run al
 The match could match a substitution block `match[2]`, an eval block `match[3]`, or a macro `match[4]`.  For a substitution block, it could either be external (`where`) or local.
 
 For each valid match, we add a replacement string on the array rep for replacement after all matches have been analyzed. 
+We are splitting the first part of the command as `external lit program :: heading block name : internal name . type`
 
+
+    internal = ''; litpro = '';
     if (match[2]) {
         
         //split off the piping
         pieces = match[2].split("|").trim();
         where = pieces.shift().toLowerCase(); 
 
-
         if (where) {
-            where = where.split("::");
-            if (where.length === 2) {
+            where = where.split("::").trim();
+            if (where.length === 1) {
+                where = where[0];
+            } else {
+                litpro = where[0];
+                where = where[1];
+            }
+            where = where.split(":").trim();
+            if (where.length === 1) {
+                where = where[0];
+            } else {
+
+                internal = where[1];
+                where = where[0];
+            }
+            if (litpro) {
                 _"|other documents"
             } else {
-                where = where[0];
                 // this doc
-                if (doc.blocks.hasOwnProperty(where) ){
-                    _"|Matching block, multi-level"
-                    comp = doc.fullSub(blocks[where]);
+                if (where) {
+                    if (doc.blocks.hasOwnProperty(where) ){
+                        _"|Matching block, multi-level"
+                        comp = doc.fullSub(blocks[where]);
+                    } else {
+                        // no block to substitute; ignore
+                        continue;
+                    }
                 } else {
-                    // no block to substitute; ignore
-                    continue;
-                }
+                    // use the code already compiled in codeBlocks
+                    _"|Matching block, multi-level"
+                    comp = codeBlocks;
+                }                    
             }
         } else {
+            // deprecated 
             // use the code already compiled in codeBlocks
             _"|Matching block, multi-level"
             comp = codeBlocks;
@@ -1021,10 +1043,11 @@ JS Substitute parsing
 
 Either the substitution specifies the name.type to insert or we use the current name's type to pull an unnamed bit from the same text. If nothing, we continue. 
 
-The bit between the first pipe and second pipe (if any) should be the type and type only. We shift the pieces to get the type and the rest should be commands to process. 
+The bit between the first pipe and second pipe (if any) should be the type and type only [for now, deprecated]. We shift the pieces to get the type and the rest should be commands to process. 
 
  
-    ret = doc.getBlock(comp, pieces.shift() || "", name || "", block.name); 
+    internal = (internal || pieces.shift() || "").trim();
+    ret = doc.getBlock(comp, internal, name || "", block.name); 
 
     ret =  doc.piping.call({doc:doc, block:block, name: where+(type|| "")}, pieces, ret );
 
@@ -1034,16 +1057,16 @@ JS Other documents
 
 This is how to pull in blocks from other literate programs.
 
-    if (doc.repo.hasOwnProperty(where[0]) ) {
-        otherdoc = doc.repo[where[0]];
-        if (otherdoc.blocks.hasOwnProperty(where[1]) ) {
-            comp = otherdoc.blocks[where[1]].compiled; 
+    if (doc.repo.hasOwnProperty(litpro) ) {
+        otherdoc = doc.repo[litpro];
+        if (otherdoc.blocks.hasOwnProperty(where) ) {
+            comp = otherdoc.blocks[where].compiled; 
         } else {
-            doc.log("No such block " + where[1] + " in literate program " + where[0]);
+            doc.log("No such block " + where+ " in literate program " + litpro);
             continue;
         }
     } else {
-        doc.log("No such literate program loaded: " + where[0]);
+        doc.log("No such literate program loaded: " + litpro);
         continue;
     }
 
@@ -1226,12 +1249,13 @@ We use lower case for the keys to avoid accidental matching with macros.
 
 ### File directive
      
-The command is `FILE fname.ext | block name | internal name ` where fname.ext is the filename and extension to use. 
+The command is `FILE fname.ext | litpro :: block name : internal name | commands...` where fname.ext is the filename and extension to use. 
 
 The rest of the options are pipe commands that get processed 
 
     function (options) {
         var doc = this; 
+        var headname, internalname, litpro, arr, name; 
         if (options[0] === "") {
             doc.log("No file name for file: "+options.join[" | "]+","+ doc.name);
             return false;
@@ -1239,10 +1263,19 @@ The rest of the options are pipe commands that get processed
             if (!options[1]) {
                 options[1] = doc.name;
             }
-            options[1] = options[1].toLowerCase();
-            if (!options[2]) {
-                options[2] = "";
+            name = options[1].toLowerCase();
+            arr = name.split("::").trim();
+            if (arr.length === 1) {
+                litpro = "";
+                name = arr[0];
+            } else {
+                litpro = arr[0] || "";
+                name =arr[1] || ""; 
             }
+            arr = name.split(":").trim();
+            headname = arr[0] || "";
+            internalname = arr[1] || options[2] || "";  //options[2] is deprecated
+            options[1] = [litpro, headname, internalname];
             doc.files.push(options);            
         }
     }
@@ -1645,27 +1678,53 @@ Given array of name and text, save the file. dir will change the directory where
             process.chdir(dir);
         }            
         var files = doc.files;
-        var file, block, fname, compiled, text;  
+        var file, block, fname, compiled, text, litpro, headname, internal, fdoc;  
         var i, n = files.length;
         for (i=0; i < n; i+= 1) {
             file = files[i];
-            block = doc.blocks[file[1]];
             fname = file[0];
-            if (block) {
-                compiled = block.compiled; 
-                text = doc.getBlock(compiled, file[2], fname, block.name);
-                text = doc.piping.call({doc:doc, block: doc.blocks[block.name], name:fname}, file.slice(3), text); 
-                if (program.preview) {
-                    doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
-                } else {      
-                    fs.writeFileSync(fname, text, 'utf8');
-                    doc.log(fname + " saved");
-                }
-            } else {
-                doc.log("No block "+file[1] + " for file " + fname);
-            } 
+            litpro = file[1][0];
+            headname = file[1][1];
+            internal = file[1][2];
+            _"|check for block existence"
+            compiled = block.compiled; 
+            text = fdoc.getBlock(compiled, internal, fname, block.name);
+            text = fdoc.piping.call({doc:fdoc, block: fdoc.blocks[block.name], name:fname}, file.slice(3), text); 
+            if (program.preview) {
+                doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+            } else {      
+                fs.writeFileSync(fname, text, 'utf8');
+                doc.log(fname + " saved");
+            }
         }
     }
+
+
+JS Check for block existence
+
+First we check whether there is an external literate program trying to be used. We either assign it or doc to fdoc. Then we load up the block with headname. The internal block name is left to another portion. 
+
+            if (litpro) {
+                if (doc.repo.hasOwnProperty(litpro) ) {
+                    fdoc = doc.repo[litpro];
+                } else {
+                    doc.log(fname + " is trying to use non-loaded literate program " + litpro);
+                    continue;
+                }
+            } else {
+                fdoc = doc;
+            }
+            if (headname) {
+                if (fdoc.blocks.hasOwnProperty(headname) ) {
+                    block = fdoc.blocks[headname];
+                } else {
+                    doc.log(fname + " is trying to load non existent block " + headname);
+                    continue;
+                }
+            } else {
+                doc.log(fname + " has no block " + litpro + " :: " + headname);
+                continue;
+            }
 
 
 
@@ -1785,14 +1844,20 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 
 ## TODO
 
+Change syntax to include :: for external lit,  : for internal block and leaving a . 
 
-As part of plugin process, have some option for storing objects that could then be passed on to something else. 
+
+Make it async. so track the status and be able to abort/restart. Plan is to use a doc.status to indicate the phase (initial, parsing, compiling, done). The parsing phase just needs to track the line it is currently on. The compiling phase should have a queue object of blocks not yet attempted to be compiled and then any block that needs to wait (A) on something (B) should register itself (A) with that other thing (B) to trigger its (A) compile when (B) all done compiling. Also need a way to restart a compile of a block when whatever it was waiting for is done. Wrap all that into a nice asyncy function (like doc.resume or something).  I guess we can just queue up the objects initially, loop over them, and no need to break. Everything will just happen automagically with callbacks once it is all primed. Pretty sweet. The load directive for other lit programs can also be asynced. The existence of the file gets noted and no compiling should happen until all parsing is done on all loaded documents. But after that, the different compiles can all go crazy as they just queue themselves willy-nilly. 
+
+
+As part of plugin process, have some option for storing objects that could then be passed on to something else. This would be for example in commands. One might evaluate something in a language, getting a javscript object that should then be fed into another command object to translate into text. Or even just JSON'd. 
+
+Indent based on position by default. That is, use the given indent of where the _"" is and then apply it throughout if the _"" is on a line of its own. Otherwise, leave the first line as is and then indent the others another 4 spaces beyond the indent of the line on which _"" appears. The command indent would override this, of course, but hopefully it gets the common cases. 
 
 Have some more preview/testing options. Maybe an abort on failed test/jshint kind of stuff and/or a diff viewer. npm diff seems popular. 
 
 More docs.
 
-make it async. so track the status and be able to abort/restart
  
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
 
