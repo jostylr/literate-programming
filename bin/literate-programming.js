@@ -50,8 +50,8 @@ var save = function (doc, dir) {
                 doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
             } else {      
                 fs.writeFileSync(fname, text, 'utf8');
+                doc.log(fname + " saved");
             }
-            doc.log(fname + " saved");
         } else {
             doc.log("No block "+file[1] + " for file " + fname);
         } 

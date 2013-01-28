@@ -18,7 +18,7 @@ FILE lib/literate-programming.js  | the lp module | | jshint | jstidy
 The literate program compiler is activated by a command line program.
 
 
-FILE bin/literate-programming.js | cli| | jshint
+FILE bin/literate-programming.js | cli|| jshint
 
 ---
 
@@ -517,6 +517,14 @@ JS
 
     Doc.prototype.piping = _"Pipe processor";
 
+    Doc.prototype.addMacros = _"|merge | substitute(OBJTYPE, macros)";
+
+    Doc.prototype.addCommands = _"|merge | substitute(OBJTYPE, commands)";
+
+    Doc.prototype.addType = _"|merge | substitute(OBJTYPE,types)";
+
+    Doc.prototype.addDirective = _"|merge | substitute(OBJTYPE,directives)";
+
 JS Merge in options
 
 In order to have more custom behavior, such as linking in behavior for visual editing, we want to be able to pass in options to the functions. 
@@ -548,10 +556,11 @@ JS Make constants
     function (obj) {
         var doc = this;
         var name;
+        var newobj = {};
         for (name in obj) {
-            doc.macros[name] = doc.wrapVal(obj[name]);
+            newobj[name] = doc.wrapVal(obj[name]);
         }
-
+        doc.addMacros(newobj);
     }
 
 JS Wrap values in function
@@ -561,6 +570,24 @@ JS Wrap values in function
             return val;
         };
     }
+
+
+JS Merge
+
+This handles adding properties to macros, commands, etc.. The value of OBJTYPE needs to be substituted in. 
+
+    function (newobj) {
+        var doc = this;
+        var oldobj = doc.OBJTYPE;
+        var name;
+        for (name in newobj) {
+            if (oldobj.hasOwnProperty(name) ) {
+                doc.log("Replacing " + name);
+            }
+            oldobj[name] = newobj[name];
+        }
+    }
+
 
 
 #### Doc commander
@@ -1337,7 +1364,7 @@ Here we set constants as macros. If NAME is the name of a macro, either NAME or 
 
 This is where we implement defining macros in the literate program. This may be rare. Probably they are already defined in a load-in file. The setup will be that the macro will be that there is exactly one code block in the section, it is already done, and we use that as the code of the function. 
 
-The arguments for the Function object will be the shifted options and the code block of the section. Note DEFINE should be at the end of the section. No substitutions as this is all done before compilation which is what allows the macros to be useful. 
+The arguments for the Function object will be the shifted options and the code block of the section. Note DEFINE should be at the end of the section. No substitutions as this is all done before compilation which is what allows the macros to be useful. It can appear anywhere, however, as parsing is unaffected by this. 
 
 Example:   `DEFINE darken | color | percent`  and in the code block above it is some code that works on color and percent to return a darkened version of color. The `this` is the document object. 
 
@@ -1372,7 +1399,8 @@ Example:   `DEFINE darken | color | percent`  and in the code block above it is 
         "raw" : _"Raw",
         "clean raw" : _"Clean Raw",
         "indent" : _"Indent", 
-        "log" : _"Log"
+        "log" : _"Log",
+        "substitute" : _"Substitute"
     }
 
 
@@ -1411,6 +1439,25 @@ JS
         code = begin+code.replace("\n", middle);
         return code;
     }
+
+### Substitute
+
+This method will replace macro values with the given values. So  `substitute(A, 1, B, fred)` would replace A with 1 and B with fred.
+
+Actually, the way it is written, it need not be in the macro form. In fact, it is a regular expression! 
+
+    function (code, options) {
+        var i, n = options.length, reg;
+        for (i = 0; i < n; i += 2) {
+            if (!options[i+1]) {
+                break; // should only happen if n is odd
+            }
+            reg = new RegExp(options[i], "g"); // global replace
+            code = code.replace(reg, options[i+1]);
+        }
+        return code; 
+    }
+
 
 ### Log
 
@@ -1767,8 +1814,8 @@ Given array of name and text, save the file. dir will change the directory where
                     doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
                 } else {      
                     fs.writeFileSync(fname, text, 'utf8');
+                    doc.log(fname + " saved");
                 }
-                doc.log(fname + " saved");
             } else {
                 doc.log("No block "+file[1] + " for file " + fname);
             } 
@@ -1892,6 +1939,8 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 ## TODO
 
 Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
+
+As part of plugin process, have some option for storing objects that could then be passed on to something else. 
 
 Have some more preview/testing options. Maybe an abort on failed test/jshint kind of stuff and/or a diff viewer. npm diff seems popular. 
 
