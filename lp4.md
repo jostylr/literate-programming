@@ -1364,9 +1364,9 @@ Here we set constants as macros. If NAME is the name of a macro, either NAME or 
 
 This is where we implement defining macros in the literate program. This may be rare. Probably they are already defined in a load-in file. The setup will be that the macro will be that there is exactly one code block in the section, it is already done, and we use that as the code of the function. 
 
-The arguments for the Function object will be the shifted options and the code block of the section. Note DEFINE should be at the end of the section. No substitutions as this is all done before compilation which is what allows the macros to be useful. It can appear anywhere, however, as parsing is unaffected by this. 
+Note DEFINE should be at the end of the section. No substitutions as this is all done before compilation which is what allows the macros to be useful. It can appear anywhere, however, as parsing is unaffected by this. 
 
-Example:   `DEFINE darken | color | percent`  and in the code block above it is some code that works on color and percent to return a darkened version of color. The `this` is the document object. 
+Example:   `DEFINE darken`  and in the code block above it is a function and only a function. The `this` is the document object. 
 
     function (options) {
         var doc = this;
@@ -1378,8 +1378,9 @@ Example:   `DEFINE darken | color | percent`  and in the code block above it is 
             return false; 
         }
         code = cur.code[cur.type].join("\n");
-        var args = options.join(",");
-        doc.macros[fname] = new Function(args, code);
+        var macrof;
+        eval("macrof="+code);
+        doc.macros[fname] = macrof;
     }
 
 

@@ -224,8 +224,10 @@ JS Factorial Table |jshint
 
 ## Jquery version
 
-    return '<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/' + 
-        v + '/jquery.min.js"></script>';
+    function (v) {
+        return '<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/' + 
+        (v || '1.9.0') + '/jquery.min.js"></script>';
+    }
 
 DEFINE jquery | v
     
