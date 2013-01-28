@@ -8,7 +8,7 @@ REQUIRE /test.js | fake
 
 LOAD great.md  | fake lit
 
-`literate-programming -d examples examples/logs.md`
+`literate-programming -r examples logs.md`
 
 
 ## Structure
@@ -224,12 +224,14 @@ JS Factorial Table |jshint
 
 ## Jquery version
 
+Not active as superseded by default jquery macro. But here as an example of how to define a macro until another example comes up. Remove leading space in front of DEFINE to get it to be active. 
+
     function (v) {
         return '<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/' + 
         (v || '1.9.0') + '/jquery.min.js"></script>';
     }
 
-DEFINE jquery | v
+ DEFINE jquery
     
 
 ## Stand alone page

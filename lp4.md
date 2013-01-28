@@ -4,7 +4,7 @@
 
 This is the fourth cycle of literate programming. Here, we augment substitution lines to play a more active role in the processing of the parts. We also add in switch typing/naming within a block. 
 
-VERSION literate-programming | 0.3.2
+VERSION literate-programming | 0.4.0
 
 
 ## Directory structure
@@ -113,10 +113,6 @@ JS
 
     /*global require, module, process*/
     /*jslint evil:true*/
-
-    var beautify = require('js-beautify').js_beautify;
-    var jshint = require('jshint').JSHINT;
-    var marked = require('marked');
 
     var fs = require('fs');
 
@@ -511,7 +507,7 @@ JS
     
     Doc.prototype.compile = _"Compile time";
 
-    Doc.prototype.makeConstants = _"|Make constants";
+    Doc.prototype.addConstants = _"|Make constants";
 
     Doc.prototype.wrapVal = _"|Wrap values in function";
 
@@ -521,9 +517,11 @@ JS
 
     Doc.prototype.addCommands = _"|merge | substitute(OBJTYPE, commands)";
 
-    Doc.prototype.addType = _"|merge | substitute(OBJTYPE,types)";
+    Doc.prototype.addTypes = _"|merge | substitute(OBJTYPE,types)";
 
-    Doc.prototype.addDirective = _"|merge | substitute(OBJTYPE,directives)";
+    Doc.prototype.addDirectives = _"|merge | substitute(OBJTYPE,directives)";
+
+    Doc.prototype.addPlugins = _"|add in plugins";
 
 JS Merge in options
 
@@ -544,10 +542,6 @@ We use file extensions as keys and we provide the mime type for the kind which m
 
     {
         "" : "text/plain",
-        js: "text/javascript", 
-        json: "application/json", 
-        md: "text/x-markdown", 
-        html: "text/html", 
         css: "text/css"
     }    
 
@@ -588,6 +582,23 @@ This handles adding properties to macros, commands, etc.. The value of OBJTYPE n
         }
     }
 
+JS Add in plugins
+
+This is laregly for loading the standard library. 
+
+    function (plugobj) {
+        var doc = this;
+        if (!plugobj) {
+            return false;
+        }
+        var type; 
+        for (type in plugobj) {
+            if ( (plugobj.hasOwnProperty(type)) && (typeof plugobj[type] === "function")) {
+              plugobj[type](doc); //each one is responsible for modifying
+            }
+        }
+        return true;
+    }
 
 
 #### Doc commander
@@ -1206,7 +1217,7 @@ We use lower case for the keys to avoid accidental matching with macros.
     { 
         "file" : _"File directive",
         "version" : _"Version directive",
-        "load" : _"Load directive|main",
+        "load" : _"The load directive|main",
         "require" : _"Require directive",
         "set" : _"Set Constant directive",
         "define" : _"Define Macro directive"
@@ -1237,7 +1248,7 @@ The rest of the options are pipe commands that get processed
     }
 
 
-### Load directive
+### The load directive
 
 This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block | internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is  LOAD file | shortname 
 
@@ -1275,7 +1286,10 @@ JS Main
             return false;
         }
 
-        doc.repo[name] = (new Doc(file)).parseLines().compile();
+        var newdoc = doc.repo[name] = (new Doc(file));
+        newdoc.standardPlugins = doc.standardPlugins;
+        newdoc.addPlugins(newdoc.standardPlugins);
+        newdoc.parseLines().compile();
 
     }
 
@@ -1339,8 +1353,8 @@ Version control directive for the literate program. Generally at the base of the
     function (options) {
         var doc = this;
 
-        doc.makeConstants({vname: (options[0] || ""), 
-                version : (options[1] || "0.0.0")});
+        doc.addConstants({docname: (options[0] || ""), 
+                docversion : (options[1] || "0.0.0")});
     }
 
      
@@ -1350,11 +1364,11 @@ Here we set constants as macros. If NAME is the name of a macro, either NAME or 
 
     function (options) {
         var doc = this;
-        if (options.length === 2) {
+        if (options.length >= 2) {
             var name = options[0].toLowerCase();
-            doc.macros[name] = function () {
-                return options[1];
-            };
+            var newc = {};
+            newc[name] = options.slice(1).join("|"); // a hack to undo pipe splitting--loses whitespacing
+            doc.addConstants(newc);
         } else {
             doc.log("Error with SET directive. Need exactly 2 arguments.");
         }
@@ -1380,7 +1394,9 @@ Example:   `DEFINE darken`  and in the code block above it is a function and onl
         code = cur.code[cur.type].join("\n");
         var macrof;
         eval("macrof="+code);
-        doc.macros[fname] = macrof;
+        var newm = {};
+        newm[fname] = macrof;
+        doc.addMacros(newm);
     }
 
 
@@ -1390,12 +1406,6 @@ Example:   `DEFINE darken`  and in the code block above it is a function and onl
 
 
      { "eval" : _"Eval",
-        "jshint" : _"JSHint|main",
-        "jstidy" : _"JSTidy",
-        "marked" : _"Marked",
-        "wrap" : _"Wrap",
-        "escape" : _"Escape",
-        "unescape" : _"Unescape",
         "nocompile" : _"No Compile",
         "raw" : _"Raw",
         "clean raw" : _"Clean Raw",
@@ -1478,184 +1488,8 @@ JS
         return code;
     }
 
-### JSTidy
-
-Run the compiled code through JSBeautify 
-
-JS
-
-    function (code, options) {
-        options = options.join(",").trim();
-        if (options) {
-            options = JSON.parse(options);
-        } else {
-            options = { indent_size: 2, "jslint_happy": true };
-        }
-        return beautify(code, options);
-    }
    
-Needs js-beautify installed: `npm install js-beautify`
 
-### JSHint
-
-Run the compiled code through JSHint and output the results to console.
-
-!! Need to think through options.
-
-JS main
-
-    function (code) {
-        var doc = this.doc;
-        var block = {};  //currently not stored anywhere
-
-        jshint(code);
-        var data = jshint.data();
-
-        _"|jshint logging"
-
-
-        if (log.length > 0 ) {
-         doc.log ("!! JSHint:" + this.block.name+"\n"+log.join("\n"));
-        } else {
-         doc.log("JSHint CLEAN: " + this.block.name);
-        }
-
-        return code;
-    }
-
-Needs jshint installed: `npm install jshint`   
-
-JS jshint logging
-
-        block.jshint = {data:data, errors: [], implieds :[], unused :[]};
-        var lines = code.split("\n");
-        var log = [], err, i;
-        for (i = 0; i < jshint.errors.length; i += 1) {
-           err = jshint.errors[i];
-           if (!err) {continue;}
-           log.push("E "+ err.line+","+err.character+": "+err.reason +
-            "  "+ lines[err.line-1]);
-            block.jshint.errors.push({"line#": err.line, character: err.character, reason: err.reason, line: lines[err.line-1]} );
-        }
-        if (data.hasOwnProperty("implieds") ) {
-         for (i = 0; i < data.implieds.length; i += 1) {
-             err = data.implieds[i];
-             log.push("Implied Gobal "+ err.line+": "+err.name +
-            "  "+ lines[err.line[0]-1]);
-              block.jshint.implieds.push({"line#": err.line, name:err.name, line: lines[err.line[0]-1]} );
-
-         }            
-        }
-        if (data.hasOwnProperty("unused") ) {
-         for (i = 0; i < data.unused.length; i += 1) {
-             err = data.unused[i];
-             log.push("Unused "+ err.line+": "+err.name +
-            "  "+ lines[err.line-1]);
-            block.jshint.unused.push({"line#": err.line, name:err.name, line: lines[err.line-1]} );
-
-         }            
-        }
-
-
-### Marked
-
-Run the text through the marked script to get html. Need to escape out underscored substitutions. 
-    
-    function (code) {
-
-
-        var lpsnip = [], mathsnip = [];
-
-        var masklit = function (match) {
-            lpsnip.push(match);
-            return "LITPROSNIP"+(lpsnip.length -1);
-        };
-
-        var maskmath = function (match) {
-            mathsnip.push(match);
-            return "MATHSNIP"+(mathsnip.length-1);
-        };
-
-        var unmasklit = function (match, number) {
-            return lpsnip[parseInt(number, 10)];
-        };
-
-        var unmaskmath = function (match, number) {
-            return mathsnip[parseInt(number, 10)];
-        };
-
-        code = code.replace(/\_+(\"[^"]+\"|\`[^`]+\`)/g, masklit); 
-        code = code.replace(/\$\$[^$]+\$\$|\$[^$\n]+\$|\\\(((?:[^\\]|\\(?!\)))+)\\\)|\\\[((?:[^\\]|\\(?!\]))+)\\\]/g, maskmath);
-        code = marked(code);
-        code = code.replace(/LITPROSNIP(\d+)/g, unmasklit);
-        code = code.replace(/MATHSNIP(\d+)/g, unmaskmath);
-        return code;
-
-    }
-
-Needs marked installed: `npm install marked`   
-
-### Escape 
-
-Escape the given code to be safe in html, e.g., javascript into an html pre element. 
-
-Replace `<>&` with their equivalents. 
-
-
-    function (code) {
-        code = code.replace(/</g, "&lt;");
-        code = code.replace(/>/g, "&gt;");
-        code = code.replace(/\&/g, "&amp;");
-        return code;
-    }
-
-### Unescape 
-
-And to undo the escapes: 
-
-    function (code) {
-        code = code.replace(/\&lt\;/g, "<");
-        code = code.replace(/\&gt\;/g, ">");
-        code = code.replace(/\&amp\;/g, "&");
-        return code;
-    }
-
-
-
-### Wrap
-
-Encapsulate the code into an html element.
-
-    function (code, options) {
-
-        var element = options.shift();
-
-        _"|Create attribute list"
-
-        return "<" + element + " " + attributes + ">"+code+"</"+element+ ">";
-
-
-    }  
-
-
-JS Create attribute list
-
-We want to create an attribute list for html elements. The convention is that everything that does not have an equals sign is a class name. So we will string them together and throw them into the class, making sure each is a single word. The others we throw in as is. 
-
-    var i, option, attributes = [], klass = [];
-
-    for (i = 0; i < options.length; i += 1) {
-        option = options[i];
-        if ( option.indexOf("=") !== -1 ) {
-            attributes.push(option);
-        } else { // class
-            klass.push(option.trim());
-        }
-    }
-    if (klass.length > 0 ) {
-       attributes.push("class='"+klass.join(" ")+"'");
-    }
-    attributes = attributes.join(" ");
 
 ### No Compile
 
@@ -1768,7 +1602,9 @@ Note this is on Object, not Object.prototype to avoid enumeration issues.
 
 ## Cli 
 
-This is the command line file. It loads the literate programming document, sends it to the module to get a doc object, and then sends the file component to the save command. An optional second command-line 
+This is the command line file. It loads the literate programming document, sends it to the module to get a doc object, and then sends the file component to the save command. 
+
+By default, it loads the standard plugins in literate-programming-standard. This can be turned off with the -f command line option. All loaded literate programs inherit this decision. 
 
     #!/usr/bin/env node
 
@@ -1781,7 +1617,15 @@ This is the command line file. It loads the literate programming document, sends
 
     var save = _"Save files";
  
-    var doc = (new Doc(md)).parseLines().compile();
+    var doc = new Doc(md);
+
+    if (!program.free) {
+        doc.standardPlugins = require('literate-programming-standard');
+    } else {
+        doc.standardPlugins = {};
+    }
+    doc.addPlugins(doc.standardPlugins);
+    doc.parseLines().compile();
 
     save(doc, dir); 
 
@@ -1844,6 +1688,7 @@ The preview option is used to avoid overwriting what exists without checking fir
         .option('-c --change <root>',  'Root directory for input')
         .option('-r --root <root>', 'Change root directory for both input and output')
         .option('-p --preview',  'Do not save the changes. Output first line of each file')
+        .option('-f --free', 'Do not use the default standard library of plugins') 
     ;
 
     program.parse(process.argv);
@@ -1852,6 +1697,7 @@ The preview option is used to avoid overwriting what exists without checking fir
         console.log("Need a file");
         process.exit();
     }
+
 
     var dir = program.dir || program.root; 
     var indir = program.change || program.root;
@@ -1939,7 +1785,6 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 
 ## TODO
 
-Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
 
 As part of plugin process, have some option for storing objects that could then be passed on to something else. 
 
@@ -1975,9 +1820,9 @@ The requisite npm package file.
 JSON 
 
     {
-      "name": "VNAME",
+      "name": "DOCNAME",
       "description": "A literate programming compile script. Write your program in markdown.",
-      "version": "VERSION",
+      "version": "DOCVERSION",
       "homepage": "https://github.com/jostylr/literate-programming",
       "author": {
         "name": "James Taylor",
@@ -2001,9 +1846,7 @@ JSON
         "node": ">0.6"
       },
       "dependencies":{
-        "marked" : "~0.2.7",
-        "js-beautify": "~0.3.1",
-        "jshint" : "~0.9.1",
+        "literate-progamming-standard" : "~0.1.0",
         "commander" : "~1.1.1"
       },
       "keywords": ["literate programming"],

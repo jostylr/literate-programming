@@ -1,5 +1,3 @@
-Split commands, etc. into own module using require system. this should be loaded by default. command line flag to disable common require. 
-
 As part of plugin process, have some option for storing objects that could then be passed on to something else. 
 
 Have some more preview/testing options. Maybe an abort on failed test/jshint kind of stuff and/or a diff viewer. npm diff seems popular. 

@@ -12,6 +12,7 @@ program
     .option('-c --change <root>',  'Root directory for input')
     .option('-r --root <root>', 'Change root directory for both input and output')
     .option('-p --preview',  'Do not save the changes. Output first line of each file')
+    .option('-f --free', 'Do not use the default standard library of plugins') 
 ;
 
 program.parse(process.argv);
@@ -58,7 +59,15 @@ var save = function (doc, dir) {
     }
 };
  
-var doc = (new Doc(md)).parseLines().compile();
+var doc = new Doc(md);
+
+if (!program.free) {
+    doc.standardPlugins = require('literate-programming-standard');
+} else {
+    doc.standardPlugins = {};
+}
+doc.addPlugins(doc.standardPlugins);
+doc.parseLines().compile();
 
 save(doc, dir); 
 
