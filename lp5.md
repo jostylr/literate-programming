@@ -1905,7 +1905,7 @@ JSON
         "node": ">0.6"
       },
       "dependencies":{
-        "literate-progamming-standard" : "~0.1.0",
+        "literate-programming-standard" : ">=0.1.0",
         "commander" : "~1.1.1"
       },
       "keywords": ["literate programming"],
