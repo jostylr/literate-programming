@@ -24,7 +24,7 @@ FILE bin/literate-programming.js | cli | jshint
 
 The standard README.
 
-FILE README.md | readme 
+FILE README.md | readme | clean raw
 
 ---
 
@@ -1778,11 +1778,12 @@ The preview option is used to avoid overwriting what exists without checking fir
     program
         .version('0.1')
         .usage('[options] <file>')
-        .option('-d --dir <root>', 'Root directory for output')
-        .option('-c --change <root>',  'Root directory for input')
+        .option('-o --output <root>', 'Root directory for output')
+        .option('-i --input <root>',  'Root directory for input')
         .option('-r --root <root>', 'Change root directory for both input and output')
         .option('-p --preview',  'Do not save the changes. Output first line of each file')
         .option('-f --free', 'Do not use the default standard library of plugins') 
+        .option('-d -diff', 'Compare diffs of old file and new file')
     ;
 
     program.parse(process.argv);
@@ -1803,10 +1804,6 @@ The preview option is used to avoid overwriting what exists without checking fir
     var md = fs.readFileSync(program.args[0], 'utf8');
 
 
-MD doc
-    
-    Currently there is only one flag: -d or --dir  with a directory that specifies the root directory where the compiled files go. 
-
 
 
 ## References
@@ -1820,60 +1817,66 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 ## README
 
 
-    literate-programming
-    ====================
-    
-    Write a program using markdown to write out your thoughts and the bits of code that go with those thoughts. This program weaves the bits together into usable fiels. 
+literate-programming
+====================
 
-    ## Installation
+Write a program using markdown to write out your thoughts and the bits of code that go with those thoughts. This program weaves the bits together into usable fiels. 
 
-        npm install -g literate-programming
+ ## Installation
 
-    ## Using
+    npm install -g literate-programming
 
-    The command installed is literate-programming and it has some command flags and one primary argument which is the markdown document containing the program, or at least the structure of the project. 
+ ## Using
 
-        literate-programming sample.md 
+The command installed is literate-programming and it has some command flags and one primary argument which is the markdown document containing the program, or at least the structure of the project. 
 
-    will create the files specified in sample.md
+    literate-programming sample.md 
 
-    ### Command flags
-    _"Command line options:doc"
+will create the files specified in sample.md
+
+ ### Command flags
+
+-o --output < root> : Root directory for output
+-i --input < root> : Root directory for input
+-r --root < root> : Change root directory for both input and output
+-p --preview : Do not save the changes. Output first line of each file
+-f --free : Do not use the default standard library of plugins
+-d -diff : Compare diffs of old file and new file
 
 
-    ## Document syntax
+ ## Document syntax
 
-    A literate program is a markdown document with some special conventions. 
+A literate program is a markdown document with some special conventions. 
 
-    The basic idea is that each header line (regardless of level) demarcates a full block. Any code blocks within a full block are concatenated together and are the code portion of the block. 
+The basic idea is that each header line (regardless of level) demarcates a full block. Any code blocks within a full block are concatenated together and are the code portion of the block. 
 
-    Each code block can contain whatever kind of code, but there are three special syntaxes (space between underscore and quote should not be present; it is there to avoid processing): 
+Each code block can contain whatever kind of code, but there are three special syntaxes (space between underscore and quote should not be present; it is there to avoid processing): 
 
-    1. _ "Block name" This tells the compiler to compile the block with "Block name" and then replace the _ "Block name" with that code.
-    2. _ `javascript code`  One can execute arbitrary javascript code within the backticks, but the parser limits what can be in there to one line. This can be circumvented by having a block name substitution inside the backticks. 
-    3. CONSTANTS/MACROS all caps are for constants or macro functions that insert their output in place of the caps. 
+1. _ "Block name" This tells the compiler to compile the block with "Block name" and then replace the _ "Block name" with that code.
+2. _ `javascript code`  One can execute arbitrary javascript code within the backticks, but the parser limits what can be in there to one line. This can be circumvented by having a block name substitution inside the backticks. 
+3. CONSTANTS/MACROS all caps are for constants or macro functions that insert their output in place of the caps. 
 
-    For both 1 and 3, if there is no match, then the text is unchanged. One can have more than one underscore for 1 and 2; this delays the substitution until another loop. It allows for the mixing of various markup languages and different processing points in the life cycle of compilation.
+For both 1 and 3, if there is no match, then the text is unchanged. One can have more than one underscore for 1 and 2; this delays the substitution until another loop. It allows for the mixing of various markup languages and different processing points in the life cycle of compilation.
 
-    Outside of a code block, if a line starts with all caps, this is potentially a directive. For example, the `FILE` directive takes the name of a file and it will compile the current block and save it to a file. 
+Outside of a code block, if a line starts with all caps, this is potentially a directive. For example, the `FILE` directive takes the name of a file and it will compile the current block and save it to a file. 
 
-    If a heading level jumps down by two or more levels (say level 2 going to level 4), then this is also a potential directive. It allows for the use of a TEST section, for example, that can automatically run some tests on a compiled block.
+If a heading level jumps down by two or more levels (say level 2 going to level 4), then this is also a potential directive. It allows for the use of a TEST section, for example, that can automatically run some tests on a compiled block.
 
-    ## Nifty parts of writing literate programming
+ ## Nifty parts of writing literate programming
 
-    You can write code in the currently live document that has no effect, put in ideas in the future, etc. Only those on a compile path will be seen. 
+You can write code in the currently live document that has no effect, put in ideas in the future, etc. Only those on a compile path will be seen. 
 
-    You can have your code in any order you wish. 
+You can have your code in any order you wish. 
 
-    You can "paste" multiple blocks of code using the same block name. 
+You can "paste" multiple blocks of code using the same block name. 
 
-    You can put distracting data checks/sanitation/transformations into another block and focus on the algorithm without the use of functions (which can be distracting). 
+You can put distracting data checks/sanitation/transformations into another block and focus on the algorithm without the use of functions (which can be distracting). 
 
-    You can use JavaScript to script out the compilation of documents, a hybrid of static and dynamic. 
+You can use JavaScript to script out the compilation of documents, a hybrid of static and dynamic. 
 
-    ## LICENSE
+ ## LICENSE
 
-    [MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)
+[MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)
 
 
 
@@ -1883,8 +1886,6 @@ More docs.
 
 Make it async. so track the status and be able to abort/restart. Plan is to use a doc.status to indicate the phase (initial, parsing, compiling, done). The parsing phase just needs to track the line it is currently on. The compiling phase should have a queue object of blocks not yet attempted to be compiled and then any block that needs to wait (A) on something (B) should register itself (A) with that other thing (B) to trigger its (A) compile when (B) all done compiling. Also need a way to restart a compile of a block when whatever it was waiting for is done. Wrap all that into a nice asyncy function (like doc.resume or something).  I guess we can just queue up the objects initially, loop over them, and no need to break. Everything will just happen automagically with callbacks once it is all primed. Pretty sweet. The load directive for other lit programs can also be asynced. The existence of the file gets noted and no compiling should happen until all parsing is done on all loaded documents. But after that, the different compiles can all go crazy as they just queue themselves willy-nilly. 
 
-
-As part of plugin process, have some option for storing objects that could then be passed on to something else. This would be for example in commands. One might evaluate something in a language, getting a javscript object that should then be fed into another command object to translate into text. Or even just JSON'd. 
 
 Indent based on position by default. That is, use the given indent of where the _"" is and then apply it throughout if the _"" is on a line of its own. Otherwise, leave the first line as is and then indent the others another 4 spaces beyond the indent of the line on which _"" appears. The command indent would override this, of course, but hopefully it gets the common cases. 
 

@@ -16,7 +16,14 @@ The command installed is literate-programming and it has some command flags and 
 will create the files specified in sample.md
 
 ### Command flags
-Currently there is only one flag: -d or --dir  with a directory that specifies the root directory where the compiled files go.
+
+-o --output < root> : Root directory for output
+-i --input < root> : Root directory for input
+-r --root < root> : Change root directory for both input and output
+-p --preview : Do not save the changes. Output first line of each file
+-f --free : Do not use the default standard library of plugins
+-d -diff : Compare diffs of old file and new file
+
 
 ## Document syntax
 

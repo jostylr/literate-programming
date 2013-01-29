@@ -8,11 +8,12 @@ var Doc = require('../lib/literate-programming').Doc;
 program
     .version('0.1')
     .usage('[options] <file>')
-    .option('-d --dir <root>', 'Root directory for output')
-    .option('-c --change <root>',  'Root directory for input')
+    .option('-o --output <root>', 'Root directory for output')
+    .option('-i --input <root>',  'Root directory for input')
     .option('-r --root <root>', 'Change root directory for both input and output')
     .option('-p --preview',  'Do not save the changes. Output first line of each file')
     .option('-f --free', 'Do not use the default standard library of plugins') 
+    .option('-d -diff', 'Compare diffs of old file and new file')
 ;
 
 program.parse(process.argv);
