@@ -13,7 +13,7 @@ Have some more preview/testing options. Maybe an abort on failed test/jshint kin
 More docs.
 
  
-Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
+Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing:vars" to list out the variables.
 
     var [insert string of comma separated variables]; // name of block 
 

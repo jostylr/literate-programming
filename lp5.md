@@ -4,7 +4,7 @@
 
 This is the fourth cycle of literate programming. Here, we augment substitution lines to play a more active role in the processing of the parts. We also add in switch typing/naming within a block. 
 
-VERSION literate-programming | 0.4.0
+VERSION literate-programming | 0.5.0-pre
 
 
 ## Directory structure
@@ -76,7 +76,7 @@ Within the parenthetical can be an expression that should be evaluated to start 
 
 The substitution expression should be of the form "block name|internalname.ext|command(arg1, arg2)|commmand2(...)|..."
 
-Examples:  _"Great|jack|marked(1)",  _"Great|md",  _"Great||", _"Great|jack.md",  "|jack"  will load the internal block named jack
+Examples:  _"Great:jack|marked",  _"Great:md",  _"Great|marked", _"Great:jack.md",  ":jack"  will load the internal block named jack
 
 
 ### Multi-level substitutions
@@ -174,7 +174,7 @@ JS
             }
         }
 
-        _"Head parser|Remove empty code blocks"
+        _"Head parser:Remove empty code blocks"
 
         return doc;
     }
@@ -216,7 +216,7 @@ JS
         cur.code[cur.type].push(match[1]);
         return true;
 
-      _"|Add empty line"
+      _":Add empty line"
         
       } else {
         return false;
@@ -254,7 +254,7 @@ JS
 
     function (line, doc) {
 
-        _"|period triggers match" 
+        _":period triggers match" 
 
       var reg = /^([A-Z][A-Z\.]*[A-Z])(?:$|\s+(.*)$)/;
       var options, name;
@@ -325,7 +325,7 @@ JS main
 
         var passin = {doc:doc, block:cur, type:type, name:name}; // for command stuff
 
-        _"|Parse options"
+        _":Parse options"
 
     }
 
@@ -352,7 +352,7 @@ And now we work on get the options to parse. The syntax is an optional number to
                 funargs = [];
             }
 
-            _"|Add command"
+            _":Add command"
         }
 
 JS Add command
@@ -395,7 +395,7 @@ JS
         oldLevel = doc.level || 0;
         level = match[1].length;
 
-        _"|Remove empty code blocks"
+        _":Remove empty code blocks"
 
         cur = new Block();
         cur.name = name;
@@ -464,7 +464,7 @@ JS
         this.subtimes = 0;
         this.type = ".";
 
-        this.types = _"|Types"; 
+        this.types = _":Types"; 
 
         this.directives = _"Directives";
 
@@ -478,7 +478,7 @@ JS
         this.processors = [].concat(this.defaultProcessors);
       
 
-        _"|Merge in options"
+        _":Merge in options"
 
 
         return this;
@@ -486,12 +486,12 @@ JS
 
     Doc.prototype.maxsub = 1e5;
 
-    Doc.prototype.oneSub = _"One cycle of substitution|main";
+    Doc.prototype.oneSub = _"One cycle of substitution:main";
     Doc.prototype.fullSub = _"The full substitution";
 
     Doc.prototype.defaultProcessors = _"Default processors";
 
-    Doc.prototype.switchType = _"Switch type|main";
+    Doc.prototype.switchType = _"Switch type:main";
 
     Doc.prototype.makeCode = _"Make code block";
 
@@ -503,25 +503,25 @@ JS
 
     Doc.prototype.parseLines = _"Parse lines";
 
-    Doc.prototype.getBlock = _"Get correct code block|main.js";
+    Doc.prototype.getBlock = _"Get correct code block:main.js";
     
     Doc.prototype.compile = _"Compile time";
 
-    Doc.prototype.addConstants = _"|Make constants";
+    Doc.prototype.addConstants = _":Make constants";
 
-    Doc.prototype.wrapVal = _"|Wrap values in function";
+    Doc.prototype.wrapVal = _":Wrap values in function";
 
     Doc.prototype.piping = _"Pipe processor";
 
-    Doc.prototype.addMacros = _"|merge | substitute(OBJTYPE, macros)";
+    Doc.prototype.addMacros = _":merge | substitute(OBJTYPE, macros)";
 
-    Doc.prototype.addCommands = _"|merge | substitute(OBJTYPE, commands)";
+    Doc.prototype.addCommands = _":merge | substitute(OBJTYPE, commands)";
 
-    Doc.prototype.addTypes = _"|merge | substitute(OBJTYPE,types)";
+    Doc.prototype.addTypes = _":merge | substitute(OBJTYPE,types)";
 
-    Doc.prototype.addDirectives = _"|merge | substitute(OBJTYPE,directives)";
+    Doc.prototype.addDirectives = _":merge | substitute(OBJTYPE,directives)";
 
-    Doc.prototype.addPlugins = _"|add in plugins";
+    Doc.prototype.addPlugins = _":add in plugins";
 
 JS Merge in options
 
@@ -683,10 +683,10 @@ So this is a function that takes in a compiled block, the internal name and the 
 
 We need to get the right block of text. First we check if there is a request from the file directive. If not, then see if we can get the extension.
 
-1. internal is the full name and a good match. Safest _"|jack.js"
+1. internal is the full name and a good match. Safest _":jack.js"
 1. Check if there is only one block. If so, return it. 
-2. See if internal is a known extension. Check main.ext and .ext.  _"|js". Would not match jack.js. Does work with no extension as well as internal would be "" and match type "".
-3. internal is the name, but without extension. Common. See if requester's extension with name matches something. If not, try default extension and then ".". If none of that works, then see if anything matches the name.   _"|jack"  becomes jack.js if looked at from cool.js block. Also checked is jack.
+2. See if internal is a known extension. Check main.ext and .ext.  _":js". Would not match jack.js. Does work with no extension as well as internal would be "" and match type "".
+3. internal is the name, but without extension. Common. See if requester's extension with name matches something. If not, try default extension and then ".". If none of that works, then see if anything matches the name.   _":jack"  becomes jack.js if looked at from cool.js block. Also checked is jack.
 4. If all that fails, then loop through the keys trying to match text. Unpredictable.
 5. If none of that works, then look for a key of main. 
 6. If that fails, grab something.
@@ -728,7 +728,7 @@ JS main
             }
         }
 
-        _"|filter internal"
+        _":filter internal"
 
         if (newkeys.length === 1) {
             return block[newkeys[0]];
@@ -744,7 +744,7 @@ JS main
 
        var ext = (requester.split(".")[1] || "").trim().toLowerCase();
 
-        _"|filter ext"
+        _":filter ext"
 
 
         if (extkeys.length === 1) {
@@ -758,7 +758,7 @@ JS main
             finalkeys = newkeys;
         }
 
-        _"|Filter main"
+        _":Filter main"
 
         if (morekeys.length > 0) {
             return block[morekeys[0]];
@@ -902,7 +902,7 @@ JS main
         
         var doc = this;
 
-        _"|Max sub limit"
+        _":Max sub limit"
         
 
         var code = codeBlocks[name];
@@ -915,7 +915,7 @@ JS main
         var blocks = doc.blocks;
 
         while ( (match = reg.exec(code) ) !== null ) {
-            _"|Process a match"
+            _":Process a match"
         }
 
         //do the replacements or return false
@@ -983,12 +983,12 @@ We are splitting the first part of the command as `external lit program :: headi
                 where = where[0];
             }
             if (litpro) {
-                _"|other documents"
+                _":other documents"
             } else {
                 // this doc
                 if (where) {
                     if (doc.blocks.hasOwnProperty(where) ){
-                        _"|Matching block, multi-level"
+                        _":Matching block, multi-level"
                         comp = doc.fullSub(blocks[where]);
                     } else {
                         // no block to substitute; ignore
@@ -996,24 +996,23 @@ We are splitting the first part of the command as `external lit program :: headi
                     }
                 } else {
                     // use the code already compiled in codeBlocks
-                    _"|Matching block, multi-level"
+                    _":Matching block, multi-level"
                     comp = codeBlocks;
                 }                    
             }
         } else {
-            // deprecated 
             // use the code already compiled in codeBlocks
-            _"|Matching block, multi-level"
+            _":Matching block, multi-level"
             comp = codeBlocks;
         }
             
-        _"|Substitute parsing"
+        _":Substitute parsing"
 
         rep.push([match[0], ret]);
                        
     } else if (match[3]) {
         // code
-        _"|Matching block, multi-level"
+        _":Matching block, multi-level"
         
         rep.push([match[0], eval(match[3])]);
 
@@ -1042,11 +1041,8 @@ JS Substitute parsing
 
 
 Either the substitution specifies the name.type to insert or we use the current name's type to pull an unnamed bit from the same text. If nothing, we continue. 
-
-The bit between the first pipe and second pipe (if any) should be the type and type only [for now, deprecated]. We shift the pieces to get the type and the rest should be commands to process. 
-
  
-    internal = (internal || pieces.shift() || "").trim();
+    internal = (internal || "").trim();
     ret = doc.getBlock(comp, internal, name || "", block.name); 
 
     ret =  doc.piping.call({doc:doc, block:block, name: where+(type|| "")}, pieces, ret );
@@ -1143,9 +1139,9 @@ so the piping can process post compiled while the command switch can compile pre
 
 HTML snip
 
-    <p class="awesome">_"|awe|marked"/p>
-    <p> class="lesscool">__"|cool"</p>
-    <p> class="long">___"|long"</p>
+    <p class="awesome">_":awe|marked"/p>
+    <p> class="lesscool">__":cool"</p>
+    <p> class="long">___":long"</p>
 
 MD awe 
 
@@ -1153,7 +1149,7 @@ MD awe
 
 MD cool marked(0)
 
-    totally rad _"|eq"
+    totally rad _":eq"
 
 MATH eq 
 
@@ -1161,7 +1157,7 @@ MATH eq
 
 MD long marked(1)
 
-    nearly done __"|eq"
+    nearly done __":eq"
 
 
 
@@ -1193,7 +1189,7 @@ HTML
 
     <p>Also in original block.</p>
 
-This should be a good format. Let's say it is in a section called cool. Then we can get it by _"cool"; this will pull in the HTML in an html block while it will pull in CSS in a CSS block. Any other type will pull in nothing.  But we could add in _"cool|.css"  to pull in the css block. or _"cool|jack" to get jack. If multiple jacks, then  _"cool|jack.css". Space after pipe optional. So no pipes in name.  If we had a mark down section to convert to html, then we could do _"cool|.md|marked"  Any number of processors are possible. 
+This should be a good format. Let's say it is in a section called cool. Then we can get it by _"cool"; this will pull in the HTML in an html block while it will pull in CSS in a CSS block. Any other type will pull in nothing.  But we could add in _"cool:.css"  to pull in the css block. or _"cool:jack" to get jack. If multiple jacks, then  _"cool:jack.css". Space after pipe optional. So no pipes in name.  If we had a mark down section to convert to html, then we could do _"cool:.md|marked"  Any number of processors are possible. 
 
 
 
@@ -1240,7 +1236,7 @@ We use lower case for the keys to avoid accidental matching with macros.
     { 
         "file" : _"File directive",
         "version" : _"Version directive",
-        "load" : _"The load directive|main",
+        "load" : _"The load directive:main",
         "require" : _"Require directive",
         "set" : _"Set Constant directive",
         "define" : _"Define Macro directive"
@@ -1283,7 +1279,7 @@ The rest of the options are pipe commands that get processed
 
 ### The load directive
 
-This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block | internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is  LOAD file | shortname 
+This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block : internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is  LOAD file | shortname 
 
 
 JS Main
@@ -1358,13 +1354,13 @@ The file should be a node module that exports functions that take in the doc and
         var bit;
         if (options.length === 0) {
             for (bit in bits) {
-                _"|bit check and run"            
+                _":bit check and run"            
             }
         } else {
             var i, n = options.length;
             for (i = 0; i < n; i += 1) {
                 bit = options[i];
-                _"|bit check and run"
+                _":bit check and run"
             }
         }
     }
@@ -1686,7 +1682,7 @@ Given array of name and text, save the file. dir will change the directory where
             litpro = file[1][0];
             headname = file[1][1];
             internal = file[1][2];
-            _"|check for block existence"
+            _":check for block existence"
             compiled = block.compiled; 
             text = fdoc.getBlock(compiled, internal, fname, block.name);
             text = fdoc.piping.call({doc:fdoc, block: fdoc.blocks[block.name], name:fname}, file.slice(2), text); 
@@ -1803,7 +1799,7 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
     will create the files specified in sample.md
 
     ### Command flags
-    _"Command line options|doc"
+    _"Command line options:doc"
 
 
     ## Document syntax
@@ -1844,8 +1840,7 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 
 ## TODO
 
-Change syntax to include :: for external lit,  : for internal block and leaving a . 
-
+More docs.
 
 Make it async. so track the status and be able to abort/restart. Plan is to use a doc.status to indicate the phase (initial, parsing, compiling, done). The parsing phase just needs to track the line it is currently on. The compiling phase should have a queue object of blocks not yet attempted to be compiled and then any block that needs to wait (A) on something (B) should register itself (A) with that other thing (B) to trigger its (A) compile when (B) all done compiling. Also need a way to restart a compile of a block when whatever it was waiting for is done. Wrap all that into a nice asyncy function (like doc.resume or something).  I guess we can just queue up the objects initially, loop over them, and no need to break. Everything will just happen automagically with callbacks once it is all primed. Pretty sweet. The load directive for other lit programs can also be asynced. The existence of the file gets noted and no compiling should happen until all parsing is done on all loaded documents. But after that, the different compiles can all go crazy as they just queue themselves willy-nilly. 
 
@@ -1856,10 +1851,9 @@ Indent based on position by default. That is, use the given indent of where the 
 
 Have some more preview/testing options. Maybe an abort on failed test/jshint kind of stuff and/or a diff viewer. npm diff seems popular. 
 
-More docs.
 
  
-Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing|vars" to list out the variables.
+Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing:vars" to list out the variables.
 
     var [insert string of comma separated variables]; // name of block 
 
