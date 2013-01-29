@@ -30,7 +30,7 @@ _"fake lit::first"
 
     _"Comments"
 
-FILE logs.htm || main
+FILE logs.htm | :main
 
 ## Introduction
 

@@ -11,14 +11,14 @@ VERSION literate-programming | 0.4.0
 
 The bulk of the work is in the node module. That has all the core weaving. It also hasthe ability to load other literate programs / directives which ties it currently to the file system. 
 
-FILE lib/literate-programming.js  | the lp module | | jshint | jstidy
+FILE lib/literate-programming.js  | the lp module  | jshint | jstidy
 
 ---
 
 The literate program compiler is activated by a command line program.
 
 
-FILE bin/literate-programming.js | cli|| jshint
+FILE bin/literate-programming.js | cli | jshint
 
 ---
 
@@ -30,19 +30,19 @@ FILE README.md | readme
 
 The requisite package file for a npm project. 
 
-FILE package.json | NPM package | json | jshint
+FILE package.json | NPM package : json | jshint
 
 ---
 
 A list of growing and shrinking items todo.
 
-FILE TODO.md | todo | | clean raw
+FILE TODO.md | todo  | clean raw
 
 ---
 
 The MIT license as I think that is the standard in the node community. 
 
-FILE LICENSE | license-mit | | clean raw
+FILE LICENSE | license-mit  | clean raw
 
 ---
 
@@ -1262,19 +1262,19 @@ The rest of the options are pipe commands that get processed
         } else {
             if (!options[1]) {
                 options[1] = doc.name;
-            }
+            } 
             name = options[1].toLowerCase();
             arr = name.split("::").trim();
             if (arr.length === 1) {
                 litpro = "";
-                name = arr[0];
+                name = arr[0] || doc.name;
             } else {
                 litpro = arr[0] || "";
-                name =arr[1] || ""; 
+                name =arr[1] || doc.name; 
             }
             arr = name.split(":").trim();
-            headname = arr[0] || "";
-            internalname = arr[1] || options[2] || "";  //options[2] is deprecated
+            headname = arr[0] || doc.name;
+            internalname = arr[1] || "";  
             options[1] = [litpro, headname, internalname];
             doc.files.push(options);            
         }
@@ -1689,7 +1689,7 @@ Given array of name and text, save the file. dir will change the directory where
             _"|check for block existence"
             compiled = block.compiled; 
             text = fdoc.getBlock(compiled, internal, fname, block.name);
-            text = fdoc.piping.call({doc:fdoc, block: fdoc.blocks[block.name], name:fname}, file.slice(3), text); 
+            text = fdoc.piping.call({doc:fdoc, block: fdoc.blocks[block.name], name:fname}, file.slice(2), text); 
             if (program.preview) {
                 doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
             } else {      
@@ -1718,7 +1718,7 @@ First we check whether there is an external literate program trying to be used. 
                 if (fdoc.blocks.hasOwnProperty(headname) ) {
                     block = fdoc.blocks[headname];
                 } else {
-                    doc.log(fname + " is trying to load non existent block " + headname);
+                    doc.log(fname + " is trying to load non existent block '" + headname + "'");
                     continue;
                 }
             } else {
