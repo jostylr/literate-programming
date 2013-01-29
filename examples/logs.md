@@ -20,8 +20,7 @@ MD main |1 marked
 _"fake lit::first"
 
     _"Computing 1000!"
-
-    _"Table of Factorials"
+    __"Table of Factorials"
 
     __"Factorial for all"
 
@@ -165,7 +164,7 @@ JS
 
 ## Code block for factorial
 
-JS | jshint| jstidy |wrap(code, id='awe', data-fake="awesome in full")|wrap(pre, editable, runnable)
+JS | jshint |wrap(code, id='awe', data-fake="awesome in full")|wrap(pre, editable, runnable)
 
     var n = 1000;
     _"Common factorial"

@@ -296,8 +296,6 @@ Here is the function for switching the type of code block one is parsing. The sy
 
 Anything works for the name.
 
-May need to make a more refined options parser at some point. 
-
 JS main
 
     function (type, options) {
@@ -323,7 +321,7 @@ JS main
 
         var codearr = cur.code[cur.type];
 
-        var passin = {doc:doc, block:cur, type:type, name:name}; // for command stuff
+        var passin = {doc:doc, block:cur, type:type, name:name, state:{}}; // for command stuff
 
         _":Parse options"
 
@@ -483,6 +481,8 @@ JS
 
         return this;
     };
+
+    Doc.prototype.defaultIndent = "    ";
 
     Doc.prototype.maxsub = 1e5;
 
@@ -910,7 +910,8 @@ JS main
 
         var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
         var rep = [];
-        var match, ret, type, pieces, where, comp, lower, args, otherdoc, litpro, internal;
+        var match, ret, type, pieces, where, comp, lower, args, otherdoc, litpro, internal, state;
+        _":vars indent code"
 
         var blocks = doc.blocks;
 
@@ -1008,6 +1009,8 @@ We are splitting the first part of the command as `external lit program :: headi
             
         _":Substitute parsing"
 
+        _":indent code"
+
         rep.push([match[0], ret]);
                        
     } else if (match[3]) {
@@ -1044,8 +1047,8 @@ Either the substitution specifies the name.type to insert or we use the current 
  
     internal = (internal || "").trim();
     ret = doc.getBlock(comp, internal, name || "", block.name); 
-
-    ret =  doc.piping.call({doc:doc, block:block, name: where+(type|| "")}, pieces, ret );
+    state = {};
+    ret =  doc.piping.call({doc:doc, block:block, name: where+(type|| ""), state:state}, pieces, ret );
 
 
 
@@ -1068,6 +1071,40 @@ This is how to pull in blocks from other literate programs.
 
 
 
+JS vars indent code
+
+    var ind, linetext, middle, space, spacereg = /^(\s*)/;
+
+JS indent code
+
+We want to have an automated indentation of code that is intelligent. If we have something like `argh = _"cool"` then the first line is not indented, but the rest of the lines are indented by an additional 4 spaces (or doc.defaultIndentation). If we have ` _"cool" ` then all lines use the indentation of _"cool".
+
+But it can be overwriten with the explicit indent command. No arguments lead to no indentation. 
+
+    if (!state.indent) {
+        ind = match.index-1;
+        while (ind > 0 ) {
+            if (code[ind] === "\n") {
+                break;
+            } else {
+                ind -= 1;
+            }
+
+        }
+        if (ind === 0 || ind === match.index-1) {
+            // no indent
+        } else {
+            linetext = code.slice(ind+1, match.index);
+            space = linetext.match(spacereg); 
+            if (space[1].length === linetext.length ) {
+                //all spaces
+                middle = space[1];
+            } else {
+                middle = space[1] + doc.defaultIndent;
+            }
+            ret = ret.replace(/\n/g, "\n"+middle);
+        }
+    }
 
 ### Pipe processor
 
@@ -1460,12 +1497,13 @@ JS
 
 To be able to indent the code in the final production (for appearance or say in Python), we can use this function. It takes two possible arguments: first line indent and rest indent. If just one number, it applies to the rest.
 
-Add in a default indent which corresponds to where the sub block is. This happens if no number is given. 
+
+If no argument, then 
 
 JS
 
     function (code, options) {
-        var begin, middle, doc = this.doc;
+        var begin, middle;
         if (options.length === 2) {
             begin = Array(parseInt(options[0],10)+1).join(" ");
             middle = "\n"+Array(parseInt(options[1],10)+1).join(" ");
@@ -1473,10 +1511,11 @@ JS
             begin = "";
             middle = "\n"+Array(parseInt(options[0],10)+1).join(" ");
         } else {
-            doc.log("Error in " + this.name +" in call to indent. Please use one or two numbers as argumetns only.");
+            this.state.indented = true;
             return code;
         }
         code = begin+code.replace("\n", middle);
+        this.state.indented = true;
         return code;
     }
 
