@@ -20,6 +20,7 @@ MD main |1 marked
 _"fake lit::first"
 
     _"Computing 1000!"
+
     __"Table of Factorials"
 
     __"Factorial for all"
@@ -231,7 +232,33 @@ Not active as superseded by default jquery macro. But here as an example of how 
     }
 
  DEFINE jquery
-    
+
+## Testing the factorial
+
+Let's make sure our factorial function is working. 
+
+JS  |jshint | eval 
+
+    (function () {
+        var factorial = function (n) {
+            _"common factorial"
+            return nf;
+        };
+        var factorials = {1 : 1, 2: 2, 3: 6, 4: 24, 5:120, 6:720};
+        var n, flag = false; 
+        for (n in factorials) {
+            if (factorial(n) != factorials[n] ) {
+                console.log(n + " does not work");
+                flag = true;
+            }
+        }
+        if (flag) {
+            console.log( "factorial function had errors");
+        } else {
+            console.log("factorial function passed test");  
+        }
+    })();
+
 
 ## Stand alone page
 
