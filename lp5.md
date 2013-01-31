@@ -1479,7 +1479,8 @@ Example:   `DEFINE darken`  and in the code block above it is a function and onl
         "clean raw" : _"Clean Raw",
         "indent" : _"Indent", 
         "log" : _"Log",
-        "substitute" : _"Substitute"
+        "substitute" : _"Substitute",
+        "stringify" : _"Stringify"
     }
 
 
@@ -1487,12 +1488,22 @@ Example:   `DEFINE darken`  and in the code block above it is a function and onl
 
 The eval function will use a function to protect var declarations from polluting the global scope. It does not prevent global access. Maybe a "use strict" version, but need to experiment and think of use case need. 
 
-This means each evally code should end with a return as to what to return. Seems nicer anyway.
+
 
 JS
 
     function (code) {
-        return eval("(function(){"+code+"})()");
+        try {
+            this.state.obj = eval("(function(){"+code+"})()");
+            if (typeof this.state.obj === "undefined") {
+                return "";
+            } else {
+                return this.state.obj.toString();
+            }
+        } catch(e) {
+            this.doc.log("Eval error: " + e + "\n" + code);
+            return "";
+        }
     }
 
 ### Indent 
@@ -1601,6 +1612,24 @@ This is like raw, but it removes any Directives, and it removes one space from t
         return (ret.join("\n")).trim();
     }
 
+
+### Stringify 
+
+If one is trying to insert a long text into a JavaScript function, it can have issues. So here is a little helper command that will split new lines, escape quotes, and then put it out as an array of strings joined with new lines.
+
+JS 
+
+    function (code) {
+        code = code.replace(/\\/g, '\\\\');
+        code = code.replace(/"/g, '\\' + '"');
+        var arr = code.split("\n");
+        var i, n = arr.length;
+        for (i = 0; i < n; i += 1) {
+            arr[i] = '"' + arr[i] + '"';
+        }
+        code = "[" + arr.join(",\n")  + '].join("\\n")';
+        return code;
+    }
 
 ## Utilities
 

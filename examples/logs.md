@@ -4,11 +4,8 @@ This post is about computing factorials via the logarithm. We use loops to compu
 
 VERSION Factorial | 0.1.0
 
-REQUIRE /test.js | fake
 
-LOAD great.md  | fake lit
-
-`literate-programming -r examples logs.md`
+Starting from the parent directory, type `literate-programming -r examples logs.md` to compile.
 
 
 ## Structure
@@ -17,8 +14,6 @@ MD main |1 marked
 
     _"Introduction"
 
-_"fake lit::first"
-
     _"Computing 1000!"
 
     __"Table of Factorials"
@@ -26,7 +21,6 @@ _"fake lit::first"
     __"Factorial for all"
 
     __"Behind the scenes"
-
 
     _"Comments"
 
@@ -66,7 +60,7 @@ MD
     To start with, computing $\ln(1000!)$ does not help since $1000!$ is computed first before the logarithm can act. 
 
     But remember that logarithms convert products to sums: 
-    $$\begin{align*} \ln(1000* 999* 998* ... *3 *2 *1) = \ln(1000) + \ln(999) + \ln(998) + ... + \ln(3)+\ln(2) + \ln(1) $$
+    $$\ln (1000* 999* 998* ... *3 *2 *1) = \ln(1000) + \ln(999) + \ln(998) + \cdots + \ln(3)+\ln(2) + \ln(1) $$
 
     For example, if you run the following command in [GeoGebra](http://geogebra.org): `sum(sequence(ln(n), n, 1, 1000))` you will get $5912.13$.
 
@@ -165,7 +159,7 @@ JS
 
 ## Code block for factorial
 
-JS | jshint |wrap(code, id='awe', data-fake="awesome in full")|wrap(pre, editable, runnable)
+JS | jshint |wrap(code, id='awe', runnable, data-fake="awesome in full")|wrap(pre, clickedit)
 
     var n = 1000;
     _"Common factorial"
@@ -197,34 +191,28 @@ MD |1 marked
 
     To see the growth of the factorial, let's compute a few of them. 
 
-    __":Factorial Table| eval "
+    __":Factorial Table| eval  | htmltable(rowswheader)"
 
 JS Factorial Table |jshint
 
     var i = 1;
     var fact = function (n) {
         _"Common factorial:|indent(4,4)"
-        return [n, nf, lf10];
+        return [n, nf, lf10.toPrecision(3)];
     };
-    var tarr = [];
+    var tarr = [["n", "n!", "\\(\\log_{10}(n!)\\)"]];
     while (i < 1e6) {
         i *= 5;
         tarr.push(fact(i));
         i *= 2;                 
        tarr.push(fact(i));
     }
-    var ret = "<table><tr><th>n</th><th>n!</th><th>\\(\\log_{10}(n!)\\)</th></tr>\n";
-    var n = tarr.length, row;
-    for (i = 0; i < n; i += 1 ) {
-        row = tarr[i];
-        ret += "<tr><td>"+row[0]+"</td><td>"+row[1]+"</td><td>"+row[2].toPrecision(3)+"</td></tr>";
-    }
-    ret += "</table>";
-    return ret; 
+
+    return tarr;
 
 ## Jquery version
 
-Not active as superseded by default jquery macro. But here as an example of how to define a macro until another example comes up. Remove leading space in front of DEFINE to get it to be active. 
+Not active as we have a default jquery macro in the common standard plugins. But here as an example of how to define a macro until another example comes up. Remove leading space in front of DEFINE to get it to be active. 
 
     function (v) {
         return '<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/' + 
@@ -257,6 +245,7 @@ JS  |jshint | eval
         } else {
             console.log("factorial function passed test");  
         }
+        return "";
     })();
 
 
@@ -272,15 +261,11 @@ Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.
         <meta charset="utf-8">
         <title>Log and Factorial</title>
         JQUERY(1.9.0)
+        MATHJAX
+        _"Scripted Writing : css"
+        _"Scripted Writing : js"
+        
 
-
- SW.CSS
- SW.JS
- MATHJAX
-
-
-<link rel="stylesheet" href="style.css">
-<script src="script" async defer></script>
 
       </head>
       <body>
@@ -289,3 +274,43 @@ Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.
     </html>
 
 FILE logs.html
+
+
+### Scripted Writing
+
+Our own homebrew solutions for a bit of scripted writing action. This will be split off into its own place, but for now it is here for demo purposes.
+
+CSS  | wrap(style) 
+
+    .clickedit { border : 3px solid lightblue}
+
+    .hide { display : none} 
+
+JS  | jshint | wrap(script) 
+
+    $(document).ready(function ()  {
+
+         _":run"
+
+_":runnable"
+
+    });
+
+JS run 
+
+The class .run should have runnable, escaped code that we unescape and then run. 
+
+        $(".run").each(function () {
+            var code = $(this).text();
+            code = code.replace(/\&lt\;/g, "<");
+            code = code.replace(/\&gt\;/g, ">");
+            code = code.replace(/\&amp\;/g, "&");
+            eval(code);
+        });
+
+
+
+
+
+
+

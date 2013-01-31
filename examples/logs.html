@@ -4,6 +4,41 @@
     <meta charset="utf-8">
     <title>Log and Factorial</title>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+    <script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX", "output/HTML-CSS"],
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+      processEscapes: true
+    },
+    "HTML-CSS": { availableFonts: ["TeX"] }, 
+    TeX: {
+    Macros: {
+      R: '{\\mathbb{R}}',
+      C: '{\\mathbb{C}}'    }
+    }
+});
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+    <style >.clickedit { border : 3px solid lightblue}
+    
+    .hide { display : none}</style>
+    <script >$(document).ready(function ()  {
+    
+         $(".run").each(function () {
+                 var code = $(this).text();
+                 code = code.replace(/\&lt\;/g, "<");
+                 code = code.replace(/\&gt\;/g, ">");
+                 code = code.replace(/\&amp\;/g, "&");
+                 eval(code);
+             });
+    
+    });</script>
+    
 
   </head>
   <body>
@@ -30,7 +65,7 @@
     
     </p>
     <p>But remember that logarithms convert products to sums: 
-    $$\begin{align*} \ln(1000* 999* 998* ... *3 *2 *1) = \ln(1000) + \ln(999) + \ln(998) + ... + \ln(3)+\ln(2) + \ln(1) $$
+    $$\ln (1000* 999* 998* ... *3 *2 *1) = \ln(1000) + \ln(999) + \ln(998) + \cdots + \ln(3)+\ln(2) + \ln(1) $$
     
     </p>
     <p>For example, if you run the following command in <a href="http://geogebra.org">GeoGebra</a>: <code>sum(sequence(ln(n), n, 1, 1000))</code> you will get $5912.13$.
@@ -56,8 +91,7 @@
     <p>To see the growth of the factorial, let&#39;s compute a few of them. 
     
     </p>
-    <table><tr><th>n</th><th>n!</th><th>\(\log_{10}(n!)\)</th></tr>
-    <tr><td>5</td><td>120</td><td>2.08</td></tr><tr><td>10</td><td>3.62880E6</td><td>6.56</td></tr><tr><td>50</td><td>3.04141E64</td><td>64.5</td></tr><tr><td>100</td><td>9.33262E157</td><td>158</td></tr><tr><td>500</td><td>1.22014E1134</td><td>1.13e+3</td></tr><tr><td>1000</td><td>4.02387E2567</td><td>2.57e+3</td></tr><tr><td>5000</td><td>4.22858E16325</td><td>1.63e+4</td></tr><tr><td>10000</td><td>2.84626E35659</td><td>3.57e+4</td></tr><tr><td>50000</td><td>3.34732E213236</td><td>2.13e+5</td></tr><tr><td>100000</td><td>2.82423E456573</td><td>4.57e+5</td></tr><tr><td>500000</td><td>1.02280E2632341</td><td>2.63e+6</td></tr><tr><td>1000000</td><td>8.26393E5565708</td><td>5.57e+6</td></tr></table>
+    <table ><tr><th>n</th><th>n!</th><th>\(\log_{10}(n!)\)</th></tr><tr><td>5</td><td>120</td><td>2.08</td></tr><tr><td>10</td><td>3.62880E6</td><td>6.56</td></tr><tr><td>50</td><td>3.04141E64</td><td>64.5</td></tr><tr><td>100</td><td>9.33262E157</td><td>158</td></tr><tr><td>500</td><td>1.22014E1134</td><td>1.13e+3</td></tr><tr><td>1000</td><td>4.02387E2567</td><td>2.57e+3</td></tr><tr><td>5000</td><td>4.22858E16325</td><td>1.63e+4</td></tr><tr><td>10000</td><td>2.84626E35659</td><td>3.57e+4</td></tr><tr><td>50000</td><td>3.34732E213236</td><td>2.13e+5</td></tr><tr><td>100000</td><td>2.82423E456573</td><td>4.57e+5</td></tr><tr><td>500000</td><td>1.02280E2632341</td><td>2.63e+6</td></tr><tr><td>1000000</td><td>8.26393E5565708</td><td>5.57e+6</td></tr></table>
     
     <h2>Factorial Computer</h2>
     <p>To use, put in a positive integer.
@@ -89,7 +123,7 @@
     <p>Would you like to play around with the code that generated this? Try editing the follow code block:
     
     </p>
-    <pre class='editable runnable'><code id='awe' data-fake="awesome in full">var n = 1000;
+    <pre class='clickedit'><code id='awe' data-fake="awesome in full" class='runnable'>var n = 1000;
     var lf = 0, nf;
     //sum ove the logs
     var i; 
