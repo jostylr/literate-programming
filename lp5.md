@@ -4,7 +4,7 @@
 
 This is the fourth cycle of literate programming. Here, we augment substitution lines to play a more active role in the processing of the parts. We also add in switch typing/naming within a block. 
 
-VERSION literate-programming | 0.5.0-pre
+VERSION literate-programming | 0.5.0
 
 
 ## Directory structure
