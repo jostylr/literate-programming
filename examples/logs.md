@@ -115,6 +115,8 @@ MD | 1 marked
 
     __"Code block for factorial"
 
+    __"Code block for factorial:html"
+
     This is the implementation described above. We first compute the some of the logarithms, then we compute the logarithm relative to 10. The final line is just an attempt to present the result nicely. 
 
     Feel free to modify the code to see how it works. 
@@ -159,10 +161,15 @@ JS
 
 ## Code block for factorial
 
-JS | jshint |wrap(code, id='awe', runnable, data-fake="awesome in full")|wrap(pre, clickedit)
+JS | jshint | wrap(textarea, runnable, cols="120", rows = "10") 
 
     var n = 1000;
     _"Common factorial"
+    $("#result").text(nf); 
+
+HTML
+
+    <p>The result of the above computation is <span id="result"></span>.</p>
 
 
 ## Common factorial
@@ -264,12 +271,15 @@ Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.
         MATHJAX
         _"Scripted Writing : css"
         _"Scripted Writing : js"
-        
+        BOOTSWATCH(simplex)
+
 
 
       </head>
       <body>
-        _"Structure"
+        <div class="container">
+            _"Structure"
+        </div>
       </body>
     </html>
 
@@ -282,7 +292,9 @@ Our own homebrew solutions for a bit of scripted writing action. This will be sp
 
 CSS  | wrap(style) 
 
-    .clickedit { border : 3px solid lightblue}
+    .runnable { border : 3px solid lightblue; width : 100%}
+
+
 
     .hide { display : none} 
 
@@ -292,7 +304,7 @@ JS  | jshint | wrap(script)
 
          _":run"
 
-_":runnable"
+        _":runnable"
 
     });
 
@@ -300,17 +312,25 @@ JS run
 
 The class .run should have runnable, escaped code that we unescape and then run. 
 
-        $(".run").each(function () {
-            var code = $(this).text();
-            code = code.replace(/\&lt\;/g, "<");
-            code = code.replace(/\&gt\;/g, ">");
-            code = code.replace(/\&amp\;/g, "&");
-            eval(code);
-        });
+    $(".run").each(function () {
+        var code = $(this).text();
+        code = code.replace(/\&lt\;/g, "<");
+        code = code.replace(/\&gt\;/g, ">");
+        code = code.replace(/\&amp\;/g, "&");
+        eval(code);
+    });
+
+JS runnable
+
+    $(".runnable").each(function () {
+        var el$ = $(this);
+        el$.blur(function () {
+            eval(el$.val());
+        }).blur();
+
+    });
 
 
-
-
-
+    
 
 

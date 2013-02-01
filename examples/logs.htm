@@ -79,7 +79,7 @@ $("#computeFactorial").click(function () {
 <p>Would you like to play around with the code that generated this? Try editing the follow code block:
 
 </p>
-<pre class='clickedit'><code id='awe' data-fake="awesome in full" class='runnable'>var n = 1000;
+<textarea cols="120" rows = "10" class='runnable'>var n = 1000;
 var lf = 0, nf;
 //sum ove the logs
 var i; 
@@ -87,7 +87,10 @@ for (i = 0; i < n; i += 1) {
   lf += Math.log(i+1);
 }
 var lf10 = lf/Math.LN10;
-nf = lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10);</code></pre>
+nf = lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10);
+$("#result").text(nf);</textarea>
+
+<p>The result of the above computation is <span id="result"></span>.</p>
 
 <p>This is the implementation described above. We first compute the some of the logarithms, then we compute the logarithm relative to 10. The final line is just an attempt to present the result nicely. 
 
