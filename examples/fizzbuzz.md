@@ -12,6 +12,7 @@ We will approach this problem by making an array of all 100 numbers and then wri
 
 JS | jshint 
 
+    /*global console */
     var overwrite = _"Overwrite multiples in array";
 
     var numarr = new Array(100);
@@ -50,3 +51,10 @@ This is a function that takes in an array, a multiple, and a string and replaces
         }
     }
 
+## Immediate gratification
+
+Because this is a literate program, we can pipe text through a command. In this case, we will evaluate it. 
+
+JS | eval
+
+    _"Structure"

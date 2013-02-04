@@ -1,3 +1,4 @@
+/*global console */
 var overwrite = function (arr, m, str) {
   var n = arr.length;
   for (i = m - 1; i < n; i += m) {
