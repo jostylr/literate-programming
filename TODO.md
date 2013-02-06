@@ -1,6 +1,6 @@
 Add in an opt-out for file saving or a rerouting... Add to Version the ability to set various boolean flags, such as dev, deploy, ..., add an environment directive to set those things. 
 
-Implement a literate program test example
+Implement a literate program test example. Also a dev, deploy version. Realized one could have a lit pro that is just a shell for files, etc., calling in the big thing. 
 
 More docs.
 
@@ -9,6 +9,12 @@ Make it async. so track the status and be able to abort/restart. Plan is to use 
 Have some more preview/testing options. Maybe an abort on failed test/jshint kind of stuff and/or a diff viewer. npm diff seems popular. 
 
 
+Think about get code block. If no name specified, look for unnamed code blocks. So while type of caller would be relevant if multiple unnamed blocks of different types, it would not be relevant if there is an unnamed block. A typical case seems to be a main block that is not labeled and then named ones below. Of course with a browser IDE depending on type, this may change. 
+
+
+Think about piping. Maybe have a pipe(blockname) that sees each line as a pipe. 
+
+Make a proper parser of commands, directives that allows for nested parentheticals, quotes, commas, escapes
  
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing:vars" to list out the variables.
 
