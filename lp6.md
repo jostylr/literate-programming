@@ -193,12 +193,8 @@ The substitution is to make sure the final block is also trimmed.
 JS Check for compile time
 
     if (Object.keys( doc.loading ).length === 0) {
-        console.log("compile");
        doc.compile();
-    } else {
-        console.log(doc.loading);
     }
-
 
 ### Default processors
 
@@ -640,7 +636,7 @@ We also need a function that will run the calls.
         this.loading = {}; // for the LOAD and compile
         this.loaded = {}; // can reference this for external litpro by names. 
         this.waiting = {}; // place to put blocks waiting for compiling
-        this.processing = {}; // place to put blocks waiting for processing
+        this.processing = 0; // Tracks status of processing. 
         this.call = [];  // a list of functions to call upon a resume
 
 
@@ -649,17 +645,34 @@ We also need a function that will run the calls.
 
 This takes in array of commands to execute on the code. Each element of the array is [function, args, calling object]
 
+If a function is doing a callback (calling out to some external resource or something), then it needs to set the callback flag to true and it has responsibility for calling next. No callback means the commands can/should ignore it all.
+
+When it is all done, the final function is called with the passin object and passed the code object. The passin object allows for whatever is stashed there to be offloaded by default if we want to do that. 
+
 JS
 
-    function (commands, code) {
-        var i, n=commands.length, command; 
-        for (i = 0; i < n; i += 1) {
-            command = commands[i];
- 
-            code = command[0].call(command[2], code, command[1]);  //if performance is issue, check here
-        }
+    function (commands, code, passin, final) {
+        var i=0, n=commands.length, command; 
+        var next = function () {
+            if ( i < n) {
+                var command = commands[i];
+                doc.callback = false; 
+                i += 1; // prime it for next loop
+                var temp = command[0].call(passin, code, command[1], next);
 
-        return code;
+                if (! passin.callback) {
+                    code = temp;
+                    next(); 
+                }
+            } else {
+                // all done
+                final.call(passin, code);
+            } 
+        };
+
+        next ();  // begin!
+
+        return null;
     }
 
 
@@ -682,6 +695,8 @@ JS
     
 Given array of name and text, save the file. dir will change the directory where to place it. This should be the root directory of all the files. Use the filenames to do different directories. 
 
+The pipiing call may lead to asynchronous callbacks. See pipe processing. The final function will store the processed text and call the end function if all of the text has been processed. Note there is no guarantee as to which file will be the last one to be fully processed. 
+
 JS
 
     function () {
@@ -690,7 +705,10 @@ JS
         var files = doc.files;
         var cFiles = doc.compiledFiles = {};
         var file, block, fname, compiled, text, litpro, headname, internal, fdoc;  
-        var i, n = files.length;
+        var i, n = files.length, passin;
+        var final = _":Final function for doc commander";
+        doc.processing = n;
+
         for (i=0; i < n; i+= 1) {
             file = files[i];
             fname = file[0];
@@ -700,15 +718,25 @@ JS
             _":check for block existence"
             compiled = block.compiled; 
             text = fdoc.getBlock(compiled, internal, fname, block.name);
-            text = fdoc.piping.call({doc:fdoc, block: fdoc.blocks[block.name], name:fname}, file.slice(2), text); 
-            cFiles[fname] = text;
+            passin = {doc:fdoc, block: fdoc.blocks[block.name], name:fname};
+            fdoc.piping.call(passin, file.slice(2), text, final  ) () ;
         }
-
-        _":Check for processing done"
 
         return doc;
     }
 
+JS  Final function for doc commander
+
+
+    function (text) {
+        var doc = this.doc;
+        var fname = this.name;
+        cFiles[fname] = text;
+        doc.processing -= 1;
+        _":Check for processing done"
+    }
+
+    
 
 JS Check for block existence
 
@@ -739,7 +767,7 @@ First we check whether there is an external literate program trying to be used. 
 
 JS Check for processing done
 
-    if (Object.keys( doc.processing ).length === 0 ) {
+    if (doc.processing < 1 ) {
         doc.end();
     }   
 
@@ -794,9 +822,6 @@ JS
     function () {
         var doc = this;
 
-        if (Object.keys( doc.loading ).length > 0) {
-            return doc;
-        }
         var blockname; 
         for (blockname in doc.blocks) {
             doc.fullSub(doc.blocks[blockname]);
@@ -1251,13 +1276,13 @@ This will process the pipe commands.
 
 A pipe command will be any non-parenthetical (and non-pipe) string of characters followed by an optional set of parentheses with arguments to be passed in. 
 
-If there is such a command, it is invoked with a this object of {doc, block, name} where name is the name.type of the sub-code block in block. Its arguments are the stuff in parentheses split on commas. 
+If there is such a command, it is invoked with a this object of {doc, block, name, callback} where name is the name.type of the sub-code block in block. Its arguments are the stuff in parentheses split on commas. 
 
 This is a very simple setup which hopefully will suffice for most needs. 
 
 JS 
     
-    function (pieces, code){
+    function (pieces, code, final){
 
         var doc = this.doc;
         var passin = this;
@@ -1290,15 +1315,15 @@ JS
 
 
             if ( doc.commands.hasOwnProperty(funname) ) {
-                comarr.push([doc.commands[funname], funargs, passin]);
+                comarr.push([doc.commands[funname], funargs]);
             } else {
                 doc.log("Issue with " + com);
             }
         }
 
-        var ret = doc.commander(comarr, code); 
-        return ret;
+        doc.commander(comarr, code, passin, final); 
 
+        return null; 
     }
 
 
@@ -2399,3 +2424,5 @@ _"Compile time" Make it async. Each call to a block either pulls in the compiled
 _"Process files" is a part of the document constructor. Everything about a "file" will be created and stored in compiledFiles
 
 _"Save Files", _"Preview Files", _"Diff Files"  all do their job acting on compiledFiles. 
+
+_"Doc commander", _"Pipe Processor" have been converted to supporting asynchronous callbacks. 
