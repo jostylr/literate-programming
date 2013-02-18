@@ -1035,6 +1035,7 @@ We create a call object for next and commands, etc.
 JS Run next
 
     for (cname in compiling) {
+        //console.log("Starting " + compiling[cname].fullname);
         compiling[cname].next(cblocks[cname].compiled); 
     }
 
@@ -1049,7 +1050,11 @@ Depending on the status, it either will execute oneSub to further compile it aft
     function (code) {
         var passin = this;
         var cblock = passin.cblock;
-        cblock.compiled = code;
+        if (code.length !== 0 ) {
+            cblock.compiled = code;
+        } else {
+            console.log("ERROR: Blank code", passin.fullname);
+        }
         var doc = passin.doc;
         var commands;
 
@@ -1086,14 +1091,17 @@ One added to a waiting list, it should be a block with a go method.
         var cblock = passin.cblock;
         var fullname = passin.fullname;
 
-        cblock.compiled = code; 
+
+//        cblock.compiled = code; 
         cblock.isCompiled = true;
         passin.status = "done";
         var waiting = cblock.waiting || []; 
+        //console.log(waiting, passin.fullname);
         while (waiting.length > 0 ) {
             (waiting.shift()) (code); // runs the go function
         }
         delete doc.waiting[fullname];
+               //console.log(passin.fullname, " ---- ", cblock.compiled.length, passin.status); 
 
     }
 
@@ -1175,7 +1183,6 @@ All the substitutions have been obtained and we are ready to do the replacing. W
 
     function () {
 
-        delete doc.waiting[passin.fullname]; // all done compiling
         //do the replacements or return false
         if (rep.length > 0) {
             for (var i = 0; i < rep.length; i += 1) {
@@ -1191,9 +1198,9 @@ All the substitutions have been obtained and we are ready to do the replacing. W
             cblock.compiled = code; 
         } else {
             passin.status = "compiled";
-            cblock.compiled = code; 
+            // cblock.compiled = code; 
         }
-        done.call(passin, code); 
+        done.call(passin, cblock.compiled); 
     }
 
 JS go substituting next
@@ -1201,6 +1208,7 @@ JS go substituting next
 This function hangs out in doc.waiting just hoping to get a bit of code to continue the compiling of the cblock. 
 
     function (reptext) {
+        //console.log("substituting into ", passin.fullname, " --- ", reptext.length);
         doc.piping.call(passin, pipes, reptext, preprep);
     }
 
@@ -1326,9 +1334,10 @@ JS cblock substitution
     gotcblock = doc.getBlock(reqhblock, names.cname); 
 
     if (gotcblock.isCompiled) {
+        //console.log("about to gather ", names.fullname, " --- ", gotcblock.compiled.length);
         go(gotcblock.compiled);
     } else {
-        waiting = true; 
+        //console.log("gonna wait for ", names.fullname, " --- ");
         gotcblock.waiting.push(go);
     }
 
@@ -1396,7 +1405,7 @@ We have the names object and now we use it to get an hblock to then get the cblo
         } else {
             // use the code already compiled in codeBlocks
             _":Matching block, multi-level"
-            reqhblock = hblock.cblocks;
+            reqhblock = hblock;
         }                    
     } 
 

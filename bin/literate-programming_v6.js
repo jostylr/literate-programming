@@ -43,7 +43,7 @@ if (program.preview) {
             var files = doc.compiledFiles;
             var fname, text;
             for (fname in files) {
-                text = files[fname];
+                text = files[fname] || "";
                 console.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
             }
         }, {}]);
@@ -111,7 +111,7 @@ if (program.preview) {
 var standardPlugins; 
 
 if (!program.free) {
-    standardPlugins = require('literate-programming-standard');
+    standardPlugins = require('../temp/node_modules/literate-programming-standard');
 } else {
     standardPlugins = {};
 }
@@ -123,7 +123,7 @@ if (!program.quiet) {
         }, {}, "inherit"]);
 }
 
-var doc = new Doc(md, {
+new Doc(md, {
         standardPlugins : standardPlugins,
         postCompile : postCompile, 
         parents : null,
