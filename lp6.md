@@ -50,35 +50,33 @@ FILE blog.md | Blog doc | clean raw
 
 ## How to write a literate program
 
-Use markdown. Each heading is a new block and can be referenced by using _"title". This substitution has more features, documented below. 
+Use markdown. Each heading is a new heading block (hblock) and can be referenced by using _"title". This substitution has more features, documented below. 
 
-Within each block, one can write directives and/or initiate a type change in the coding blocks by starting a line with capital letters. 
+Within each hBlock, one can write free form markdown explanatory text, directives, code lines, or initiate a new code block (cblock). 
 
-For example, to say that a file should be saved from the block's text, one can write FILE filename type
-where type states which named internal block to start with; it is optional if there is only one internal code block. 
+* hblock is initiated by number signs at the beginnning of a line. 
+* Directive is initiated by a block of at least 2 capital letters and a mixture of caps and dots. The rest of the line is taken as arguments to the directive function with a pipe being the delimiter.
+* A new cblock is initiated with a caps if recognized or a .caps if not known. 
+* cblock lines are recognized by 4 spaces. 
 
-In addition, a jump of two levels or more in the heading yields heading directives that pertain to just the parent block. All caps inside a code block is a constant and/or macro. 
+To reference a cblock, the full precise name, a cblock name, is  "litprodoc :: hblock : cblock.ext"  where all but hblock is optional. Also hblock.ext grabs the unnamed extension relevant to it. 
 
+To use a cblock, use the substitution command  _"cblock name | commands ..."  where commands can do stuff on the code text and each pipes into the next. 
+
+Examples:  _"Great:jack|marked",  _"Great:.md" or "Great.md",  _"Great|marked", _"Great:jack.md",  ":jack"  will load the internal block named jack
+
+The FILE command is of the form FILE "cblock name"  filename | commands...  If the cblock name is missing, it uses the current cblock.
+
+### Advice
+
+1. Setup an hblock as a body of code, such as a funciton. Use the subcblocks to break that body into manageable chunks. Use new hblocks for new functions or for very important behavior. 
+2. Write function blocks without punctuation so that they can be inserted in multiple ways. Put the punctuation after the substitution quote. 
 
 ### Runnable Code
 
-One should also be able to run JavaScript code directly in the interpreter. I think a decent convention would be underscore backtick code  backtick.        
-
-    _ `javascript code`
+You can run JavaScript code while compiling in at least two ways. One is by  _&#96;some code&#96; on a single line. The other way is to have a cblock and reference it with a pipe command that evals it, such as the `eval` command
 
 The eval output (last evaluated value) is what is placed in the code to replace the backtick call.
-
-To eval long blocks of code (the above is limited to a single line), use the pipe syntax:  _"Some block||eval()"  
-
-We use two pipes as the second part should be a type/name of codeblock if needed, e.g.,  _"Some block|js|eval()"  
-
-Within the parenthetical can be an expression that should be evaluated to start the block. 
-
-### Full pipe syntax
-
-The substitution expression should be of the form "block name|internalname.ext|command(arg1, arg2)|commmand2(...)|..."
-
-Examples:  _"Great:jack|marked",  _"Great:md",  _"Great|marked", _"Great:jack.md",  ":jack"  will load the internal block named jack
 
 
 ### Multi-level substitutions
@@ -95,21 +93,18 @@ Example:
              __"markdown text"
     
 
-## Structure
-
-The program is structured into a module file and a command line file. 
-
-The command line file's structure is in section "Cli" while the module file, which is the heart of the code and designed to work-in browser eventually, is in "LP module"
-
 
 ## The lp module
 
-This module takes in a literate program as a string of markdown and possibly some options (not used yet). 
+This module takes in a literate program as a string of markdown and an options object. 
 
-It takes the string and makes a document that has the markdown parsed out into various blocks. The parsing is down line-by-line. The two main calls are `lineparser` which parses the lines, creating the document,  and the `makeFiles` command which will compile the blocks in the `files` array to a full string that can then be saved or whatever (that's what the command line does). 
+It takes the string and makes a document that has the markdown parsed out into various compiled blocks. 
 
+1. The parsing is down line-by-line. lineparser parses each line, adding the lines to each relevant block or creating new blocks or even retrieving/compiling other literate programs. 
+2. After all literate programs have been loaded and parsed, then the compile phase starts. This is asynchronous and all the cblocks are compiled into the cblock property compiled. If a block is compiled, it has isCompiled set to true. 
+3. Post-compile will send those compiled blocks into files as directed by the directives. 
 
-This current uses the filesystem to load external programs. This needs to be refactored, but it will require some async rejiggering.
+This currently uses the filesystem to load external programs. This needs to be refactored.
 
 JS  
 
@@ -122,13 +117,13 @@ JS
     _"Utilities"
 
 
-    var Block, Doc, repo = {plugins : {}, litpro :{} }; 
+    var HBlock, Doc, repo = {plugins : {}, litpro :{} }; 
 
 
 
     _"Document constructor"
 
-    _"Block constructor"
+    _"HBlock constructor"
 
     module.exports.Doc = Doc;
 
@@ -143,10 +138,10 @@ Each literate program gets its own document style. It starts off life with linep
 
 Each line is of one of four basic types:
 
-1. Header. This signifies a new block. If it jumps in level by two or more levels, then it is considered an internal block instead of a new independent block. Thus, it is attached to the parent and is not seen from the outside. Think tests and examples. 
-2. Code line. This is a line indented with 4 spaces (maybe a tab?) If that is true, it gets put into the code block of the current type. 
-3. Directive/Type switch. If a line starts with all caps or a ., then it has the potential to be a directive (such as FILE command)  or a to switch the code block to a new type or name. What happens is very dependent on what is found there.  
-4. Plain text. This just is for reading and gets put into a plain text block without it being useful, presumably. 
+1. Header. This signifies a new hblock. 
+2. Code line. This is a line indented with (possibly a tab followed by) 4 spaces. Stored in cblock.
+3. Directive/Type switch. If a line starts with all caps or a ., then it has the potential to be a directive (such as FILE command)  or to create/switch the code block to a new type or name. What happens is very dependent on what is found there.  
+4. Plain text. This just is for reading and gets put into a plain text block without it being useful, presumably.
 
 All lines in a block do get put into storage in order for safe-keeping (some raw output, for example, could be useful).
 
@@ -154,7 +149,7 @@ All lines in a block do get put into storage in order for safe-keeping (some raw
 
 This is the function that takes in a literate program, splits it into lines, and parses them, returning a structure for compilation. 
 
-The Document consists mostly of blocks constructed by the Block constructor. The doc.processors is where the magic happens. 
+The Document consists mostly of blocks constructed by the Hblock constructor. The doc.processors is where the magic happens. 
 
 This is largely synchronous. The directives can create hooks that prevent the compiling stage from beginning. The main cause of this is the LOAD directive. Those files will be loaded asynchronously and will register themselves as loading and prevent compilation until they are loaded. See the LOAD directive. The REQUIRE command is synchronous and will block until it is loaded. 
 
@@ -165,14 +160,13 @@ JS
         var i, line, nn; 
 
         var lines = doc.litpro.split("\n");
-        doc.cur.level = 0; 
         var n = lines.length;
         for (i = 0; i < n; i += 1) {
             line = lines[i];
             nn = doc.processors.length;
             for (var ii = 0; ii < nn; ii += 1) {
                 if (doc.processors[ii](line, doc) ) {
-                    doc.cur.full.push(line);
+                    doc.hcur.full.push(line);
                     break;
                 }
             }
@@ -216,16 +210,18 @@ JS
 
 We look for 4 spaces of indentation. If so, it is code and we store it in the current block's code block for the current type. 
 
-Note that tabs do not trigger a code block. This allows for the use of tabs for multiple paragraphs in a list. The tab then 4 indents does trigger code. That's where the insanity stops. 
+Note that tabs do not trigger a code block. This allows for the use of tabs for multiple paragraphs in a list. Any sequence of leading tabs followed by 4 spaces will trigger a code block. 
+
+This also means that if one wants a code block that is not to be compiled, you can use tabs as long as it is not followed by 4 spaces. 
 
 JS
 
     function (line, doc) {
-      var cur = doc.cur;
-      var reg = /^(?: {4}|(?:\t {4}))(.*)$/;
+      var hcur = doc.hcur;
+      var reg = /^\t* {4}(.*)$/;
       var match = reg.exec(line);
       if (match) {
-        cur.code[cur.type].push(match[1]);
+        hcur.cblocks[hcur.cname].lines.push(match[1]);
         return true;
 
       _":Add empty line"
@@ -241,9 +237,9 @@ Added the following clause to add empty lines to the code. Stuff before and afte
 JS Add empty line 
 
       } else if (line.match(/^\s*$/)  ) {
-        var carr = cur.code[cur.type];
+        var carr = hcur.cblocks[hcur.cname];
         if (carr && carr.length > 0 && carr[carr.length -1 ] !== "") {
-            cur.code[cur.type].push(line);
+            hcur.code[hcur.cname].lines.push(line);
         }
         return false; // so that it can be added to the plain parser as well
 
@@ -256,8 +252,7 @@ A directive will be recognized as, at the start of a line, as all caps and a mat
 
 A space in front would defeat the regex as well. Periods are also allowed. At least two capital letters are required.
 
-A directive could also be a type switch command. This is either a recognized type or it should start with a period. While the post directive part of a directive is passed on freely to the directive function, the post type text should be of a specific form, namely,  a name for the section followed by a pipe string of commands, all of which is optional. 
-
+A directive could also be a code block create/switch command. This is either a recognized type or it should start with a period. 
 
 The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
 
@@ -306,13 +301,14 @@ JS period triggers match
 
 Here is the function for switching the type of code block one is parsing. The syntax is the type (alread parsed and passed in) and then name of the block followed by pipes for the different functions to act on it. If there is no name, then use a pipe anyway. Examples:  `JS for running | run  ` or  `JS | hint`
 
-Anything works for the name.
+Anything works for the name except pipes.
 
 JS main
 
     function (type, options) {
         var doc = this;
-        var cur = doc.cur;
+        var hcur = doc.hcur;
+        var cname; 
 
         type = type.toLowerCase(); 
         if (typeof options === "undefined") {
@@ -322,18 +318,17 @@ JS main
         var name = options.shift();
         if (name) {
             name.trim();
-            cur.type = name.toLowerCase()+"."+type;
+            cname = name.toLowerCase()+"."+type;
         } else {
-            cur.type = "."+type;
+            cname = "."+type;
+        }
+        hcur.cname = cname;
+
+        if (! hcur.cblocks.hasOwnProperty(cname) ) {
+            hcur.cblocks[cname] = doc.makeCode();
         }
 
-        if (! cur.code.hasOwnProperty(cur.type) ) {
-            cur.code[cur.type] = doc.makeCode();
-        }
-
-        var codearr = cur.code[cur.type];
-
-        var passin = {doc:doc, block:cur, type:type, name:name, state:{}}; // for command stuff
+        var codearr = hcur.cblocks[cname];
 
         _":Parse options"
 
@@ -341,7 +336,7 @@ JS main
 
 JS Parse options
 
-And now we work on get the options to parse. The syntax is an optional number to indicate when to process (0 for pre, 1+ for during, nothing for post), followed by whatever until parentheses, followed by optional arguments separated by commas. Examples: `0 marked (great, file)` and `marked` and `marked awesome(great)`
+And now we work on getting the options to parse. The syntax is an optional number to indicate when to process (0 for pre, 1+ for during, nothing for post), followed by whatever until parentheses, followed by optional arguments separated by commas. Examples: `0 marked (great, file)` and `marked` and `marked awesome(great)`
 
         
         var funname, ind, funargs, match, funreg = /^(\d*)\s*([^(]+)(?:\(([^)]*)\))?$/;
@@ -378,14 +373,13 @@ The setup is that the code array has a property named commands which is an assoc
             if ( doc.commands.hasOwnProperty(funname) ) {
                 
                 if (codearr.commands.hasOwnProperty(ind) ) {
-                    codearr.commands[ind].push([doc.commands[funname], funargs, passin]);
+                    codearr.commands[ind].push([doc.commands[funname], funargs]);
                 }  else {
-                   codearr.commands[ind] = [[doc.commands[funname], funargs, passin]];
+                   codearr.commands[ind] = [[doc.commands[funname], funargs]];
                 }             
             }
 
 
-I toyed with categorizing the commands by type, but since the different transformations by change its type and it is even harder to figure out with the substituion pipes, it seems best to use a global namespace. 
 
 
 ### Head parser
@@ -397,25 +391,21 @@ For new global blocks, we use the heading string as the block name. We lower cas
 JS
 
     function (line, doc) {
-      var level, oldLevel, cur, name;
+      var hcur, heading;
       var head = /^(\#+)\s*(.+)$/;
       var match = head.exec(line);
       if (match) {
-        name = match[2].trim().toLowerCase();
-        oldLevel = doc.level || 0;
-        level = match[1].length;
+        heading = match[2].trim().toLowerCase();
 
         _":Remove empty code blocks"
 
-        cur = new Block();
-        cur.name = name;
-        cur.type = doc.type;    
-        cur.code[cur.type] = doc.makeCode();
+        hcur = new HBlock();
+        hcur.heading = heading;
+        hcur.cname = doc.type;    
+        hcur.cblocks[hcur.cname] = doc.makeCode();
                 
-        doc.blocks[name] = cur; 
-        doc.cur = cur; 
-        doc.level = level;
-        doc.name = name;
+        doc.hblocks[heading] = hcur; 
+        doc.hcur = hcur; 
         // new processors for each section
         doc.processors = [].concat(doc.defaultProcessors);
         
@@ -431,10 +421,12 @@ JS Remove empty code blocks
 We do not want empty code blocks left. So we delete them just before we are going to move onto a new processing section. 
 
     var cname;
-    var old = doc.cur; 
-    for (cname in old.code) {
-        if (old.code[cname].length === 0) {
-            delete old.code[cname];
+    var oldh = doc.hcur; 
+    if (oldh) {
+        for (cname in oldh.cblocks) {
+            if (oldh.cblocks[cname].lines.length === 0) {
+                delete oldh.cblocks[cname];
+            }
         }
     }
 
@@ -448,7 +440,7 @@ It means there is nothing special about the line. So we simply add it to the pla
 
 JS
     function (line, doc) {
-      doc.cur.plain.push(line);
+      doc.hcur.plain.push(line);
       return true;
     }
 
@@ -467,8 +459,8 @@ JS
     Doc = function (md, options) {
 
         this.litpro = md; 
-        this.blocks = {};
-        this.cur = new Block();
+        this.hblocks = {};
+        this.chur = new HBlock();
         this.files = [];
         this.compiledFiles = {};
         this.logarr = [];
@@ -506,6 +498,8 @@ JS
     Doc.prototype.maxsub = 1e5;
 
     Doc.prototype.oneSub = _"One cycle of substitution:main";
+    Doc.prototype.oneSub.callback = true; 
+
     Doc.prototype.fullSub = _"The full substitution";
 
     Doc.prototype.defaultProcessors = _"Default processors";
@@ -645,32 +639,41 @@ We also need a function that will run the calls.
 
 This takes in array of commands to execute on the code. Each element of the array is [function, args, calling object]
 
-If a function is doing a callback (calling out to some external resource or something), then it needs to set the callback flag to true and it has responsibility for calling next. No callback means the commands can/should ignore it all.
+If a function is doing a callback (calling out to some external resource or something), then it needs to set the callback flag to true and it has responsibility for calling next with the compiled code as argument. No callback means the commands can/should ignore it all.
 
 When it is all done, the final function is called with the passin object and passed the code object. The passin object allows for whatever is stashed there to be offloaded by default if we want to do that. 
 
 JS
 
     function (commands, code, passin, final) {
-        var i=0, n=commands.length, command; 
-        var next = function () {
+        var i=0, n=commands.length; 
+        if (!passin.lengths) {
+            passin.lengths = [];
+        }
+        var next = function (code) {
+            if (code) {
+                passin.lengths.push([i, code.length]);
+            } else {
+                passin.lengths.push([i,0]);
+            }
+
             if ( i < n) {
                 var command = commands[i];
-                doc.callback = false; 
                 i += 1; // prime it for next loop
-                var temp = command[0].call(passin, code, command[1], next);
-
-                if (! passin.callback) {
-                    code = temp;
-                    next(); 
+                if (command[0].callback) {
+                    code = command[0].call(passin, code, command[1], next);
+                } else {
+                    code = command[0].call(passin, code, command[1]);
+                    next(code); 
                 }
             } else {
+
                 // all done
                 final.call(passin, code);
             } 
         };
 
-        next ();  // begin!
+        next (code);  // begin!
 
         return null;
     }
@@ -679,15 +682,19 @@ JS
 
 #### Make code block
 
-We need an array of the code lines and a property that holds any processing functions to use during the substitution phase.
+We need an array of the code lines and a property that holds any processing functions to use during the substitution phase. Might want to make this a constructor some day. 
 
 JS
 
     function () {
         var doc = this;
-        var ret = [];
-        ret.commands = {0: [ doc.trimCode ]};
-        return ret;
+        return {
+            lines : [],
+            commands : {0: [ doc.trimCode ]},
+            isCompiled : false,
+            compiled : "",
+            waiting : []
+        };
     }
 
 
@@ -695,16 +702,17 @@ JS
     
 Given array of name and text, save the file. dir will change the directory where to place it. This should be the root directory of all the files. Use the filenames to do different directories. 
 
-The pipiing call may lead to asynchronous callbacks. See pipe processing. The final function will store the processed text and call the end function if all of the text has been processed. Note there is no guarantee as to which file will be the last one to be fully processed. 
+The piping call may lead to asynchronous callbacks. See pipe processing. The final function will store the processed text and call the end function if all of the text has been processed. Note there is no guarantee as to which file will be the last one to be fully processed. 
 
 JS
 
     function () {
         var doc = this;
+        var type;
 
         var files = doc.files;
         var cFiles = doc.compiledFiles = {};
-        var file, block, fname, compiled, text, litpro, headname, internal, fdoc;  
+        var file, hblock, fname, text, litpro, headname, cname, fdoc;  
         var i, n = files.length, passin;
         var final = _":Final function for doc commander";
         doc.processing = n;
@@ -714,12 +722,12 @@ JS
             fname = file[0];
             litpro = file[1][0];
             headname = file[1][1];
-            internal = file[1][2];
+            cname = file[1][2] || "";
             _":check for block existence"
-            compiled = block.compiled; 
-            text = fdoc.getBlock(compiled, internal, fname, block.name);
-            passin = {doc:fdoc, block: fdoc.blocks[block.name], name:fname};
-            fdoc.piping.call(passin, file.slice(2), text, final  ) () ;
+            type = fname.split(".")[1].trim(); //assuming no other period in name
+            text = fdoc.getBlock(hblock, cname, type).compiled;
+            passin = {doc:fdoc, hblock: hblock, name:fname, state : {indent : false}};
+            fdoc.piping.call(passin, file.slice(2), text, final  )  ;
         }
 
         return doc;
@@ -753,8 +761,8 @@ First we check whether there is an external literate program trying to be used. 
                 fdoc = doc;
             }
             if (headname) {
-                if (fdoc.blocks.hasOwnProperty(headname) ) {
-                    block = fdoc.blocks[headname];
+                if (fdoc.hblocks.hasOwnProperty(headname) ) {
+                    hblock = fdoc.hblocks[headname];
                 } else {
                     doc.log(fname + " is trying to load non existent block '" + headname + "'");
                     continue;
@@ -773,6 +781,8 @@ JS Check for processing done
 
 #### End process
 
+This handles outputting the doc.log if requested. And whatever else. 
+
 JS
 
     function () {
@@ -789,15 +799,15 @@ JS
         return doc; 
     }
 
-### Block constructor
+### HBlock constructor
 
-This just creates a basic structore for a block that corresponds to a heading and the rest. The code property is the most useful and it is an object whose keys correspond to the name.type of each code block, each block being an array of lines as created in "Make code block".
+This just creates a basic structore for a block that corresponds to a heading and the rest. The cblocks property is the most useful and it is an object whose keys correspond to the name.type of each code block, each block containing an array of lines as created in "Make code block".
 
 JS
 
-    Block = function () {
+    HBlock = function () {
 
-        this.code = {};
+        this.cblocks = {};
         this.full = [];
         this.plain = [];
 
@@ -811,9 +821,7 @@ JS
 
 We now want to assemble all the code. This function takes in a parsed lp doc and compiles each block. It will visit each block and run the fullSub method. 
 
-Most likely, most blocks will be called within another's block compile method, but that's okay as the result is stored and short circuits the loop. 
-
-Originally, only blocks called by FILE were compiled, but with this approach it allows for experimental blocks to be compiled with linting/testing results before being folded into the main code. Another pipe directive such as `0 nocompile` could shortcircuit the compile phase. 
+Most likely, many cblocks will call other cblocks that are not compiled. But that is okay as they can wait. 
 
 This checks to see if there are any files being loaded. As they finish, they will reduce the doc.loading and call compile.
 
@@ -822,9 +830,9 @@ JS
     function () {
         var doc = this;
 
-        var blockname; 
-        for (blockname in doc.blocks) {
-            doc.fullSub(doc.blocks[blockname]);
+        var heading; 
+        for (heading in doc.hblocks) {
+            doc.fullSub(doc.hblocks[heading]);
         }
 
         _":Check for time to process"
@@ -840,9 +848,9 @@ JS Check for time to process
 
 ### Get correct code block
 
-Each compiled block has an associative array whose keys are internal names. They may be explicitly set, such as `JS main` becomes `main.js`.  But they might also be no name or even no extension. 
+Each compiled block has an associative array whose keys are cnames. They may be explicitly set, such as `JS main` becomes `main.js`.  But they might also be no name or even no extension. 
 
-So this is a function that takes in a compiled block, the internal name and the requester's name and tries to find the right segment of text. 
+So this is a function that takes in a compiled hblock, the cname, and a possible extension (if coming from a file save request). It tries to find the right compiled block and returns that. 
 
 
 We need to get the right block of text. First we check if there is a request from the file directive. If not, then see if we can get the extension.
@@ -858,61 +866,66 @@ We need to get the right block of text. First we check if there is a request fro
 
 JS main
     
-    function (block, internal, requester, bname) {
+    function (hblock, cname, ext) {
         var doc = this;
-    
-        internal = internal.toLowerCase();
-        requester = requester.toLowerCase();
+        ext = ext || ""; // only relevant in compiling file type
+        var cblocks = hblock.cblocks;
 
-        // an exact match! yay!
-        if (block.hasOwnProperty(internal)) {
-            return block[internal];
+        if (!cblocks) {
+            doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+            return {compiled:"", isCompiled : true};
         }
 
-        var keys = Object.keys(block);
+        cname = cname.toLowerCase();
+
+        // an exact match! yay!
+        if (cblocks.hasOwnProperty(cname)) {
+            return cblocks[cname];
+        }
+
+        var keys = Object.keys(cblocks);
 
         // just one key
         if (keys.length === 1) {
-            return block[keys[0]];
+            return cblocks[keys[0]];
         }
 
         // no code segments
         if (keys.length === 0) {
-            return "";
+            doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+            return {compiled:"", isCompiled : true};
         }
 
-        if (doc.types.hasOwnProperty(internal)) {
+        if (doc.types.hasOwnProperty(cname)) {
             // main.js
-            if (block.hasOwnProperty("main."+internal) ) {
-                return block["main."+internal];
+            if (cblocks.hasOwnProperty("main."+cname) ) {
+                return cblocks["main."+cname];
             }            
             // .js
-            if (block.hasOwnProperty(internal) ) {
-                return block["."+internal];
+            if (cblocks.hasOwnProperty(cname) ) {
+                return cblocks["."+cname];
             }
         }
 
         _":filter internal"
 
         if (newkeys.length === 1) {
-            return block[newkeys[0]];
+            return cblocks[newkeys[0]];
         }
 
         if (newkeys.length === 0) {
-            doc.log("Name not found: " + internal + " requested from " + requester + " of " + bname);
-            return "";
+            doc.log("Name not found: " + cname + " of " + hblock.heading);
+            return {compiled:"", isCompiled : true};
         }
 
-        //so we have multiple matches to internal (internal could be "")
-        // get extension from requester
-
-       var ext = (requester.split(".")[1] || "").trim().toLowerCase();
+        //so we have multiple matches to cname (cname could be/ probably is "")
+        // use extension ext if it has anything.
 
         _":filter ext"
 
 
         if (extkeys.length === 1) {
-            return block[extkeys[0]];
+            return cblocks[extkeys[0]];
         }
 
         var finalkeys;
@@ -925,11 +938,11 @@ JS main
         _":Filter main"
 
         if (morekeys.length > 0) {
-            return block[morekeys[0]];
+            return cblocks[morekeys[0]];
         }
 
         // pick shortest one which could be the empty name
-        return block[ finalkeys.sort(function (a,b) {
+        return cblocks[ finalkeys.sort(function (a,b) {
             if (a.length < b.length) {
                 return -1;
             } else {
@@ -944,7 +957,7 @@ JS Filter internal
 
         // try and find a match for the internal
         var newkeys = keys.filter(function (val) {
-            if (val.match(internal) ) {
+            if (val.match(cname) ) {
                 return true;
             } else {
                 return false;
@@ -980,64 +993,108 @@ This compiles a block to its fullly substituted values.
 
 JS
 
-    function fullSub (block) {
+    function fullSub (hblock) {
         var doc = this;
-        var name ; 
-        var  code={}, blockCode;
+        var cname, cblock, compiling = {} ; 
+        var cblocks= hblock.cblocks;
+
+        var final; 
+
+        var next = _":Next function";
+
+        final = _":Final function";
+
+        _":Compiling status prep"
+
+        _":Run next"
+    }
 
 
-Check if already compiled. If so, return that.
+JS Compiling status prep
 
-        if (block.hasOwnProperty("compiled") ) {
-            return block.compiled;
+We create a call object for next and commands, etc. 
+
+    for (cname in cblocks) {
+        cblock = cblocks[cname];
+        cblock.compiled = cblock.lines.join("\n");
+        compiling[cname] = {status : 0, 
+                cblock : cblock,
+                commands : cblock.commands || [],
+                hblock : hblock,
+                next : next,
+                final: final,
+                doc : doc,
+                name : cname,
+                fullname : hblock.heading +":" + cname, 
+                state : {indent: false},
+                lengths : [cblock.compiled.length]
+        };
+    }
+
+
+JS Run next
+
+    for (cname in compiling) {
+        compiling[cname].next(cblocks[cname].compiled); 
+    }
+
+
+
+JS Next function
+
+This is where the magic happens. It should always be called on the block being compiled as the this object.
+
+Depending on the status, it either will execute oneSub to further compile it after any pre/mid-processing commands or it will execute the final function after the post-process. 
+
+    function (code) {
+        var passin = this;
+        var cblock = passin.cblock;
+        cblock.compiled = code;
+        var doc = passin.doc;
+        var commands;
+
+
+        if (passin.status === "done") {
+            return;
+        }
+
+        if (passin.status === "compiled") {
+            // run post commands, final
+            commands = cblock.commands["Infinity"] || [];
+            doc.commander(commands, code, passin, final);
         } else {
-            block.compiled = {};
+            commands = cblock.commands[passin.status] || [];
+            passin.status += 1;
+            commands.push( [doc.oneSub, []] );
+            // run commands
+            doc.commander(commands, code, passin, next); 
         }
 
-Cycle through the named code blocks, doing pre compiles
+    }
 
+JS Final function
 
-        for (name in block.code) {
-            blockCode  = block.code[name];
-            code[name] = blockCode.join("\n");
-            if (blockCode.commands.hasOwnProperty(0) ) {
-                code[name] = doc.commander(blockCode.commands[0], code[name]); 
-            }
-        
+This is where all the cleanup happens. 
+
+We store the compiled block and then we remove it from the waiting area. The waiting area also has an array of blocks that are waiting for this one to be compiled. 
+
+One added to a waiting list, it should be a block with a go method. 
+
+    function (code) {
+        var passin = this;
+        var doc = passin.doc;
+        var cblock = passin.cblock;
+        var fullname = passin.fullname;
+
+        cblock.compiled = code; 
+        cblock.isCompiled = true;
+        passin.status = "done";
+        var waiting = cblock.waiting || []; 
+        while (waiting.length > 0 ) {
+            (waiting.shift()) (code); // runs the go function
         }
+        delete doc.waiting[fullname];
 
-Loop through all the names in each loop over substitution runs. This allows for subbing in at just the right moment.
-
-
-            var counter = 0, go=1;
-            while (go) {
-                go = 0;
-                counter += 1;
-                for (name in code) {
-                    go += doc.oneSub(code, name, block);
-
-                    blockCode  = block.code[name];
-                    
-                    if (blockCode.commands.hasOwnProperty(counter) ) {
-                        code[name] = doc.commander(blockCode.commands[counter], code[name]); 
-                    }      
-                }
-            }
-        
-Loop through the names one more time to get any post compile directives. 
-
-
-        for (name in code) {
-            blockCode  = block.code[name];
-                    
-            if (blockCode.commands.hasOwnProperty("Infinity") ) {
-                code[name] = doc.commander(blockCode.commands["Infinity"], code[name]); 
-            }      
-            block.compiled[name] = code[name]; 
-        }
-
-
-        return block.compiled;
     }
 
  
@@ -1050,147 +1107,299 @@ So we have three basic things that we might see in code that the compiler needs 
 2. Constants
 3. Evaling
 
-This is a method of a doc; it takes in a string for the code and the current block. It returns a string if replacements happened or false if none happened.
+This is kept in the doc object, but it is invoked on an object that contains:  doc, topblock, code, name, fullname, next, final, commands.  See "The full substitution: next function". The arguments are the code and the function to call for callbacks. 
+
 
 We run through the code string, matching block name/js code block/constant. We note the location, get the replacement text, and continue on. We also keep a look out for multi-level, preparing to reduce the level. 
 
 Once all matches are found, we replace the text in the code block. We use the custom rawString method on strings to avoid the customary [replacement string](https://developer.mozilla.org/en-US/docs/JavaScript/Reference/Global_Objects/String/replace#Specifying_a_string_as_a_parameter) replacement semantics 
 
-We return 1 if there was a replacement, 0 if not.
+The substitutions may become asynchronous. 
 
 For evaling, no substitutions are done. It is just straight, one line code. If evaling a block is needed use _"block to run|eval"
 
+
+
 JS main
 
-    function oneSub (codeBlocks, name, block) {
-        
-        var doc = this;
+    function oneSub (code, ignore, done) {
+    
+        var passin = this;
+        var cblock = passin.cblock;
+        var doc = passin.doc;        
+        var hblock = passin.hblock;
 
-        _":Max sub limit"
-        
-
-        var code = codeBlocks[name];
-
-
-        var reg = /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
+        var reg =  /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
+ 
         var rep = [];
-        var match, ret, type, pieces, where, comp, lower, args, otherdoc, litpro, internal, state;
-        _":vars indent code"
+        var waiting = false;
+        var match, lower, args, ext;
+        var names, temp, reqhblock, otherdoc, pipes, fullname, gotcblock, macro;
 
-        var blocks = doc.blocks;
+ 
+        var next, final, go, preprep, pushrep; 
 
-        while ( (match = reg.exec(code) ) !== null ) {
-            _":Process a match"
+        next = _":next match";
+
+        final = _":ready to replace";
+
+        go = passin.go = _":go substituting next";
+
+        preprep = _":do some indenting";
+
+        pushrep = _":push it on rep";
+
+        doc.waiting[passin.fullname] = passin;
+
+        next("first");
+            
+    }
+
+JS Next match
+
+This keeps going while there are matches executing. We are using closures in a big way here.
+
+    function () {
+        if ( (match = reg.exec(code) ) !== null ) {
+            _"Processing a substitution match"
+        } else {
+            final("from next"); 
         }
 
+    }
+
+
+JS  Ready to replace
+
+All the substitutions have been obtained and we are ready to do the replacing. We are using the closured variable rep. 
+
+    function () {
+
+        delete doc.waiting[passin.fullname]; // all done compiling
         //do the replacements or return false
         if (rep.length > 0) {
             for (var i = 0; i < rep.length; i += 1) {
                 if (typeof rep[i][1] === "string" ) {
                   code = code.replace(rep[i][0], rep[i][1].rawString());
                 } else {
-                  doc.log( rep[i][0], rep[i][1]);
-                  return 0;
+                    // error
+                  console.log("ERROR in replacing:", rep[i][0], rep[i][1]);
+
+                  code = code.replace(rep[i][0], "");
                 }
             }
-            codeBlocks[name] = code; 
-
-            return 1; 
-            
+            cblock.compiled = code; 
         } else {
-            return 0;
+            passin.status = "compiled";
+            cblock.compiled = code; 
         }
+        done.call(passin, code); 
+    }
+
+JS go substituting next
+
+This function hangs out in doc.waiting just hoping to get a bit of code to continue the compiling of the cblock. 
+
+    function (reptext) {
+        doc.piping.call(passin, pipes, reptext, preprep);
+    }
+
+JS do some indenting
+
+
+We want to have an automated indentation of code that is intelligent. If we have something like `argh = _"cool"` then the first line is not indented, but the rest of the lines are indented by an additional 4 spaces (or doc.defaultIndentation). If we have ` _"cool" ` then all lines use the indentation of _"cool".
+
+But it can be overwriten with the explicit indent command. No arguments lead to no indentation.
+
+The code is a closure variable to the original code text that we are going to sub into. ret is the bit under consideration that will be inserted.  
+
+    function (ret) {
+        var passin = this;        
+        var ind, linetext, middle, space, spacereg = /^(\s*)/;
+        if (!passin.state.indent) {
+            ind = match.index-1;
+            while (ind > 0 ) {
+                if (code[ind] === "\n") {
+                    break;
+                } else {
+                    ind -= 1;
+                }
+
+            }
+            if (ind === 0 || ind === match.index-1) {
+                // no indent
+            } else {
+                linetext = code.slice(ind+1, match.index);
+                space = linetext.match(spacereg); 
+                if (space[1].length === linetext.length ) {
+                    //all spaces
+                    middle = space[1];
+                } else {
+                    middle = space[1] + doc.defaultIndent;
+                }
+                ret = ret.replace(/\n/g, "\n"+middle);
+            }
+        }
+        pushrep(ret);
+
+    }
+
+
+JS push it on rep
+
+Presumably this needs to execute the next step
+
+    function (ret) {
+        rep.push([match[0], ret]);
+        next("rep pushed");
     }
         
-JS Max sub limit
 
-We need to regard against infinite recursion of substituting. We do this by having a maximum loop limit. 
+### Processing a substitution match
 
-        if (doc.subtimes >= doc.maxsub) {
-            doc.log("maxed out", block.name);
-            return false;
-        } else {
-            doc.subtimes += 1;
-        }
-
-
-JS Process a match
 
 When we have a match requiring a substitution, we call fullSub which will run all of the compile cycles for what is called. 
 
-The match could match a substitution block `match[2]`, an eval block `match[3]`, or a macro `match[4]`.  For a substitution block, it could either be external (`where`) or local.
+The match could match a substitution block `match[2]`, an eval block `match[3]`, or a macro `match[4]`.  For a substitution block, it could either be external or local. 
+
+We allow for "block name.ext" to mean "block name:.ext"
 
 For each valid match, we add a replacement string on the array rep for replacement after all matches have been analyzed. 
 We are splitting the first part of the command as `external lit program :: heading block name : internal name . type`
 
 
-    internal = ''; litpro = '';
+The go function is used to keep coming back to the block after the subbing. When the go thinks all is done, it calls next to do the next match. 
+
+
+JS 
+
+
     if (match[2]) {
-        
-        //split off the piping
-        pieces = match[2].split("|").trim();
-        where = pieces.shift().toLowerCase(); 
+        _":cblock substitution"
+    } else if (match[3] ) {
+        _":eval backticks"
+    } else {
+        _":macro call"
+    }
 
-        if (where) {
-            where = where.split("::").trim();
-            if (where.length === 1) {
-                where = where[0];
-            } else {
-                litpro = where[0];
-                where = where[1];
-            }
-            where = where.split(":").trim();
-            if (where.length === 1) {
-                where = where[0];
-            } else {
 
-                internal = where[1];
-                where = where[0];
-            }
-            if (litpro) {
-                _":other documents"
+JS eval backticks
+
+This is pretty simple. We take the stuff in the backticks and eval it. The output is the replacement string. If evalling for side effects, make the last statement an empty string.
+
+There is no async mechanism for this call.
+
+    _":Matching block, multi-level"
+
+    rep.push([match[0], eval(match[3])]);
+    next("eval");
+
+
+JS macro call
+
+A macro is a function, even if it is being used to simply return a constant value. This lowercases the macro name and preps the arguments. Then if the macro exists, it will run it, possibly in an async fashion
+
+    lower = match[4].toLowerCase();
+    args = (match[5]|| "").split(',').trim();
+    if (doc.macros.hasOwnProperty(lower)) {
+        macro = doc.macros[lower];
+        if (macro.callback) {
+            doc.macros[lower].call(passin, args, pushrep); //the macro should call the second argument: pushrep
+        } else {
+         rep.push([match[0], doc.macros[lower].apply(passin, args)]);
+         next("macro"); 
+        }
+    }
+
+A macro will be called with the passin object. It can have a callback flag. 
+
+JS cblock substitution
+
+
+    pipes = match[2].split("|").trim();
+    fullname = pipes.shift().toLowerCase(); 
+    
+    _":parse fullname"
+
+    _":get relevant hblock"
+
+    gotcblock = doc.getBlock(reqhblock, names.cname); 
+
+    if (gotcblock.isCompiled) {
+        go(gotcblock.compiled);
+    } else {
+        waiting = true; 
+        gotcblock.waiting.push(go);
+    }
+
+
+JS Parse fullname
+
+We will put all parsed bits into `names`. The temp variable will the bits that have yet to be parsed. 
+
+First we get any reference to an external litpro document. This is the "::".  Next, we check to see if there is no ":". If so, we check for a "."; the last period starts the extension and becomes the cname. If there is a ":", then that becomes the cname. 
+
+    names = {fullname: fullname};
+
+    temp = fullname.split("::").trim();
+    if (temp.length === 1) {
+        names.litpro = "";
+        temp = temp[0];
+    } else {
+        names.litpro = temp[0];
+        temp = temp[1];
+    }
+    // no ":"
+    if (temp.indexOf(":") === -1) {
+        if ( (ext = temp.lastIndexOf(".") ) !== -1 ) {
+            // has a period indicating extension
+            names.cname  = temp.slice(ext);
+            names.heading = temp.slice(0, ext);
+        } else {
+            names.cname = "";
+            names.heading = temp;
+        }
+    } else {
+        temp = temp.split(":").trim();
+        names.cname = temp[1];
+        names.heading = temp[0];
+    }
+
+
+JS Get relevant hblock
+
+We have the names object and now we use it to get an hblock to then get the cblock. 
+
+    if (names.litpro) {
+        if (doc.repo.hasOwnProperty(names.litpro) ) {
+            otherdoc = doc.repo[names.litpro];
+            if (otherdoc.hblocks.hasOwnProperty(names.heading) ) {
+                reqhblock = otherdoc.hblocks[temp]; 
             } else {
-                // this doc
-                if (where) {
-                    if (doc.blocks.hasOwnProperty(where) ){
-                        _":Matching block, multi-level"
-                        comp = doc.fullSub(blocks[where]);
-                    } else {
-                        // no block to substitute; ignore
-                        continue;
-                    }
-                } else {
-                    // use the code already compiled in codeBlocks
-                    _":Matching block, multi-level"
-                    comp = codeBlocks;
-                }                    
+                doc.log("No such block " + names.heading + " in literate program " + names.litpro);
+                next("no block");
+            }
+        } else {
+            doc.log("No such literate program loaded: " + names.litpro);
+            next("no litpro");
+        }
+    } else {
+        // this doc
+        if (names.heading) {
+            if (doc.hblocks.hasOwnProperty(names.heading) ){
+                _":Matching block, multi-level"
+                reqhblock = doc.hblocks[names.heading];
+            } else {
+                // no block to substitute; ignore
+                next("no block to sub");
             }
         } else {
             // use the code already compiled in codeBlocks
             _":Matching block, multi-level"
-            comp = codeBlocks;
-        }
-            
-        _":Substitute parsing"
+            reqhblock = hblock.cblocks;
+        }                    
+    } 
 
-        _":indent code"
-
-        rep.push([match[0], ret]);
-                       
-    } else if (match[3]) {
-        // code
-        _":Matching block, multi-level"
-        
-        rep.push([match[0], eval(match[3])]);
-
-    } else {
-        // constant
-        lower = match[4].toLowerCase();
-        args = (match[5]|| "").split(',').trim();
-        if (doc.macros.hasOwnProperty(lower)) {
-          rep.push([match[0], doc.macros[lower].apply(doc, args)]);
-        }
-    }
 
 
 
@@ -1198,77 +1407,12 @@ JS Matching block, multi-level
 
 There is a match, but the level is not yet ready  for full substitution
 
-                    if (match[1] && match[1].length > 1) {
-                        rep.push([match[0], match[0].slice(1)]);
-                        continue;
-                    }
-
-
-JS Substitute parsing
-
-
-Either the substitution specifies the name.type to insert or we use the current name's type to pull an unnamed bit from the same text. If nothing, we continue. 
- 
-    internal = (internal || "").trim();
-    ret = doc.getBlock(comp, internal, name || "", block.name); 
-    state = {};
-    ret =  doc.piping.call({doc:doc, block:block, name: where+(type|| ""), state:state}, pieces, ret );
-
-
-
-JS Other documents
-
-This is how to pull in blocks from other literate programs.
-
-    if (doc.repo.hasOwnProperty(litpro) ) {
-        otherdoc = doc.repo[litpro];
-        if (otherdoc.blocks.hasOwnProperty(where) ) {
-            comp = otherdoc.blocks[where].compiled; 
-        } else {
-            doc.log("No such block " + where+ " in literate program " + litpro);
-            continue;
-        }
-    } else {
-        doc.log("No such literate program loaded: " + litpro);
-        continue;
+    if (match[1] && match[1].length > 1) {
+        rep.push([match[0], match[0].slice(1)]);
+        next("multilevel");
     }
 
 
-
-JS vars indent code
-
-    var ind, linetext, middle, space, spacereg = /^(\s*)/;
-
-JS indent code
-
-We want to have an automated indentation of code that is intelligent. If we have something like `argh = _"cool"` then the first line is not indented, but the rest of the lines are indented by an additional 4 spaces (or doc.defaultIndentation). If we have ` _"cool" ` then all lines use the indentation of _"cool".
-
-But it can be overwriten with the explicit indent command. No arguments lead to no indentation. 
-
-    if (!state.indent) {
-        ind = match.index-1;
-        while (ind > 0 ) {
-            if (code[ind] === "\n") {
-                break;
-            } else {
-                ind -= 1;
-            }
-
-        }
-        if (ind === 0 || ind === match.index-1) {
-            // no indent
-        } else {
-            linetext = code.slice(ind+1, match.index);
-            space = linetext.match(spacereg); 
-            if (space[1].length === linetext.length ) {
-                //all spaces
-                middle = space[1];
-            } else {
-                middle = space[1] + doc.defaultIndent;
-            }
-            ret = ret.replace(/\n/g, "\n"+middle);
-        }
-    }
 
 ### Pipe processor
 
@@ -1286,7 +1430,6 @@ JS
 
         var doc = this.doc;
         var passin = this;
-
 
         var com, cmatch, funname, funargs, comreg = /^\s*([^(]+)(?:\(([^)]*)\))?$/, comarr;
 
@@ -1325,72 +1468,6 @@ JS
 
         return null; 
     }
-
-
-
-###### Example
-
-awe is already done and so it can be fed into marked immediately and consumed.
-
-cool gets markedup before the first substitution and then the eq is substituted in and in the second round it all is done. 
-
-long takes three loops to compile. in the first loop, it is marked. in the second loop, long gets equation subbed in. in the third loop, it is installed. 
-
-so the piping can process post compiled while the command switch can compile pre and during. 
-
-HTML snip
-
-    <p class="awesome">_":awe|marked"/p>
-    <p> class="lesscool">__":cool"</p>
-    <p> class="long">___":long"</p>
-
-MD awe 
-
-    great work **dude**
-
-MD cool marked(0)
-
-    totally rad _":eq"
-
-MATH eq 
-
-    \[\sin(x^2)*\int_5^8 \]
-
-MD long marked(1)
-
-    nearly done __":eq"
-
-
-
-
-So we may need delayed substitutions as well here.
-
-HTML snip
-
-    <p>Continuing the previous snip</p>
-
-###### Example
-
-HTML
-
-    <p class="cool">Need some cool color</p>
-
-CSS
-
-    p.cool {color:blue}
-
-HTML jack
-
-    <p>not called</p>
-
-CSS jack
-    p {color:red}
-
-HTML
-
-    <p>Also in original block.</p>
-
-This should be a good format. Let's say it is in a section called cool. Then we can get it by _"cool"; this will pull in the HTML in an html block while it will pull in CSS in a CSS block. Any other type will pull in nothing.  But we could add in _"cool:.css"  to pull in the css block. or _"cool:jack" to get jack. If multiple jacks, then  _"cool:jack.css". Space after pipe optional. So no pipes in name.  If we had a mark down section to convert to html, then we could do _"cool:.md|marked"  Any number of processors are possible. 
 
 
 
@@ -1659,14 +1736,14 @@ Example:   `DEFINE darken`  and in the code block above it is a function and onl
 
     function (options) {
         var doc = this;
-        var cur = doc.cur;
+        var hcur = doc.hcur;
         var code;
         var fname = options.shift().toLowerCase();
         if (!fname) {
             doc.log("Error with DEFINE directive. Need a name.");
             return false; 
         }
-        code = cur.code[cur.type].join("\n");
+        code = hcur.code[hcur.cname].join("\n");
         var macrof;
         eval("macrof="+code);
         var newm = {};
@@ -1940,7 +2017,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     var standardPlugins; 
 
     if (!program.free) {
-        standardPlugins = require('literate-programming-standard');
+        standardPlugins = require('../temp/node_modules/literate-programming-standard');
     } else {
         standardPlugins = {};
     }
@@ -1950,7 +2027,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     }
 
 
-    var doc = new Doc(md, {
+    new Doc(md, {
             standardPlugins : standardPlugins,
             postCompile : postCompile, 
             parents : null,
@@ -2001,7 +2078,7 @@ This is a safety precaution to get a quick preview of the output.
         var files = doc.compiledFiles;
         var fname, text;
         for (fname in files) {
-            text = files[fname];
+            text = files[fname] || "";
             console.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
         }
     }
@@ -2318,6 +2395,8 @@ Add in an opt-out for file saving or a rerouting... Add to Version the ability t
 
 Implement a literate program test example. Also a dev, deploy version. Realized one could have a lit pro that is just a shell for files, etc., calling in the big thing. 
 
+modify the file command to do "block name" filename | ...   so input then output: FILE "TODO" todo.md | clean raw
+
 More docs.
 
 Make it async. so track the status and be able to abort/restart. Plan is to use a doc.status to indicate the phase (initial, parsing, compiling, done). The parsing phase just needs to track the line it is currently on. The compiling phase should have a queue object of blocks not yet attempted to be compiled and then any block that needs to wait (A) on something (B) should register itself (A) with that other thing (B) to trigger its (A) compile when (B) all done compiling. Also need a way to restart a compile of a block when whatever it was waiting for is done. Wrap all that into a nice asyncy function (like doc.resume or something).  I guess we can just queue up the objects initially, loop over them, and no need to break. Everything will just happen automagically with callbacks once it is all primed. Pretty sweet. The load directive for other lit programs can also be asynced. The existence of the file gets noted and no compiling should happen until all parsing is done on all loaded documents. But after that, the different compiles can all go crazy as they just queue themselves willy-nilly. 
@@ -2332,6 +2411,9 @@ Think about piping. Maybe have a pipe(blockname) that sees each line as a pipe.
 
 Make a proper parser of commands, directives that allows for nested parentheticals, quotes, commas, escapes
  
+Let  "block name.html" get the html section of the block. So do the "." splitting first. 
+
+
 Using  VARS to write down the variables being used at the top of the block. Then use _"Substitute parsing:vars" to list out the variables.
 
     var [insert string of comma separated variables]; // name of block 
