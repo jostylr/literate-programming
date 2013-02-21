@@ -11,42 +11,42 @@ VERSION literate-programming | 0.6.0-pre
 
 The bulk of the work is in the node module. That has all the core weaving. It also hasthe ability to load other literate programs / directives which ties it currently to the file system. 
 
-FILE lib/literate-programming_v6.js  | the lp module  | jshint | jstidy
+FILE "the lp module" lib/literate-programming.js   | jshint | jstidy
 
 ---
 
 The literate program compiler is activated by a command line program.
 
 
-FILE bin/literate-programming_v6.js | cli | jshint
+FILE "cli" bin/literate-programming.js  | jshint
 
 ---
 
 The standard README.
 
-FILE README.md | readme | clean raw
+FILE "readme" README.md  | clean raw
 
 ---
 
 The requisite package file for a npm project. 
 
-FILE package.json | NPM package : json | jshint
+FILE "NPM package : json" package.json  | jshint
 
 ---
 
 A list of growing and shrinking items todo.
 
-FILE TODO.md | todo  | clean raw
+FILE "todo" TODO.md | clean raw
 
 ---
 
 The MIT license as I think that is the standard in the node community. 
 
-FILE LICENSE | license-mit  | clean raw
+FILE "license-mit" LICENSE   | clean raw
 
 ---
 
-FILE blog.md | Blog doc | clean raw
+FILE "Blog doc" blog.md | clean raw
 
 ## How to write a literate program
 
@@ -2103,7 +2103,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     /*global process, require, console*/
     var program = require('commander');
     var fs = require('fs');
-    var Doc = require('../lib/literate-programming_v6').Doc;
+    var Doc = require('../lib/literate-programming').Doc;
 
     _"Command line options"
 
@@ -2124,7 +2124,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     var standardPlugins; 
 
     if (!program.free) {
-        standardPlugins = require('../temp/node_modules/literate-programming-standard');
+        standardPlugins = require('literate-programming-standard');
     } else {
         standardPlugins = {};
     }

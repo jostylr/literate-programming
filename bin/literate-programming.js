@@ -14,6 +14,7 @@ program
     .option('-p --preview',  'Do not save the changes. Output first line of each file')
     .option('-f --free', 'Do not use the default standard library of plugins') 
     .option('-d -diff', 'Compare diffs of old file and new file')
+    .option('-s -saveall', 'Save all externally literate program files as well')
 ;
 
 program.parse(process.argv);
@@ -23,8 +24,8 @@ if ((! program.args[0]) ) {
     process.exit();
 }
 
-var dir = program.dir || program.root; 
-var indir = program.change || program.root;
+var dir = program.dir || program.root || process.cwd(); 
+var indir = program.change || program.root || process.cwd();
 var originalroot = process.cwd();
 if (indir) {
     process.chdir(indir);
@@ -32,63 +33,105 @@ if (indir) {
 
 var md = fs.readFileSync(program.args[0], 'utf8');
 
-var save = function (doc, dir) {
-        process.chdir(originalroot);
-        if (dir) {
-            process.chdir(dir);
-        }            
-        var files = doc.files;
-        var file, block, fname, compiled, text, litpro, headname, internal, fdoc;  
-        var i, n = files.length;
-        for (i=0; i < n; i+= 1) {
-            file = files[i];
-            fname = file[0];
-            litpro = file[1][0];
-            headname = file[1][1];
-            internal = file[1][2];
-            if (litpro) {
-                        if (doc.repo.hasOwnProperty(litpro) ) {
-                            fdoc = doc.repo[litpro];
-                        } else {
-                            doc.log(fname + " is trying to use non-loaded literate program " + litpro);
-                            continue;
-                        }
-                    } else {
-                        fdoc = doc;
-                    }
-                    if (headname) {
-                        if (fdoc.blocks.hasOwnProperty(headname) ) {
-                            block = fdoc.blocks[headname];
-                        } else {
-                            doc.log(fname + " is trying to load non existent block '" + headname + "'");
-                            continue;
-                        }
-                    } else {
-                        doc.log(fname + " has no block " + litpro + " :: " + headname);
-                        continue;
-                    }
-            compiled = block.compiled; 
-            text = fdoc.getBlock(compiled, internal, fname, block.name);
-            text = fdoc.piping.call({doc:fdoc, block: fdoc.blocks[block.name], name:fname}, file.slice(2), text); 
-            if (program.preview) {
-                doc.log(fname + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
-            } else {      
-                fs.writeFileSync(fname, text, 'utf8');
-                doc.log(fname + " saved");
+
+var postCompile = [];
+
+//postCompile.push([function (doc) {console.log(doc);}, {}]);
+
+if (program.preview) {
+    postCompile.push([function () {
+            var doc = this;
+            var files = doc.compiledFiles;
+            var fname, text;
+            for (fname in files) {
+                text = files[fname] || "";
+                console.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
             }
         }
-    };
- 
-var doc = new Doc(md);
+        , {}]);
+} else if (program.diff) {
+    postCompile.push([function (obj) {
+            var doc = this;
+            process.chdir(originalroot);
+            if (obj.dir) {
+                process.chdir(dir);
+            }  
+            var files = doc.compiledFiles;
+            var fname;
+            for (fname in files) {
+                console.log(fname + " diff not activated yet ");
+            }
+        }
+        , {dir:dir}]);
+} else if (program.saveAll) {
+    postCompile.push([function (obj) {
+            var doc = this;
+            process.chdir(originalroot);
+            if (obj.dir) {
+                process.chdir(dir);
+            }            
+            var files = doc.compiledFiles;
+            var fname;
+            var cbfact = function (fname) {
+                    return function (err) {
+                        if (err) {
+                            console.log("Error in saving file " + fname + ": " + err.message);
+                        } else {
+                            console.log("File "+ fname + " saved");
+                        }
+                    };
+                }
+                ;
+            for (fname in files) {
+                fs.writeFile(fname, files[fname], 'utf8', cbfact(fname));
+            }
+        
+        }, {dir: dir}, "inherit"]);
+} else {
+    postCompile.push([function (obj) {
+            var doc = this;
+            process.chdir(originalroot);
+            if (obj.dir) {
+                process.chdir(dir);
+            }            
+            var files = doc.compiledFiles;
+            var fname;
+            var cbfact = function (fname) {
+                    return function (err) {
+                        if (err) {
+                            console.log("Error in saving file " + fname + ": " + err.message);
+                        } else {
+                            console.log("File "+ fname + " saved");
+                        }
+                    };
+                }
+                ;
+            for (fname in files) {
+                fs.writeFile(fname, files[fname], 'utf8', cbfact(fname));
+            }
+        
+        }, {dir: dir}]);
+}
+
+var standardPlugins; 
 
 if (!program.free) {
-    doc.standardPlugins = require('literate-programming-standard');
+    standardPlugins = require('literate-programming-standard');
 } else {
-    doc.standardPlugins = {};
+    standardPlugins = {};
 }
-doc.addPlugins(doc.standardPlugins);
-doc.parseLines().compile();
 
-save(doc, dir); 
+if (!program.quiet) {
+    postCompile.push([function () {
+            var doc = this;
+            console.log(doc.logarr.join("\n"));
+        }
+        , {}, "inherit"]);
+}
 
-console.log(doc.logarr.join("\n"));
+new Doc(md, {
+    standardPlugins : standardPlugins,
+    postCompile : postCompile, 
+    parents : null,
+    fromFile : null
+});
