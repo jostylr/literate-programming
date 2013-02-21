@@ -2,7 +2,7 @@
 
 We just need a place to do some minor tests.
 
-FILE testpro.js | Body
+FILE "Body" testpro.js  |jshint | jstidy
 
 ## Body
 
@@ -12,9 +12,9 @@ JS
 
     te = (function () {
         return  _"f1";
-    };
+    })();
 
-    funciton () {
+    function () {
         _"cl"
     }
 

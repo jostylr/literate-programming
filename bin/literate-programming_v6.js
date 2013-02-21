@@ -33,7 +33,6 @@ if (indir) {
 
 var md = fs.readFileSync(program.args[0], 'utf8');
 
-
 var postCompile = [];
 
 //postCompile.push([function (doc) {console.log(doc);}, {}]);
@@ -47,8 +46,7 @@ if (program.preview) {
                 text = files[fname] || "";
                 console.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
             }
-        }
-        , {}]);
+        }, {}]);
 } else if (program.diff) {
     postCompile.push([function (obj) {
             var doc = this;
@@ -61,8 +59,7 @@ if (program.preview) {
             for (fname in files) {
                 console.log(fname + " diff not activated yet ");
             }
-        }
-        , {dir:dir}]);
+        }, {dir:dir}]);
 } else if (program.saveAll) {
     postCompile.push([function (obj) {
             var doc = this;
@@ -80,8 +77,7 @@ if (program.preview) {
                             console.log("File "+ fname + " saved");
                         }
                     };
-                }
-                ;
+                };
             for (fname in files) {
                 fs.writeFile(fname, files[fname], 'utf8', cbfact(fname));
             }
@@ -104,8 +100,7 @@ if (program.preview) {
                             console.log("File "+ fname + " saved");
                         }
                     };
-                }
-                ;
+                };
             for (fname in files) {
                 fs.writeFile(fname, files[fname], 'utf8', cbfact(fname));
             }
@@ -125,8 +120,7 @@ if (!program.quiet) {
     postCompile.push([function () {
             var doc = this;
             console.log(doc.logarr.join("\n"));
-        }
-        , {}, "inherit"]);
+        }, {}, "inherit"]);
 }
 
 new Doc(md, {

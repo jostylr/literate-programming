@@ -12,6 +12,7 @@ for (i = 0; i < 100; i += 1) {
   numarr[i] = i + 1;
 }
 
+
 overwrite(numarr, 3, "Fizz");
 overwrite(numarr, 5, "Buzz");
 overwrite(numarr, 15, "FizzBuzz");

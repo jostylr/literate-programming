@@ -1569,37 +1569,85 @@ We use lower case for the keys to avoid accidental matching with macros.
 
 ### File directive
      
-The command is `FILE fname.ext | litpro :: block name : internal name | commands...` where fname.ext is the filename and extension to use. 
+The command is `FILE "litpro :: block name : internal name" fname.ext | commands...` where fname.ext is the filename and extension to use. 
+
+The quoted part is optional. Its omission means that one should use the current code block.
 
 The rest of the options are pipe commands that get processed 
 
     function (options) {
         var doc = this; 
-        var headname, internalname, litpro, arr, name; 
-        if (options[0] === "") {
-            doc.log("No file name for file: "+options.join[" | "]+","+ doc.hcur.heading);
+        var heading, cname, fullname, litpro, filename, temp; 
+
+        _":Split Quotes"
+
+        if (!filename ) {
+            doc.log("No file name for file: " _":Msg");
             return false;
-        } else {
-            if (!options[1]) {
-                options[1] = ["", doc.hcur.heading, doc.hcur.cname];
-            } else {
-                name = options[1].toLowerCase();
-                arr = name.split("::").trim();
-                if (arr.length === 1) {
-                    litpro = "";
-                    name = arr[0] || doc.hcur.heading;
-                } else {
-                    litpro = arr[0] || "";
-                    name =arr[1] || doc.hcur.heading; 
-                }
-                arr = name.split(":").trim();
-                headname = arr[0] || doc.hcur.heading;
-                internalname = arr[1] || "";  
-                options[1] = [litpro, headname, internalname];
-            }
-            doc.files.push(options);            
         }
+        if (!fullname ) {
+            litpro = "";
+            heading = doc.hcur.heading;
+            cname = doc.hcur.cname;
+        } else {
+
+            _":Parse out quoted name"
+        }
+
+        doc.files.push( [filename, [litpro, heading, cname]].concat(options.slice(1)));
     }
+
+JS Split quotes
+
+    temp = options[0].split('"').trim();
+    if (temp.length === 1) {
+        // no quotes presumably
+        filename = temp[0];
+        fullname = "";
+    } else if (temp.length === 3) {
+        filename = temp[2];
+        fullname = temp[1];
+    } else {
+        //error
+        doc.log('Error in File Directive specification. Please use: "block name" filename.ext | to specify the input and output. ' _":Msg");
+        return false;
+    }
+
+
+JS Parse out quoted name
+
+First splite out on "::" to get external literate program name and then split on ":" to get heading/cname split. Fill in reasonable defaults as one can; abort if it doesn't make sense. 
+
+    fullname = fullname.toLowerCase();
+    //litpro :: fullname
+    temp = fullname.split("::").trim();
+    if (temp.length === 1) {
+        litpro = "";
+    } else {
+        litpro = temp[0];
+        fullname = temp[1];
+    }
+
+    // heading : cname
+    temp = fullname.split(":").trim();
+    heading = temp[0];
+    cname = temp[1] || "";
+    if (!heading && litpro) {
+        doc.log("Need block name for external program." _":Msg" );
+        return false;
+    }
+
+    if (! heading) {
+        //current block
+        heading = doc.hcur.heading;
+        cname = cname || doc.hcur.cname;
+    }
+
+
+JS Msg
+Just a snippet of code I keep writing for reporting error location.
+
+    +options.join[" | "]+","+ doc.hcur.heading
 
 
 ### The load directive

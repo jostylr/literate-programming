@@ -24,7 +24,7 @@ MD main |1 marked
 
     _"Comments"
 
-FILE logs.htm | :main
+FILE ":main" logs.htm 
 
 ## Introduction
 
@@ -204,7 +204,7 @@ JS Factorial Table |jshint
 
     var i = 1;
     var fact = function (n) {
-        _"Common factorial:|indent(4,4)"
+        _"Common factorial|indent(4,4)"
         return [n, nf, lf10.toPrecision(3)];
     };
     var tarr = [["n", "n!", "\\(\\log_{10}(n!)\\)"]];
@@ -283,7 +283,7 @@ Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.
       </body>
     </html>
 
-FILE logs.html
+FILE "Stand alone page" logs.html 
 
 
 ### Scripted Writing

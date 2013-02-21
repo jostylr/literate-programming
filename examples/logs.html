@@ -26,7 +26,8 @@ MathJax.Hub.Config({
 </script>
     <style >.runnable { border : 3px solid lightblue; width : 100%}
     
-    .hide { display : none}</style>
+    .hide { display : none} 
+    </style>
     <script >$(document).ready(function ()  {
     
          $(".run").each(function () {
@@ -36,6 +37,7 @@ MathJax.Hub.Config({
              code = code.replace(/\&amp\;/g, "&");
              eval(code);
          });
+         
     
         $(".runnable").each(function () {
             var el$ = $(this);
@@ -44,6 +46,8 @@ MathJax.Hub.Config({
             }).blur();
         
         });
+        
+        
     
     });</script>
     <link rel="stylesheet" href="http://bootswatch.com/simplex/bootstrap.min.css">
@@ -64,6 +68,7 @@ MathJax.Hub.Config({
         
         </p>
         <p>The logarithm of a product is the sum of the logarithms...
+        
         
         </p>
         <h2>Solution</h2>
@@ -95,6 +100,7 @@ MathJax.Hub.Config({
         <p>Therefore, 
         $$1000! \approx  10^{0.6046} \times 10^{2567} \approx 4.02 \times 10^{2567}$$
         
+        
         </p>
         <h2>A few factorials</h2>
         <p>To see the growth of the factorial, let&#39;s compute a few of them. 
@@ -116,6 +122,7 @@ MathJax.Hub.Config({
             if ((n &amp;lt; 0) || (Math.floor(n) !== n) ) {
                 $("#factorial").text("Input a positive integer");
             }
+            
             var lf = 0, nf;
             //sum ove the logs
             var i; 
@@ -124,6 +131,7 @@ MathJax.Hub.Config({
             }
             var lf10 = lf/Math.LN10;
             nf = lf10 &amp;lt; 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10);
+            
             var text = n + "! = " + nf;
             $("#factorial").text(text );      
         });</div>
@@ -141,9 +149,11 @@ MathJax.Hub.Config({
         }
         var lf10 = lf/Math.LN10;
         nf = lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10);
+        
         $("#result").text(nf);</textarea>
         
         <p>The result of the above computation is <span id="result"></span>.</p>
+        
         
         <p>This is the implementation described above. We first compute the some of the logarithms, then we compute the logarithm relative to 10. The final line is just an attempt to present the result nicely. 
         
@@ -158,7 +168,8 @@ MathJax.Hub.Config({
         <p>While Google maxes out at $170!$, one can use <a href="http://www.wolframalpha.com/input/?i=1000%21">Wolfram Alpha</a> to compute the factorial and check our work. 
         
         </p>
-        <p>Always keep in mind the power of logarithms.</p>
+        <p>Always keep in mind the power of logarithms. 
+        </p>
         
     </div>
   </body>
