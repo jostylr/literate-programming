@@ -2361,9 +2361,9 @@ The basic idea is that each header line (regardless of level) demarcates a full 
 
 Each code block can contain whatever kind of code, but there are three special syntaxes: 
 
-1. _"Block name" This tells the compiler to compile the block with "Block name" and then replace the _"Block name" with that code.
-2. _` javascript code `  One can execute arbitrary javascript code within the backticks, but the parser limits what can be in there to one line. 
-3. CONSTANTS/MACROS all caps are for constants or macro functions that insert their output in place of the caps. 
+1. `_"Block name"` This tells the compiler to compile the block with "Block name" and then replace the _"Block name" with that code.
+2. ``_`javascript code``  One can execute arbitrary javascript code within the backticks, but the parser limits what can be in there to one line. 
+3. `MACROS` all caps are for constants or macro functions that insert their output in place of the caps. 
 
 For both 1 and 3, if there is no match, then the text is unchanged. One can have more than one underscore for 1 and 2; this delays the substitution until another loop. It allows for the mixing of various markup languages and different processing points in the life cycle of compilation.
 
