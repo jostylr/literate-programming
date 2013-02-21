@@ -238,8 +238,8 @@ JS Add empty line
 
       } else if (line.match(/^\s*$/)  ) {
         var carr = hcur.cblocks[hcur.cname];
-        if (carr && carr.length > 0 && carr[carr.length -1 ] !== "") {
-            hcur.code[hcur.cname].lines.push(line);
+        if (carr && carr.lines.length > 0 && carr.lines[carr.lines.length -1 ] !== "") {
+            hcur.cblocks[hcur.cname].lines.push(line);
         }
         return false; // so that it can be added to the plain parser as well
 
@@ -325,7 +325,7 @@ JS main
         hcur.cname = cname;
 
         if (! hcur.cblocks.hasOwnProperty(cname) ) {
-            hcur.cblocks[cname] = doc.makeCode();
+            hcur.cblocks[cname] = doc.makeCode(cname);
         }
 
         var codearr = hcur.cblocks[cname];
@@ -402,7 +402,8 @@ JS
         hcur = new HBlock();
         hcur.heading = heading;
         hcur.cname = doc.type;    
-        hcur.cblocks[hcur.cname] = doc.makeCode();
+        hcur.cblocks[hcur.cname] = doc.makeCode(cname);
+
                 
         doc.hblocks[heading] = hcur; 
         doc.hcur = hcur; 
@@ -426,6 +427,7 @@ We do not want empty code blocks left. So we delete them just before we are goin
         for (cname in oldh.cblocks) {
             if (oldh.cblocks[cname].lines.length === 0) {
                 delete oldh.cblocks[cname];
+
             }
         }
     }
@@ -510,7 +512,7 @@ JS
 
     Doc.prototype.trimCode = [function (code) {
         return code.trim();
-    }, [], {}];
+    }, []];
 
     Doc.prototype.log = function (text) {this.logarr.push(text);};
 
@@ -665,11 +667,13 @@ JS
                 } else {
                     code = command[0].call(passin, code, command[1]);
                     next(code); 
+                    return null;
                 }
             } else {
 
                 // all done
                 final.call(passin, code);
+                return null;
             } 
         };
 
@@ -686,14 +690,15 @@ We need an array of the code lines and a property that holds any processing func
 
 JS
 
-    function () {
+    function (cname) {
         var doc = this;
         return {
             lines : [],
             commands : {0: [ doc.trimCode ]},
             isCompiled : false,
             compiled : "",
-            waiting : []
+            waiting : [],
+            cname : cname
         };
     }
 
@@ -716,6 +721,8 @@ JS
         var i, n = files.length, passin;
         var final = _":Final function for doc commander";
         doc.processing = n;
+
+        //console.log(files);
 
         for (i=0; i < n; i+= 1) {
             file = files[i];
@@ -830,21 +837,23 @@ JS
     function () {
         var doc = this;
 
-        var heading; 
+        var heading, cblocks, cname;
+        for (heading in doc.hblocks) {
+            cblocks = doc.hblocks[heading].cblocks;
+            for (cname in cblocks) {
+                doc.waiting[heading+":"+cname] = true;
+            }
+        }
+
+
         for (heading in doc.hblocks) {
             doc.fullSub(doc.hblocks[heading]);
         }
 
-        _":Check for time to process"
-
         return doc;
     }
 
-JS Check for time to process
 
-    if (Object.keys( doc.waiting ).length === 0 ) {
-        doc.process();
-    }
 
 ### Get correct code block
 
@@ -1100,7 +1109,14 @@ One added to a waiting list, it should be a block with a go method.
         while (waiting.length > 0 ) {
             (waiting.shift()) (code); // runs the go function
         }
+        //console.log("DONE", fullname);
+
         delete doc.waiting[fullname];
+
+        // check for other waiting
+        if (Object.keys( doc.waiting ).length === 0 ) {
+            doc.process();
+        } 
                //console.log(passin.fullname, " ---- ", cblock.compiled.length, passin.status); 
 
     }
@@ -1157,7 +1173,6 @@ JS main
 
         pushrep = _":push it on rep";
 
-        doc.waiting[passin.fullname] = passin;
 
         next("first");
             
@@ -1168,6 +1183,7 @@ JS Next match
 This keeps going while there are matches executing. We are using closures in a big way here.
 
     function () {
+        //console.log("Next called", passin.fullname, ( match ? match.index : "--"), passin.status);
         if ( (match = reg.exec(code) ) !== null ) {
             _"Processing a substitution match"
         } else {
@@ -1183,6 +1199,7 @@ All the substitutions have been obtained and we are ready to do the replacing. W
 
     function () {
 
+        //console.log("final called", passin.status, passin.fullname, rep.length);
         //do the replacements or return false
         if (rep.length > 0) {
             for (var i = 0; i < rep.length; i += 1) {
@@ -1208,7 +1225,8 @@ JS go substituting next
 This function hangs out in doc.waiting just hoping to get a bit of code to continue the compiling of the cblock. 
 
     function (reptext) {
-        //console.log("substituting into ", passin.fullname, " --- ", reptext.length);
+        //console.log("substituting", passin.gocall, " into ", passin.fullname, " --- ", reptext.length);
+        delete passin.gocall;
         doc.piping.call(passin, pipes, reptext, preprep);
     }
 
@@ -1225,6 +1243,10 @@ The code is a closure variable to the original code text that we are going to su
         var passin = this;        
         var ind, linetext, middle, space, spacereg = /^(\s*)/;
         if (!passin.state.indent) {
+            if (!match) {
+                //console.log(ret, rep);
+                //console.log(passin, ret);
+            }
             ind = match.index-1;
             while (ind > 0 ) {
                 if (code[ind] === "\n") {
@@ -1283,6 +1305,7 @@ JS
 
 
     if (match[2]) {
+        //console.log(match[2]);
         _":cblock substitution"
     } else if (match[3] ) {
         _":eval backticks"
@@ -1301,6 +1324,7 @@ There is no async mechanism for this call.
 
     rep.push([match[0], eval(match[3])]);
     next("eval");
+    return null;
 
 
 JS macro call
@@ -1315,8 +1339,12 @@ A macro is a function, even if it is being used to simply return a constant valu
             doc.macros[lower].call(passin, args, pushrep); //the macro should call the second argument: pushrep
         } else {
          rep.push([match[0], doc.macros[lower].apply(passin, args)]);
-         next("macro"); 
+         next("macro");
+         return null; 
         }
+    } else {
+        next("no macro");
+        return null;
     }
 
 A macro will be called with the passin object. It can have a callback flag. 
@@ -1333,14 +1361,19 @@ JS cblock substitution
 
     gotcblock = doc.getBlock(reqhblock, names.cname); 
 
-    if (gotcblock.isCompiled) {
-        //console.log("about to gather ", names.fullname, " --- ", gotcblock.compiled.length);
-        go(gotcblock.compiled);
+    if (passin.gocall) {
+        console.log("go called again", passin.gocall, names.fullname, gotcblock.cname);
     } else {
-        //console.log("gonna wait for ", names.fullname, " --- ");
-        gotcblock.waiting.push(go);
+        passin.gocall = names.fullname; 
+        if (gotcblock.isCompiled) {
+            //console.log("about to gather ", names.fullname, " --- ", gotcblock.compiled.length);
+            go(gotcblock.compiled);
+        } else {
+            //console.log("gonna wait for ", names.fullname, " --- ", gotcblock.cname, gotcblock.waiting.length, passin.fullname);
+            //console.log(gotcblock.waiting.length);
+            gotcblock.waiting.push(go);
+        }
     }
-
 
 JS Parse fullname
 
@@ -1387,10 +1420,12 @@ We have the names object and now we use it to get an hblock to then get the cblo
             } else {
                 doc.log("No such block " + names.heading + " in literate program " + names.litpro);
                 next("no block");
+                return null;
             }
         } else {
             doc.log("No such literate program loaded: " + names.litpro);
             next("no litpro");
+            return null;
         }
     } else {
         // this doc
@@ -1401,6 +1436,7 @@ We have the names object and now we use it to get an hblock to then get the cblo
             } else {
                 // no block to substitute; ignore
                 next("no block to sub");
+                return null;
             }
         } else {
             // use the code already compiled in codeBlocks
@@ -1419,6 +1455,7 @@ There is a match, but the level is not yet ready  for full substitution
     if (match[1] && match[1].length > 1) {
         rep.push([match[0], match[0].slice(1)]);
         next("multilevel");
+        return null;
     }
 
 
@@ -1540,25 +1577,26 @@ The rest of the options are pipe commands that get processed
         var doc = this; 
         var headname, internalname, litpro, arr, name; 
         if (options[0] === "") {
-            doc.log("No file name for file: "+options.join[" | "]+","+ doc.name);
+            doc.log("No file name for file: "+options.join[" | "]+","+ doc.hcur.heading);
             return false;
         } else {
             if (!options[1]) {
-                options[1] = doc.name;
-            } 
-            name = options[1].toLowerCase();
-            arr = name.split("::").trim();
-            if (arr.length === 1) {
-                litpro = "";
-                name = arr[0] || doc.name;
+                options[1] = ["", doc.hcur.heading, doc.hcur.cname];
             } else {
-                litpro = arr[0] || "";
-                name =arr[1] || doc.name; 
+                name = options[1].toLowerCase();
+                arr = name.split("::").trim();
+                if (arr.length === 1) {
+                    litpro = "";
+                    name = arr[0] || doc.hcur.heading;
+                } else {
+                    litpro = arr[0] || "";
+                    name =arr[1] || doc.hcur.heading; 
+                }
+                arr = name.split(":").trim();
+                headname = arr[0] || doc.hcur.heading;
+                internalname = arr[1] || "";  
+                options[1] = [litpro, headname, internalname];
             }
-            arr = name.split(":").trim();
-            headname = arr[0] || doc.name;
-            internalname = arr[1] || "";  
-            options[1] = [litpro, headname, internalname];
             doc.files.push(options);            
         }
     }
@@ -2037,11 +2075,12 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
 
     new Doc(md, {
-            standardPlugins : standardPlugins,
-            postCompile : postCompile, 
-            parents : null,
-            fromFile : null
+        standardPlugins : standardPlugins,
+        postCompile : postCompile, 
+        parents : null,
+        fromFile : null
     });
+
 
 
 
@@ -2149,8 +2188,8 @@ The preview option is used to avoid overwriting what exists without checking fir
     }
 
 
-    var dir = program.dir || program.root; 
-    var indir = program.change || program.root;
+    var dir = program.dir || program.root || process.cwd(); 
+    var indir = program.change || program.root || process.cwd();
     var originalroot = process.cwd();
     if (indir) {
         process.chdir(indir);
