@@ -24,8 +24,8 @@ if ((! program.args[0]) ) {
     process.exit();
 }
 
-var dir = program.dir || program.root; 
-var indir = program.change || program.root;
+var dir = program.dir || program.root || process.cwd(); 
+var indir = program.change || program.root || process.cwd();
 var originalroot = process.cwd();
 if (indir) {
     process.chdir(indir);
@@ -124,8 +124,8 @@ if (!program.quiet) {
 }
 
 new Doc(md, {
-        standardPlugins : standardPlugins,
-        postCompile : postCompile, 
-        parents : null,
-        fromFile : null
+    standardPlugins : standardPlugins,
+    postCompile : postCompile, 
+    parents : null,
+    fromFile : null
 });
