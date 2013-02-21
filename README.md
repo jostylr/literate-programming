@@ -1,28 +1,83 @@
 literate-programming
 ====================
 
-Write a program using markdown to write out your thoughts and the bits of code that go with those thoughts. This program weaves the bits together into usable fiels. 
+Write your code anywhere and in any order with as much explanation as you like. literate-programming will weave it all together to produce your project.
+
+This is a modificaiton of and an implementation of [Knuth's Literate Programming](http://www-cs-faculty.stanford.edu/~uno/lp.html) technique. It is perhaps most in line with [noweb](http://tex.loria.fr/litte/ieee.pdf). 
+
+It uses markdown as the basic document format with the code to be weaved together being delimited by each line having 4 spaces as is typical for markdown. 
+
+It can handle any programming language, but has some standard commands useful for creating HTML, CSS, and JavaScript. 
 
 ## Installation
+
+This required [node.js](http://nodejs.org) and [npm](https://npmjs.org/) to be installed. Then issue the command:
 
     npm install -g literate-programming
 
 ## Using
 
-The command installed is literate-programming and it has some command flags and one primary argument which is the markdown document containing the program, or at least the structure of the project. 
+From the command line:
 
-    literate-programming sample.md 
+    literate-programming <file.md>
 
-will create the files specified in sample.md
+This will process the literate program in `file.md` and produce whatever output files are specified in the program. 
 
-### Command flags
+Use `literate-programming -h`  for command flag usage, including specifying the root output directory.  
 
--o --output < root> : Root directory for output
--i --input < root> : Root directory for input
--r --root < root> : Change root directory for both input and output
--p --preview : Do not save the changes. Output first line of each file
--f --free : Do not use the default standard library of plugins
--d -diff : Compare diffs of old file and new file
+## Example
+
+Let's give a quick example. Here is the text of sample.md
+
+    # Welcome
+
+    So you want to make a literate program? Let's have a program that outputs all numbers between 1 to 10.
+
+    Let's save it in file count.js
+
+    FILE "Structure" count.js
+
+    ## Structure 
+
+    We have some intial setup. Then we will generate the array of numbers. We end with outputting the numbers. 
+
+        var numarr = [], start=1, end = 11, step = 1;
+
+        _"Loop"
+
+        _"Output"
+
+    ## Output 
+
+    At this point, we have the array of numbers. Now we can join them with a comma and output that to the console.
+
+        console.log("The numbers are: ", numarr.join(", ") );
+
+    ## Loop
+
+    Set the loop up and push the numbers onto it. 
+
+        var i;
+        for (i = start; i < end; i += step) {
+            numarr.push(i);
+        }
+
+Running it through literate-programming produces count.js: 
+
+    var numarr = [], start=1, end = 11, step = 1;
+
+    var i;
+    for (i = start; i < end; i += step) {
+        numarr.push(i);
+    }
+
+    console.log("The numbers are: ", numarr.join(", ") );
+
+And it can be run from the command line using `node count.js`
+
+
+There are more [examples](https://github.com/jostylr/literate-programming/tree/master/examples), but for a non-trivial example, see the [literate program]( that compiles to literate-programming
+
 
 
 ## Document syntax

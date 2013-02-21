@@ -2347,40 +2347,59 @@ Running it through literate-programming produces count.js:
 
 And it can be run from the command line using `node count.js`
 
+There are more [examples](https://github.com/jostylr/literate-programming/tree/master/examples), but for a non-trivial example, see the [literate program](https://github.com/jostylr/literate-programming/blob/master/lp.md) that compiles to literate-programming.
 
-There are more [examples](https://github.com/jostylr/literate-programming/tree/master/examples), but for a non-trivial example, see the [literate program]( that compiles to literate-programming
-
-
+See the full documentation
 
  ## Document syntax
 
 A literate program is a markdown document with some special conventions. 
 
-The basic idea is that each header line (regardless of level) demarcates a full block. Any code blocks within a full block are concatenated together and are the code portion of the block. 
+The basic idea is that each header line (regardless of level) demarcates a full block. Code blocks within a full block are the bits that are woven together. 
 
-Each code block can contain whatever kind of code, but there are three special syntaxes (space between underscore and quote should not be present; it is there to avoid processing): 
+ ### Code Block
 
-1. _ "Block name" This tells the compiler to compile the block with "Block name" and then replace the _ "Block name" with that code.
-2. _ `javascript code`  One can execute arbitrary javascript code within the backticks, but the parser limits what can be in there to one line. This can be circumvented by having a block name substitution inside the backticks. 
+Each code block can contain whatever kind of code, but there are three special syntaxes: 
+
+1. _"Block name" This tells the compiler to compile the block with "Block name" and then replace the _"Block name" with that code.
+2. _`javascript code`  One can execute arbitrary javascript code within the backticks, but the parser limits what can be in there to one line. 
 3. CONSTANTS/MACROS all caps are for constants or macro functions that insert their output in place of the caps. 
 
 For both 1 and 3, if there is no match, then the text is unchanged. One can have more than one underscore for 1 and 2; this delays the substitution until another loop. It allows for the mixing of various markup languages and different processing points in the life cycle of compilation.
 
-Outside of a code block, if a line starts with all caps, this is potentially a directive. For example, the `FILE` directive takes the name of a file and it will compile the current block and save it to a file. 
+ ### Directive
 
-If a heading level jumps down by two or more levels (say level 2 going to level 4), then this is also a potential directive. It allows for the use of a TEST section, for example, that can automatically run some tests on a compiled block.
+Outside of a code block, if a line starts with all caps, this is potentially a directive. For example, the `FILE` directive takes the name of a code block in quotes, a file name following it and it will save the compiled block to the file. 
+
+ ### Pipes
+
+One can also use pipes to pipe the compiled text through a command to do something to it. For example, `_"Some JS code | jshint"`  will take the code in block `some JS code` and pipe it into jshint to check for errors; it will report the errors to the console. We can also use pipe commands in a FILE directive:  `FILE "Some JS code" code.js | jstidy` will tidy up the code before storing it in the file `code.js`.
+
+ ### Named Code Block
+
+Finally, you can use distinct code blocks within a full block. Start a line with the file type in all caps followed by the code block's name, such as  `JS outer loop` in a block with heading `Loopy` and then reference it by _"Loopy : outer loop". This also works for the quoted name in a FILE directive. 
+
+If the extension is unknown, start the line with `.` followed by all caps for the type. 
+
 
  ## Nifty parts of writing literate programming
 
-You can write code in the currently live document that has no effect, put in ideas in the future, etc. Only those on a compile path will be seen. 
+* You can have your code in any order you wish. 
+* You can separate out flow control from the processing. For example,
 
-You can have your code in any order you wish. 
+    if (condition) {
+        _":Truth"
+    } else {
+        _":Beauty"
+    }
 
-You can "paste" multiple blocks of code using the same block name. 
+* The above lets you write the if/else statement with its logic and put the code in the code blocks `truth` and `beauty`. This can help keep one's code to within a single screenful per notion. 
+* You can write code in the currently live document that has no effect, put in ideas in the future, etc. Only those on a compile path will be seen. 
+* You can "paste" multiple blocks of code using the same block name. This is like DRY, but the code does get repeated. You can also substitute in various values  in the substitution process so that code blocks that are almost the same but with different names can be coming from the same root structure. 
+* You can put distracting data checks/sanitation/transformations into another block and focus on the algorithm without the use of functions (which can be distracting). 
+* You can use JavaScript to script out the compilation of documents, a hybrid of static and dynamic. 
 
-You can put distracting data checks/sanitation/transformations into another block and focus on the algorithm without the use of functions (which can be distracting). 
-
-You can use JavaScript to script out the compilation of documents, a hybrid of static and dynamic. 
+I also like to use it compile an entire project from a single file, but a literate program can load external files thus allowing one to split a project into any kind of setup desired. 
 
  ## LICENSE
 
