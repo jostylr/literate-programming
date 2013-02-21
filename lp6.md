@@ -762,6 +762,7 @@ First we check whether there is an external literate program trying to be used. 
                     fdoc = doc.repo[litpro];
                 } else {
                     doc.log(fname + " is trying to use non-loaded literate program " + litpro);
+                    doc.processing -= 1;
                     continue;
                 }
             } else {
@@ -772,10 +773,12 @@ First we check whether there is an external literate program trying to be used. 
                     hblock = fdoc.hblocks[headname];
                 } else {
                     doc.log(fname + " is trying to load non existent block '" + headname + "'");
+                    doc.processing -= 1;
                     continue;
                 }
             } else {
                 doc.log(fname + " has no block " + litpro + " :: " + headname);
+                doc.processing -= 1;
                 continue;
             }
 
@@ -1635,6 +1638,15 @@ First splite out on "::" to get external literate program name and then split on
     if (!heading && litpro) {
         doc.log("Need block name for external program." _":Msg" );
         return false;
+    }
+
+    if (heading && !cname) {
+        //check for a period
+        temp = heading.split(".").trim();
+        if (temp.length === 2) {
+            cname = temp[1];
+            heading = temp[0];
+        }
     }
 
     if (! heading) {
