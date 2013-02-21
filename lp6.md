@@ -709,7 +709,7 @@ Given array of name and text, save the file. dir will change the directory where
 
 The piping call may lead to asynchronous callbacks. See pipe processing. The final function will store the processed text and call the end function if all of the text has been processed. Note there is no guarantee as to which file will be the last one to be fully processed. 
 
-JS
+JS Main
 
     function () {
         var doc = this;
@@ -731,7 +731,7 @@ JS
             headname = file[1][1];
             cname = file[1][2] || "";
             _":check for block existence"
-            type = fname.split(".")[1].trim(); //assuming no other period in name
+            type = (fname.split(".")[1]  || "" ).trim(); //assuming no other period in name
             text = fdoc.getBlock(hblock, cname, type).compiled;
             passin = {doc:fdoc, hblock: hblock, name:fname, state : {indent : false}};
             fdoc.piping.call(passin, file.slice(2), text, final  )  ;
@@ -1916,9 +1916,9 @@ This prevents the compilation of the block. Mostly used with 0 in front to avoid
 This returns the joined text of the full block. Probably called by another block. 
 
     function () {
-        var block = this.block;
+        var hblock = this.hblock;
 
-        return block.full.join("\n");
+        return hblock.full.join("\n");
     }
 
 ### Clean Raw
@@ -1926,8 +1926,8 @@ This returns the joined text of the full block. Probably called by another block
 This is like raw, but it removes any Directives, and it removes one space from the start of a line that would otherwise match a directive or header. 
 
     function () {
-        var block = this.block;
-        var full = block.full;
+        var hblock = this.hblock;
+        var full = hblock.full;
         var i, n = full.length, ret = [], line;
         for (i = 0; i < n; i += 1) {
             line = full[i];
