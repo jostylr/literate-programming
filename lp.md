@@ -518,7 +518,7 @@ JS
 
     Doc.prototype.parseLines = _"Parse lines";
 
-    Doc.prototype.getBlock = _"Get correct code block:main.js";
+    Doc.prototype.getcblock = _"Get correct code block:main.js";
     
     Doc.prototype.compile = _"Compile time";
 
@@ -732,7 +732,7 @@ JS Main
             cname = file[1][2] || "";
             _":check for block existence"
             type = (fname.split(".")[1]  || "" ).trim(); //assuming no other period in name
-            text = fdoc.getBlock(hblock, cname, type).compiled;
+            text = fdoc.getcblock(hblock, cname, type).compiled;
             passin = {doc:fdoc, hblock: hblock, name:fname, state : {indent : false}};
             fdoc.piping.call(passin, file.slice(2), text, final  )  ;
         }
@@ -885,7 +885,7 @@ JS main
 
         if (!cblocks) {
             doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
-            return {compiled:"", isCompiled : true};
+            return false; 
         }
 
         cname = cname.toLowerCase();
@@ -899,13 +899,18 @@ JS main
 
         // just one key
         if (keys.length === 1) {
-            return cblocks[keys[0]];
+            if (keys[0].match(cname) ) {
+                return cblocks[keys[0]];
+            } else {
+            doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+            return false;                
+            }
         }
 
         // no code segments
         if (keys.length === 0) {
             doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
-            return {compiled:"", isCompiled : true};
+            return false;
         }
 
         if (doc.types.hasOwnProperty(cname)) {
@@ -927,7 +932,7 @@ JS main
 
         if (newkeys.length === 0) {
             doc.log("Name not found: " + cname + " of " + hblock.heading);
-            return {compiled:"", isCompiled : true};
+            return false;
         }
 
         //so we have multiple matches to cname (cname could be/ probably is "")
@@ -1362,7 +1367,15 @@ JS cblock substitution
 
     _":get relevant hblock"
 
-    gotcblock = doc.getBlock(reqhblock, names.cname); 
+    gotcblock = doc.getcblock(reqhblock, names.cname); 
+
+    if (gotcblock === false) {
+        doc.log("No cblock found with givename:" + names.cname);
+        next();
+        return null;
+    } else {
+        _":Matching block, multi-level"
+    }
 
     if (passin.gocall) {
         console.log("go called again", passin.gocall, names.fullname, gotcblock.cname);
@@ -1434,7 +1447,6 @@ We have the names object and now we use it to get an hblock to then get the cblo
         // this doc
         if (names.heading) {
             if (doc.hblocks.hasOwnProperty(names.heading) ){
-                _":Matching block, multi-level"
                 reqhblock = doc.hblocks[names.heading];
             } else {
                 // no block to substitute; ignore
@@ -1443,7 +1455,6 @@ We have the names object and now we use it to get an hblock to then get the cblo
             }
         } else {
             // use the code already compiled in codeBlocks
-            _":Matching block, multi-level"
             reqhblock = hblock;
         }                    
     } 
@@ -2388,9 +2399,9 @@ If the extension is unknown, start the line with `.` followed by all caps for th
 * You can separate out flow control from the processing. For example,
 
     if (condition) {
-        _"Truth"
+        _":Truth"
     } else {
-        _"Beauty"
+        _":Beauty"
     }
 
 * The above lets you write the if/else statement with its logic and put the code in the code blocks `truth` and `beauty`. This can help keep one's code to within a single screenful per notion. 
@@ -2571,6 +2582,11 @@ You can also define your own directives; see [literate-programming-standard](htt
 
 
 ## TODO
+
+Make sure non-existent blocks do not hang program (cname). More generally, make sure that looped references (alice calls bob, bob calls alice) do not hang program; emit doc.log problem and move on. Also have a check at the end for ready to compile docs. This should allow for saving of files that are fine and the hung up files do not get saved. 
+
+Deal with line spacing. 
+
 
 Add in an opt-out for file saving or a rerouting... Add to Version the ability to set various boolean flags, such as dev, deploy, ..., add an environment directive to set those things. 
 

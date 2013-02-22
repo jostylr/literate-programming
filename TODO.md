@@ -1,3 +1,5 @@
+Make sure non-existent blocks do not hang program (cname).
+
 Add in an opt-out for file saving or a rerouting... Add to Version the ability to set various boolean flags, such as dev, deploy, ..., add an environment directive to set those things. 
 
 Implement a literate program testing example. Also a dev, deploy version. Realized one could have a lit pro that is just a shell for files, etc., calling in the big thing. 
