@@ -1,4 +1,7 @@
-Make sure non-existent blocks do not hang program (cname).
+Make sure non-existent blocks do not hang program (cname). More generally, make sure that looped references (alice calls bob, bob calls alice) do not hang program; emit doc.log problem and move on. Also have a check at the end for ready to compile docs. This should allow for saving of files that are fine and the hung up files do not get saved. 
+
+Deal with line spacing. 
+
 
 Add in an opt-out for file saving or a rerouting... Add to Version the ability to set various boolean flags, such as dev, deploy, ..., add an environment directive to set those things. 
 

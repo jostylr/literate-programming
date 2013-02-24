@@ -463,10 +463,10 @@ JS
         this.litpro = md; 
         this.hblocks = {};
         this.chur = new HBlock();
-        this.files = [];
-        this.compiledFiles = {};
+        this.actions = {};
         this.logarr = [];
         this.subtimes = 0;
+        this.processing = 0;
         this.type = ".";
 
 
@@ -538,9 +538,7 @@ JS
 
     Doc.prototype.addPlugins = _":add in plugins";
 
-    Doc.prototype.process = _"Process files";
-
-    Doc.prototype.end = _"End process";
+    Doc.prototype.processActions = _"Process actions";
 
 JS Merge in options
 
@@ -703,11 +701,20 @@ JS
     }
 
 
-#### Process files
-    
-Given array of name and text, save the file. dir will change the directory where to place it. This should be the root directory of all the files. Use the filenames to do different directories. 
 
-The piping call may lead to asynchronous callbacks. See pipe processing. The final function will store the processed text and call the end function if all of the text has been processed. Note there is no guarantee as to which file will be the last one to be fully processed. 
+#### Process actions
+    
+Actions are functions that act on a compiled block of text. Mainly this would be saving the compiled text to a file, but it could be other actions as well. 
+
+Each action should have an object of the form
+
+* f: function that is to be called
+* a path to the cblock in the form of litpro:, heading:, cname: 
+* fullname : reference
+* msg : for unfinished business
+* pipe: an array of pipes to act on the compiled text first
+* state : whatever state variables need to be passed. For files, this is {indent : false}
+
 
 JS Main
 
@@ -715,55 +722,52 @@ JS Main
         var doc = this;
         var type;
 
-        var files = doc.files;
-        var cFiles = doc.compiledFiles = {};
-        var file, hblock, fname, text, litpro, headname, cname, fdoc;  
-        var i, n = files.length, passin;
-        var final = _":Final function for doc commander";
-        doc.processing = n;
+        var actions = doc.actions;
+        var action, hblock, cblock, litpro, headname, cname, fdoc, go;
 
-        //console.log(files);
+        var goFact = _":the go function to pass for waiting";
 
-        for (i=0; i < n; i+= 1) {
-            file = files[i];
-            fname = file[0];
-            litpro = file[1][0];
-            headname = file[1][1];
-            cname = file[1][2] || "";
+        var aname;
+        for (aname in actions) {
+            action = actions[aname];
+            litpro = action.litpro;
+            headname = action.heading;
+            cname = action.cname || "";
             _":check for block existence"
-            type = (fname.split(".")[1]  || "" ).trim(); //assuming no other period in name
-            text = fdoc.getcblock(hblock, cname, type).compiled;
-            passin = {doc:fdoc, hblock: hblock, name:fname, state : {indent : false}};
-            fdoc.piping.call(passin, file.slice(2), text, final  )  ;
-        }
 
-        return doc;
+            type = (action.type || "" ).trim(); 
+            cblock = fdoc.getcblock(hblock, cname, type);
+            if (cblock === false) {
+                fdoc.piping.call({doc:fdoc, hblock: hblock, cblock: {}, name:action.filename, state : action.state, action:action}, action.pipes || [], hblock.full.join("\n"), action.f);
+            } else {
+                go = goFact({doc:fdoc, hblock: hblock, cblock: cblock, name:action.filename, state : action.state,  action:action});
+                cblock.waiting.push(go);
+            }
+        }
     }
 
-JS  Final function for doc commander
+JS  The go function to pass for waiting
 
+We generate a function to sit patiently waiting for compilation.
 
-    function (text) {
-        var doc = this.doc;
-        var fname = this.name;
-        cFiles[fname] = text;
-        doc.processing -= 1;
-        _":Check for processing done"
+    function (passin) {
+        return function (text) {
+            fdoc.piping.call(passin, passin.action.pipes || [], text, action.f);
+        };
     }
 
     
 
 JS Check for block existence
 
-First we check whether there is an external literate program trying to be used. We either assign it or doc to fdoc. Then we load up the block with headname. The internal block name is left to another portion. 
+First we check whether there is an external literate program trying to be used. We either assign it or doc to fdoc. Then we load up the block with headname. The code block name is left to another portion. 
 
             if (litpro) {
                 if (doc.repo.hasOwnProperty(litpro) ) {
                     fdoc = doc.repo[litpro];
                 } else {
-                    doc.log(fname + " is trying to use non-loaded literate program " + litpro);
-                    doc.processing -= 1;
-                    continue;
+                    doc.log("Trying to use non-loaded literate program " + litpro);
+                    _":End action"
                 }
             } else {
                 fdoc = doc;
@@ -772,42 +776,21 @@ First we check whether there is an external literate program trying to be used. 
                 if (fdoc.hblocks.hasOwnProperty(headname) ) {
                     hblock = fdoc.hblocks[headname];
                 } else {
-                    doc.log(fname + " is trying to load non existent block '" + headname + "'");
-                    doc.processing -= 1;
-                    continue;
+                    doc.log("Trying to load non existent block '" + headname + "'");
+                    _":End action"
+
                 }
             } else {
-                doc.log(fname + " has no block " + litpro + " :: " + headname);
-                doc.processing -= 1;
-                continue;
+                doc.log("No block " + litpro + " :: " + headname);
+                _":End action"
             }
+ 
+JS End action
 
+    doc.log(action.msg);
+    delete actions[action.msg];
+    return;
 
-JS Check for processing done
-
-    if (doc.processing < 1 ) {
-        doc.end();
-    }   
-
-#### End process
-
-This handles outputting the doc.log if requested. And whatever else. 
-
-JS
-
-    function () {
-        
-        var doc = this;
-        var pc = doc.postCompile;
-        var i, n = pc.length, fun, obj;
-        for (i = 0; i < n; i += 1) {
-            fun = pc[i][0];
-            obj = pc[i][1];
-            fun.call(doc, obj); 
-        }
-
-        return doc; 
-    }
 
 ### HBlock constructor
 
@@ -833,7 +816,7 @@ We now want to assemble all the code. This function takes in a parsed lp doc and
 
 Most likely, many cblocks will call other cblocks that are not compiled. But that is okay as they can wait. 
 
-This checks to see if there are any files being loaded. As they finish, they will reduce the doc.loading and call compile.
+This also is where the files are loaded into the waiting array of the called compile block. As soon as the block is compiled the file it is associated with gets saved. 
 
 JS
 
@@ -848,6 +831,7 @@ JS
             }
         }
 
+        doc.processActions();
 
         for (heading in doc.hblocks) {
             doc.fullSub(doc.hblocks[heading]);
@@ -884,7 +868,9 @@ JS main
         var cblocks = hblock.cblocks;
 
         if (!cblocks) {
-            doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+            if (cname) {
+                doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+            }
             return false; 
         }
 
@@ -902,14 +888,18 @@ JS main
             if (keys[0].match(cname) ) {
                 return cblocks[keys[0]];
             } else {
-            doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+                if (cname) {
+                    doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+                }
             return false;                
             }
         }
 
         // no code segments
         if (keys.length === 0) {
-            doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+            if (cname) {
+                doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+            }
             return false;
         }
 
@@ -1052,7 +1042,6 @@ We create a call object for next and commands, etc.
 JS Run next
 
     for (cname in compiling) {
-        //console.log("Starting " + compiling[cname].fullname);
         compiling[cname].next(cblocks[cname].compiled); 
     }
 
@@ -1069,9 +1058,7 @@ Depending on the status, it either will execute oneSub to further compile it aft
         var cblock = passin.cblock;
         if (code.length !== 0 ) {
             cblock.compiled = code;
-        } else {
-            console.log("ERROR: Blank code", passin.fullname);
-        }
+        } 
         var doc = passin.doc;
         var commands;
 
@@ -1109,23 +1096,14 @@ One added to a waiting list, it should be a block with a go method.
         var fullname = passin.fullname;
 
 
-//        cblock.compiled = code; 
         cblock.isCompiled = true;
         passin.status = "done";
         var waiting = cblock.waiting || []; 
-        //console.log(waiting, passin.fullname);
         while (waiting.length > 0 ) {
             (waiting.shift()) (code); // runs the go function
         }
-        //console.log("DONE", fullname);
 
         delete doc.waiting[fullname];
-
-        // check for other waiting
-        if (Object.keys( doc.waiting ).length === 0 ) {
-            doc.process();
-        } 
-               //console.log(passin.fullname, " ---- ", cblock.compiled.length, passin.status); 
 
     }
 
@@ -1164,7 +1142,6 @@ JS main
         var reg =  /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
  
         var rep = [];
-        var waiting = false;
         var match, lower, args, ext;
         var names, temp, reqhblock, otherdoc, pipes, fullname, gotcblock, macro;
 
@@ -1191,7 +1168,6 @@ JS Next match
 This keeps going while there are matches executing. We are using closures in a big way here.
 
     function () {
-        //console.log("Next called", passin.fullname, ( match ? match.index : "--"), passin.status);
         if ( (match = reg.exec(code) ) !== null ) {
             _"Processing a substitution match"
         } else {
@@ -1207,7 +1183,6 @@ All the substitutions have been obtained and we are ready to do the replacing. W
 
     function () {
 
-        //console.log("final called", passin.status, passin.fullname, rep.length);
         //do the replacements or return false
         if (rep.length > 0) {
             for (var i = 0; i < rep.length; i += 1) {
@@ -1233,7 +1208,6 @@ JS go substituting next
 This function hangs out in doc.waiting just hoping to get a bit of code to continue the compiling of the cblock. 
 
     function (reptext) {
-        //console.log("substituting", passin.gocall, " into ", passin.fullname, " --- ", reptext.length);
         delete passin.gocall;
         doc.piping.call(passin, pipes, reptext, preprep);
     }
@@ -1251,10 +1225,6 @@ The code is a closure variable to the original code text that we are going to su
         var passin = this;        
         var ind, linetext, middle, space, spacereg = /^(\s*)/;
         if (!passin.state.indent) {
-            if (!match) {
-                //console.log(ret, rep);
-                //console.log(passin, ret);
-            }
             ind = match.index-1;
             while (ind > 0 ) {
                 if (code[ind] === "\n") {
@@ -1313,7 +1283,6 @@ JS
 
 
     if (match[2]) {
-        //console.log(match[2]);
         _":cblock substitution"
     } else if (match[3] ) {
         _":eval backticks"
@@ -1382,11 +1351,8 @@ JS cblock substitution
     } else {
         passin.gocall = names.fullname; 
         if (gotcblock.isCompiled) {
-            //console.log("about to gather ", names.fullname, " --- ", gotcblock.compiled.length);
             go(gotcblock.compiled);
         } else {
-            //console.log("gonna wait for ", names.fullname, " --- ", gotcblock.cname, gotcblock.waiting.length, passin.fullname);
-            //console.log(gotcblock.waiting.length);
             gotcblock.waiting.push(go);
         }
     }
@@ -1608,7 +1574,35 @@ The rest of the options are pipe commands that get processed
             _":Parse out quoted name"
         }
 
-        doc.files.push( [filename, [litpro, heading, cname]].concat(options.slice(1)));
+        var type = filename.split(".");
+        if (type.length > 1) {
+            type = type[type.length-1];            
+        } else {
+            type = "";
+        }
+
+        doc.actions["File not saved: " + filename] = {
+            f: _":the action function",
+            litpro: litpro,
+            heading : heading,
+            cname : cname, 
+            pipes: options.slice(1),
+            filename : filename,
+            msg : "File not saved: " + filename,
+            state : {indent : false},
+            type: type
+        };
+    }
+
+JS The action function
+
+
+This should receive the passin object as this which will contain the aciton object. The argument is the text.
+
+All postCompile functions should expect a passin object with a text from compiling. 
+
+    function (text) {
+        doc.postCompile.call(this, text);
     }
 
 JS Split quotes
@@ -2117,16 +2111,14 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
     _"Command line options"
 
-    var postCompile = [];
+    var postCompile; 
 
-    //postCompile.push([function (doc) {console.log(doc);}, {}]);
+    _"Post Compile function"
 
     if (program.preview) {
         postCompile.push([_"Preview files", {}]);
     } else if (program.diff) {
         postCompile.push([_"Diff files", {dir:dir}]);
-    } else if (program.saveAll) {
-        postCompile.push([_"Save files", {dir: dir}, "inherit"]);
     } else {
         postCompile.push([_"Save files", {dir: dir}]);
     }
@@ -2140,11 +2132,13 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     }
 
     if (!program.quiet) {
-        postCompile.push([_"Cli log", {}, "inherit"]);
+        postCompile.push([_"Cli log", {}]);
     }
 
+    postCompile.push([_"Action cleanup", {}]);
 
-    new Doc(md, {
+
+    var doc = new Doc(md, {
         standardPlugins : standardPlugins,
         postCompile : postCompile, 
         parents : null,
@@ -2152,38 +2146,86 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     });
 
 
+    _"On exit"
 
 
-#### Save Files 
+#### Post Compile function
 
+This takes in a text and is called in the context of a passin object. 
 
-    function (obj) {
-        var doc = this;
-        process.chdir(originalroot);
-        if (obj.dir) {
-            process.chdir(dir);
-        }            
-        var files = doc.compiledFiles;
-        var fname;
-        var cbfact = _":Callback Factory";
-        for (fname in files) {
-            fs.writeFile(fname, files[fname], 'utf8', cbfact(fname));
+JS 
+
+    postCompile = function (text) {
+        var passin = this;
+        var doc = this.doc;
+        var steps = doc.postCompile.steps;
+        var i = 0; 
+        var next = _":Next function";
+        next(text); 
+    };
+    
+    postCompile.push = _"Post Compile function:push";
+
+    postCompile.steps = [];
+
+JS Push
+
+    function (arr) {
+        this.steps.push(arr);
+    }
+
+JS Next function
+
+    function(text) {
+        if (i  < steps.length) {
+            var step = steps[i];
+            i+= 1;
+            step[0].call(passin, text, next, step[1]);
+        } else {
+            // done
         }
 
     }
 
+
+#### Action cleanup
+
+We need to delete the associated action after it is done. 
+
+    function (text, next) {
+        var doc = this.doc;
+        delete doc.actions[this.action.msg];
+        next(text);
+    }
+
+#### Save Files 
+
+
+    function (text, next, obj) {
+        var passin = this;
+        var doc = passin.doc;
+        var fname = passin.action.filename;
+
+        process.chdir(originalroot);
+        if (obj.dir) {
+            process.chdir(dir);
+        }            
+        var cb = _":Callback ";
+
+        fs.writeFile(fname, text, 'utf8', cb);
+    }
+
 JS Callback Factory
 
-Information about what happened with the file writing. 
+Information about what happened with the file writing and then next is called. 
 
-    function (fname) {
-        return function (err) {
-            if (err) {
-                console.log("Error in saving file " + fname + ": " + err.message);
-            } else {
-                console.log("File "+ fname + " saved");
-            }
-        };
+    function (err) {
+        if (err) {
+            doc.log("Error in saving file " + fname + ": " + err.message);
+        } else {
+            doc.log("File "+ fname + " saved");
+        }
+        next(text);
     }
 
 
@@ -2191,14 +2233,12 @@ Information about what happened with the file writing.
 
 This is a safety precaution to get a quick preview of the output. 
 
-    function () {
-        var doc = this;
-        var files = doc.compiledFiles;
-        var fname, text;
-        for (fname in files) {
-            text = files[fname] || "";
-            console.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
-        }
+    function (text, next) {
+        var passin = this;
+        var doc = passin.doc;
+        var fname = passin.action.filename;
+        doc.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+        next(text);
     }
 
 
@@ -2208,17 +2248,18 @@ This is to see the changes that might occur before saving the files.
 
 Currently not working
 
-    function (obj) {
-        var doc = this;
+    function (text, next, obj) {        
+        var passin = this;
+        var doc = passin.doc;
+        var fname = passin.action.filename;
+
         process.chdir(originalroot);
         if (obj.dir) {
             process.chdir(dir);
-        }  
-        var files = doc.compiledFiles;
-        var fname;
-        for (fname in files) {
-            console.log(fname + " diff not activated yet ");
         }
+
+        doc.log(fname + " diff not activated yet ");
+        next(text);
     }
 
 
@@ -2227,9 +2268,13 @@ Currently not working
 
 This is where we report the logs. 
 
-    function () {
-        var doc = this;
-        console.log(doc.logarr.join("\n"));
+    function (text, next) {
+        var doc = this.doc;
+        var i, n = doc.logarr.length;
+        for (i = 0; i < n; i += 1) {
+            console.log(doc.logarr.shift() );
+        }
+        next(text);
     }
 
 ### Command line options
@@ -2239,7 +2284,7 @@ Here we define what the various configuration options are.
 The preview option is used to avoid overwriting what exists without checking first. Eventually, I will hookup a diff view. There might also be a test-safe mode which runs the tests and other stuff and will not save if they do not pass. 
 
     program
-        .version('0.1')
+        .version('DOCVERSION')
         .usage('[options] <file>')
         .option('-o --output <root>', 'Root directory for output')
         .option('-i --input <root>',  'Root directory for input')
@@ -2247,7 +2292,6 @@ The preview option is used to avoid overwriting what exists without checking fir
         .option('-p --preview',  'Do not save the changes. Output first line of each file')
         .option('-f --free', 'Do not use the default standard library of plugins') 
         .option('-d -diff', 'Compare diffs of old file and new file')
-        .option('-s -saveall', 'Save all externally literate program files as well')
     ;
 
     program.parse(process.argv);
@@ -2267,6 +2311,27 @@ The preview option is used to avoid overwriting what exists without checking fir
 
     var md = fs.readFileSync(program.args[0], 'utf8');
 
+#### On exit
+
+    process.on('exit', function () {
+        if (Object.keys(doc.waiting).length > 0 ) {
+            console.log("The following blocks failed to compile: \n",  Object.keys(doc.waiting).join("\n "));
+        } 
+        if (Object.keys(doc.actions).length > 0 ) {
+            console.log("The following actions failed to execute: \n",  Object.keys(doc.actions).join("\n "));
+        } 
+
+        var fdoc, fdocname;
+        for (fdocname in doc.repo.litpro) {
+            fdoc = doc.repo.litpro[fdocname]; 
+            if (Object.keys(fdoc.waiting).length > 0 ) {
+                console.log("The following blocks in "+fdocname+" failed to compile: \n",  Object.keys(fdoc.waiting).join("\n "));
+            } 
+            if (Object.keys(fdoc.actions).length > 0 ) {
+                console.log("The following actions in "+fdocname+" failed to execute: \n",  Object.keys(fdoc.actions).join("\n "));
+            }
+        } 
+    });
 
 
 
@@ -2399,9 +2464,9 @@ If the extension is unknown, start the line with `.` followed by all caps for th
 * You can separate out flow control from the processing. For example,
 
     if (condition) {
-        _":Truth"
+        _"Truth"
     } else {
-        _":Beauty"
+        _"Beauty"
     }
 
 * The above lets you write the if/else statement with its logic and put the code in the code blocks `truth` and `beauty`. This can help keep one's code to within a single screenful per notion. 
@@ -2689,7 +2754,9 @@ _"Doc constructor" Make it so that constructing the document parses it and compi
 
 _"Compile time" Make it async. Each call to a block either pulls in the compiled bit or queues up the current block. Need to store state. 
 
-_"Process files" is a part of the document constructor. Everything about a "file" will be created and stored in compiledFiles
+_"Process files" is a part of the document constructor. Everything about a "file" will be created and stored in compiledFiles. Now deprecated. 
+
+_"Process actions" replaced files. This gives a stronger plugin feel. See the section for what should be in an action. These wait for the compiled code block to be compiled and then execute. 
 
 _"Save Files", _"Preview Files", _"Diff Files"  all do their job acting on compiledFiles. 
 

@@ -6,7 +6,7 @@ var fs = require('fs');
 var Doc = require('../lib/literate-programming').Doc;
 
 program
-    .version('0.1')
+    .version('0.6.0-pre')
     .usage('[options] <file>')
     .option('-o --output <root>', 'Root directory for output')
     .option('-i --input <root>',  'Root directory for input')
@@ -14,7 +14,6 @@ program
     .option('-p --preview',  'Do not save the changes. Output first line of each file')
     .option('-f --free', 'Do not use the default standard library of plugins') 
     .option('-d -diff', 'Compare diffs of old file and new file')
-    .option('-s -saveall', 'Save all externally literate program files as well')
 ;
 
 program.parse(process.argv);
@@ -33,83 +32,79 @@ if (indir) {
 
 var md = fs.readFileSync(program.args[0], 'utf8');
 
+var postCompile; 
 
-var postCompile = [];
+postCompile = function (text) {
+    var passin = this;
+    var doc = this.doc;
+    var steps = doc.postCompile.steps;
+    var i = 0; 
+    var next = function(text) {
+            if (i  < steps.length) {
+                var step = steps[i];
+                i+= 1;
+                step[0].call(passin, text, next, step[1]);
+            } else {
+                // done
+            }
+        
+        }
+        ;
+    next(text); 
+};
 
-//postCompile.push([function (doc) {console.log(doc);}, {}]);
+postCompile.push = function (arr) {
+        this.steps.push(arr);
+    }
+    ;
+
+postCompile.steps = [];
 
 if (program.preview) {
-    postCompile.push([function () {
-            var doc = this;
-            var files = doc.compiledFiles;
-            var fname, text;
-            for (fname in files) {
-                text = files[fname] || "";
-                console.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
-            }
+    postCompile.push([function (text, next) {
+            var passin = this;
+            var doc = passin.doc;
+            var fname = passin.action.filename;
+            doc.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+            next(text);
         }
         , {}]);
 } else if (program.diff) {
-    postCompile.push([function (obj) {
-            var doc = this;
+    postCompile.push([function (text, next, obj) {        
+            var passin = this;
+            var doc = passin.doc;
+            var fname = passin.action.filename;
+        
             process.chdir(originalroot);
             if (obj.dir) {
                 process.chdir(dir);
-            }  
-            var files = doc.compiledFiles;
-            var fname;
-            for (fname in files) {
-                console.log(fname + " diff not activated yet ");
             }
+        
+            doc.log(fname + " diff not activated yet ");
+            next(text);
         }
         , {dir:dir}]);
-} else if (program.saveAll) {
-    postCompile.push([function (obj) {
-            var doc = this;
-            process.chdir(originalroot);
-            if (obj.dir) {
-                process.chdir(dir);
-            }            
-            var files = doc.compiledFiles;
-            var fname;
-            var cbfact = function (fname) {
-                    return function (err) {
-                        if (err) {
-                            console.log("Error in saving file " + fname + ": " + err.message);
-                        } else {
-                            console.log("File "+ fname + " saved");
-                        }
-                    };
-                }
-                ;
-            for (fname in files) {
-                fs.writeFile(fname, files[fname], 'utf8', cbfact(fname));
-            }
-        
-        }, {dir: dir}, "inherit"]);
 } else {
-    postCompile.push([function (obj) {
-            var doc = this;
+    postCompile.push([function (text, next, obj) {
+            var passin = this;
+            var doc = passin.doc;
+            var fname = passin.action.filename;
+        
             process.chdir(originalroot);
             if (obj.dir) {
                 process.chdir(dir);
             }            
-            var files = doc.compiledFiles;
-            var fname;
-            var cbfact = function (fname) {
-                    return function (err) {
-                        if (err) {
-                            console.log("Error in saving file " + fname + ": " + err.message);
-                        } else {
-                            console.log("File "+ fname + " saved");
-                        }
-                    };
+            var cb = function (err) {
+                    if (err) {
+                        doc.log("Error in saving file " + fname + ": " + err.message);
+                    } else {
+                        doc.log("File "+ fname + " saved");
+                    }
+                    next(text);
                 }
                 ;
-            for (fname in files) {
-                fs.writeFile(fname, files[fname], 'utf8', cbfact(fname));
-            }
         
+            fs.writeFile(fname, text, 'utf8', cb);
         }, {dir: dir}]);
 }
 
@@ -122,16 +117,47 @@ if (!program.free) {
 }
 
 if (!program.quiet) {
-    postCompile.push([function () {
-            var doc = this;
-            console.log(doc.logarr.join("\n"));
+    postCompile.push([function (text, next) {
+            var doc = this.doc;
+            var i, n = doc.logarr.length;
+            for (i = 0; i < n; i += 1) {
+                console.log(doc.logarr.shift() );
+            }
+            next(text);
         }
-        , {}, "inherit"]);
+        , {}]);
 }
 
-new Doc(md, {
+postCompile.push([function (text, next) {
+        var doc = this.doc;
+        delete doc.actions[this.action.msg];
+        next(text);
+    }
+    , {}]);
+
+var doc = new Doc(md, {
     standardPlugins : standardPlugins,
     postCompile : postCompile, 
     parents : null,
     fromFile : null
+});
+
+process.on('exit', function () {
+    if (Object.keys(doc.waiting).length > 0 ) {
+        console.log("The following blocks failed to compile: \n",  Object.keys(doc.waiting).join("\n "));
+    } 
+    if (Object.keys(doc.actions).length > 0 ) {
+        console.log("The following actions failed to execute: \n",  Object.keys(doc.actions).join("\n "));
+    } 
+
+    var fdoc, fdocname;
+    for (fdocname in doc.repo.litpro) {
+        fdoc = doc.repo.litpro[fdocname]; 
+        if (Object.keys(fdoc.waiting).length > 0 ) {
+            console.log("The following blocks in "+fdocname+" failed to compile: \n",  Object.keys(fdoc.waiting).join("\n "));
+        } 
+        if (Object.keys(fdoc.actions).length > 0 ) {
+            console.log("The following actions in "+fdocname+" failed to execute: \n",  Object.keys(fdoc.actions).join("\n "));
+        }
+    } 
 });

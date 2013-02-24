@@ -32,3 +32,16 @@ A function
 
     console.log("I was here");
 
+
+## Now for some bad stuff
+
+What happens if to blocks refer to each other? 
+
+. Alice
+
+    Alice needs _":Bob"
+
+. Bob
+
+    Bob needs _":Alice"
+

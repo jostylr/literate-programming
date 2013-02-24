@@ -116,7 +116,7 @@ If the extension is unknown, start the line with `.` followed by all caps for th
 * You can separate out flow control from the processing. For example,
 
     if (condition) {
-        _":Truth"
+        _"Truth"
     } else {
         _"Beauty"
     }
