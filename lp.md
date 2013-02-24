@@ -322,6 +322,7 @@ JS main
         } else {
             cname = "."+type;
         }
+
         hcur.cname = cname;
 
         if (! hcur.cblocks.hasOwnProperty(cname) ) {
@@ -1007,6 +1008,8 @@ JS
 
         var final; 
 
+        var prune = _":prune";
+
         var next = _":Next function";
 
         final = _":Final function";
@@ -1019,11 +1022,11 @@ JS
 
 JS Compiling status prep
 
-We create a call object for next and commands, etc. 
+We create a call object for next and commands, etc. We prune the lines first, removing any blank lines at the beginning or end. 
 
     for (cname in cblocks) {
         cblock = cblocks[cname];
-        cblock.compiled = cblock.lines.join("\n");
+        cblock.compiled = prune(cblock.lines).join("\n");
         compiling[cname] = {status : 0, 
                 cblock : cblock,
                 commands : cblock.commands || [],
@@ -1107,7 +1110,34 @@ One added to a waiting list, it should be a block with a go method.
 
     }
 
- 
+JS Prune
+
+We need to remove empty blank lines at the beginning or end. We do this by creating a new array. 
+
+    function (arr) {
+        var begin, barr =[], earr= [], end, n = arr.length;
+        for (begin = 0; begin < n; begin += 1) {
+            if (arr[begin] === "" ) {
+                continue;
+            } else if (arr[begin].match(/^\s+$/)) {
+                barr.push(arr[begin].slice(1));
+            } else {
+                break;
+            }
+        }
+        for (end = n-1; end > -1; end -= 1) {
+            if (arr[end] === "" ) {
+                continue;
+            } else if (arr[end].match(/^\s+$/)) {
+                earr.push(arr[end].slice(1));
+            } else {
+                break;
+            }
+        }
+        return barr.concat(arr.slice(begin, end+1), earr.reverse());
+    }
+
+
 
 ## One cycle of substitution
 
@@ -1190,7 +1220,7 @@ All the substitutions have been obtained and we are ready to do the replacing. W
                   code = code.replace(rep[i][0], rep[i][1].rawString());
                 } else {
                     // error
-                  console.log("ERROR in replacing:", rep[i][0], rep[i][1]);
+                  doc.log("ERROR in replacing:", rep[i][0], rep[i][1]);
 
                   code = code.replace(rep[i][0], "");
                 }
@@ -1256,6 +1286,8 @@ The code is a closure variable to the original code text that we are going to su
 JS push it on rep
 
 Presumably this needs to execute the next step
+
+Added trim to make sure new blank lines after
 
     function (ret) {
         rep.push([match[0], ret]);
@@ -1347,7 +1379,7 @@ JS cblock substitution
     }
 
     if (passin.gocall) {
-        console.log("go called again", passin.gocall, names.fullname, gotcblock.cname);
+        doc.log("go called again", passin.gocall, names.fullname, gotcblock.cname);
     } else {
         passin.gocall = names.fullname; 
         if (gotcblock.isCompiled) {
@@ -1820,7 +1852,8 @@ Version control directive for the literate program. Generally at the base of the
                 docversion : (options[1] || "0.0.0")});
     }
 
-     
+
+
 ### Set Constant directive
 
 Here we set constants as macros. If NAME is the name of a macro, either NAME or NAME() will return the value
@@ -1911,6 +1944,7 @@ If no argument, then
 JS
 
     function (code, options) {
+
         var begin, middle;
         if (options.length === 2) {
             begin = Array(parseInt(options[0],10)+1).join(" ");

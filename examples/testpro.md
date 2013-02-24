@@ -2,7 +2,7 @@
 
 We just need a place to do some minor tests.
 
-FILE "Body" testpro.js  |jshint | jstidy
+FILE "Body" testpro.js  |jshint 
 
 ## Body
 
@@ -31,6 +31,10 @@ A function
 ## cl
 
     console.log("I was here");
+ 
+  
+   
+
 
 
 ## Now for some bad stuff

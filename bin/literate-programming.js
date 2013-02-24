@@ -48,15 +48,13 @@ postCompile = function (text) {
                 // done
             }
         
-        }
-        ;
+        };
     next(text); 
 };
 
 postCompile.push = function (arr) {
         this.steps.push(arr);
-    }
-    ;
+    };
 
 postCompile.steps = [];
 
@@ -67,8 +65,7 @@ if (program.preview) {
             var fname = passin.action.filename;
             doc.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
             next(text);
-        }
-        , {}]);
+        }, {}]);
 } else if (program.diff) {
     postCompile.push([function (text, next, obj) {        
             var passin = this;
@@ -82,8 +79,7 @@ if (program.preview) {
         
             doc.log(fname + " diff not activated yet ");
             next(text);
-        }
-        , {dir:dir}]);
+        }, {dir:dir}]);
 } else {
     postCompile.push([function (text, next, obj) {
             var passin = this;
@@ -101,8 +97,7 @@ if (program.preview) {
                         doc.log("File "+ fname + " saved");
                     }
                     next(text);
-                }
-                ;
+                };
         
             fs.writeFile(fname, text, 'utf8', cb);
         }, {dir: dir}]);
@@ -124,16 +119,14 @@ if (!program.quiet) {
                 console.log(doc.logarr.shift() );
             }
             next(text);
-        }
-        , {}]);
+        }, {}]);
 }
 
 postCompile.push([function (text, next) {
         var doc = this.doc;
         delete doc.actions[this.action.msg];
         next(text);
-    }
-    , {}]);
+    }, {}]);
 
 var doc = new Doc(md, {
     standardPlugins : standardPlugins,
