@@ -4,7 +4,7 @@
 
 This is the sixth cycle of literate programming. Here we implement a more asynchronous environment, particularly during the compile stage. 
 
-VERSION literate-programming | 0.6.0-pre
+VERSION literate-programming | 0.6.0
 
 
 ## Directory structure
