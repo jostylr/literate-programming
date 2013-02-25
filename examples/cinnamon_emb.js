@@ -7,8 +7,7 @@
 
     // Alternate styles for Safari
     if ((navigator.userAgent.indexOf('Safari') !== -1 ) && ( navigator.userAgent.indexOf('Chrome') === -1)) {
-        var css = ".cinnamon { overflow: visible; font-size: inherit; 
-             }";
+        var css = ".cinnamon { overflow: visible; font-size: inherit;  }";
     
         var head = document.head || document.getElementsByTagName('head')[0],
             style = document.createElement('style');
@@ -22,7 +21,6 @@
         }
         
         head.appendChild(style);
-        
     }
 
     // Add elements
@@ -52,5 +50,4 @@
             cinnamon.appendChild(e);
         }
     }
-    
 })();

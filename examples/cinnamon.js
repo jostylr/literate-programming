@@ -22,7 +22,6 @@
         "    width: 100%; ",
         "    color: rgba(0,0,0,0); ",
         "    overflow: hidden; font-size: 999px; ",
-        "    ",
         "}",
         "@media all and (device-width: 768px) and (device-height: 1024px) {",
         "    .cinnamon { ",
@@ -32,9 +31,7 @@
     
     // Alternate styles for Safari
     if ((navigator.userAgent.indexOf('Safari') !== -1 ) && ( navigator.userAgent.indexOf('Chrome') === -1)) {
-        css.replace('overflow: hidden; font-size: 999px; 
-            ', 'overflow: visible; font-size: inherit; 
-            ' );        
+        css.replace('overflow: hidden; font-size: 999px; ', 'overflow: visible; font-size: inherit; ' );        
     }
     
     var head = document.head || document.getElementsByTagName('head')[0],
@@ -49,7 +46,6 @@
     }
     
     head.appendChild(style);
-    
 
     // Add elements
     var cinnamons = document.querySelectorAll('[data-cinnamon]');
@@ -78,5 +74,4 @@
             cinnamon.appendChild(e);
         }
     }
-    
 })();
