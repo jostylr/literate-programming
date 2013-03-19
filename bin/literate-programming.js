@@ -13,7 +13,7 @@ program
     .option('-r --root <root>', 'Change root directory for both input and output')
     .option('-p --preview',  'Do not save the changes. Output first line of each file')
     .option('-f --free', 'Do not use the default standard library of plugins') 
-    .option('-d -diff', 'Compare diffs of old file and new file')
+    .option('-d --diff', 'Compare diffs of old file and new file')
 ;
 
 program.parse(process.argv);
