@@ -2687,6 +2687,9 @@ Make sure non-existent blocks do not hang program (cname). More generally, make 
 
 Deal with line spacing. 
 
+Deal with empty file -- a better reporting mechanism. 
+
+Implement a ! tracking. Put ! at the beginning of a line--the number of marks is the level of severity of the issue. 
 
 Add in an opt-out for file saving or a rerouting... Add to Version the ability to set various boolean flags, such as dev, deploy, ..., add an environment directive to set those things. 
 
