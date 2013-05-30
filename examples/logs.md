@@ -8,7 +8,8 @@ VERSION Factorial | 0.1.0
 Starting from the parent directory, type `literate-programming -r examples logs.md` to compile.
 
 
-## Structure
+Structure
+=========
 
 MD main |1 marked
 
@@ -26,7 +27,8 @@ MD main |1 marked
 
 FILE ":main" logs.htm 
 
-## Introduction
+Introduction
+= 
 
 Introduce the problem
 
@@ -256,7 +258,8 @@ JS  |jshint | eval
     })();
 
 
-## Stand alone page
+Stand alone page
+=============
 
 Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.com/a-minimal-html-document-html5-edition/)
 
@@ -286,7 +289,8 @@ Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.
 FILE "Stand alone page" logs.html 
 
 
-### Scripted Writing
+Scripted Writing
+-----------
 
 Our own homebrew solutions for a bit of scripted writing action. This will be split off into its own place, but for now it is here for demo purposes.
 

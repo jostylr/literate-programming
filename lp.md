@@ -4,7 +4,7 @@
 
 This is the sixth cycle of literate programming. Here we implement a more asynchronous environment, particularly during the compile stage. 
 
-VERSION literate-programming | 0.6.0
+VERSION literate-programming | 0.6.1
 
 
 ## Directory structure
@@ -222,9 +222,14 @@ JS
       var match = reg.exec(line);
       if (match) {
         hcur.cblocks[hcur.cname].lines.push(match[1]);
+        doc.lastLineType = "code";
         return true;
 
-      _":Add empty line"
+      } else if (line.match(/^\s*$/)  ) {
+
+        _":Add empty line"
+
+        return false; // so that it can be added to the plain parser as well
         
       } else {
         return false;
@@ -236,12 +241,10 @@ Added the following clause to add empty lines to the code. Stuff before and afte
 
 JS Add empty line 
 
-      } else if (line.match(/^\s*$/)  ) {
-        var carr = hcur.cblocks[hcur.cname];
-        if (carr && carr.lines.length > 0 && carr.lines[carr.lines.length -1 ] !== "") {
-            hcur.cblocks[hcur.cname].lines.push(line);
-        }
-        return false; // so that it can be added to the plain parser as well
+    var carr = hcur.cblocks[hcur.cname];
+    if (carr && carr.lines.length > 0 && carr.lines[carr.lines.length -1 ] !== "") {
+        hcur.cblocks[hcur.cname].lines.push(line);
+    }
 
 
 
@@ -271,9 +274,11 @@ JS
         if (doc.directives.hasOwnProperty(name)) {
             options = (match[2] || "").split("|").trim();
             doc.directives[name].call(doc, options);
+            doc.lastLineType = "directive";
             return true;
         } else if (doc.types.hasOwnProperty(name) ){
             doc.switchType(match[1], match[2]);
+            doc.lastLineType = "type switch";
             return true;   
         } else {
             return false;
@@ -385,7 +390,9 @@ The setup is that the code array has a property named commands which is an assoc
 
 ### Head parser
 
-We recognize a heading by the start of a line having '#'. 
+We recognize a heading by the start of a line having '#'. We ignore any '#' found at the end of the line (this is the replace at the end of heading). 
+
+We will also recognize a seText underline heading by the combination of a line consisting of only '=' or '-' that is preceded by a line of type plain text.
 
 For new global blocks, we use the heading string as the block name. We lower case the whole name to avoid capitalization issues (it was really annoying!)
 
@@ -395,9 +402,16 @@ JS
       var hcur, heading;
       var head = /^(\#+)\s*(.+)$/;
       var match = head.exec(line);
+      var setext = /^(=+|-+)\s*$/;
+      var matchse = setext.exec(line);
       if (match) {
-        heading = match[2].trim().toLowerCase();
-
+        heading = match[2].trim().toLowerCase().replace(/(\#+)$/, '').trim();
+      } else if (matchse ) {
+        if (doc.lastLineType === "text") {
+            heading = doc.hcur.plain.pop().trim().toLowerCase();
+        }
+      }
+      if (heading) {
         _":Remove empty code blocks"
 
         hcur = new HBlock();
@@ -411,6 +425,7 @@ JS
         // new processors for each section
         doc.processors = [].concat(doc.defaultProcessors);
         
+        doc.lastLineType = "heading";
         return true;
       } 
       return false;
@@ -443,7 +458,12 @@ It means there is nothing special about the line. So we simply add it to the pla
 
 JS
     function (line, doc) {
-      doc.hcur.plain.push(line);
+        doc.hcur.plain.push(line);
+        if (line.match(/^\s*$/) ) {
+            doc.lastLineType = "empty line";
+        } else {
+            doc.lastLineType = "text";
+        }
       return true;
     }
 
@@ -2033,7 +2053,7 @@ This is like raw, but it removes any Directives, and it removes one space from t
             if (line.match(/^(?:\#|\.[A-Z]|[A-Z]{2})/) ) {
                 continue;
             }
-            if (line.match(/^ (?:\#|[A-Z.])/) ) {
+            if (line.match(/^ (?:\#|[A-Z.]|\=|\-)/) ) {
                 ret.push(line.slice(1));
             } else {
                 ret.push(line);
@@ -2382,7 +2402,7 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 
 
 literate-programming
-====================
+ ====================
 
 Write your code anywhere and in any order with as much explanation as you like. literate-programming will weave it all together to produce your project.
 
@@ -2466,7 +2486,7 @@ See the full documentation
 
 A literate program is a markdown document with some special conventions. 
 
-The basic idea is that each header line (regardless of level) demarcates a full block. Code blocks within a full block are the bits that are woven together. 
+The basic idea is that each header line (regardless of level, either atx # or seText underline ) demarcates a full block. Code blocks within a full block are the bits that are woven together. 
 
  ### Code Block
 

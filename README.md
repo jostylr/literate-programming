@@ -83,7 +83,7 @@ See the full documentation
 
 A literate program is a markdown document with some special conventions. 
 
-The basic idea is that each header line (regardless of level) demarcates a full block. Code blocks within a full block are the bits that are woven together. 
+The basic idea is that each header line (regardless of level, either atx # or seText underline ) demarcates a full block. Code blocks within a full block are the bits that are woven together. 
 
 ### Code Block
 
