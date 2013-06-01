@@ -2,10 +2,12 @@
 
 This post is about computing factorials via the logarithm. We use loops to compute it. 
 
-
-
 Starting from the parent directory, type `literate-programming -r examples logs.md` to compile.
 
+This literate program compiles into the following files: 
+
+* [logs.htm](#structure 'Save: ":main"')
+* [logs.html](#Stand-alone-page 'Save')
 
 Structure
 =========
@@ -25,7 +27,6 @@ Structure
     _"Comments"
 
 
-[logs.htm](#structure 'Save: ":main" logs.htm')
 
 Introduction
 ===== 
@@ -54,7 +55,8 @@ Introduce the problem
 
 Here we work out step by step how to compute out 1000!
 
-MD
+[](# '.MD')
+
 
     ## Solution
     Using logarithms, I claim $1000! \approx 4.02\times 10^{2567}$. 
@@ -82,7 +84,7 @@ MD
 
 ## Comments
 
-MD
+[](# '.MD')
 
     ##Conclusion
     Factorials are large. For example, suffling a deck of cards leads to about $52! \approx 8.13 \times 10^{67}$ different possible outcomes. That is a number with 67 digits. To put that into perspective, the number of estimated molecules in the observed universe is about $10^{80}$. 
@@ -95,7 +97,7 @@ MD
 
 Here we give a little calculator to compute factorials of large size. Could even get larger using Stirling's approximation stuff:  (x – 1/2) log(x) – x  + (1/2) log(2 π)  from [Endeavor](http://www.johndcook.com/blog/2010/08/16/how-to-compute-log-factorial/)
 
-MD | 1 marked 
+[](# '.MD| 1 marked ')
 
     ## Factorial Computer
 
@@ -109,7 +111,7 @@ MD | 1 marked
 Give an editable code block that can be edited and run.
 
 
-MD | 1 marked
+[](# '.MD| 1 marked ')
 
     ## Working code
 
@@ -129,7 +131,7 @@ MD | 1 marked
 
 We need an input box and a way to run it. We will have a button that implements it.
 
-HTML
+[](# '.HTML')
 
     <input type="text" name="n" id="n"></input><button id="computeFactorial">Compute!</button>
     
@@ -139,7 +141,8 @@ HTML
 
 We will attach a function to the click action 
 
-JS
+[](# '.JS')
+
     /*global $*/
     $("#computeFactorial").click(function () {
         var n = $("#n").val();
@@ -154,7 +157,7 @@ JS
 
 We need to make sure that n is a positive integer.
 
-JS
+[](# '.JS')
 
     if ((n < 0) || (Math.floor(n) !== n) ) {
         $("#factorial").text("Input a positive integer");
@@ -163,13 +166,13 @@ JS
 
 ## Code block for factorial
 
-JS | jshint | wrap(textarea, runnable, cols="120", rows = "10") 
+[](# '.JS | jshint | wrap(textarea, runnable, cols="120", rows = "10") ')
 
     var n = 1000;
     _"Common factorial"
     $("#result").text(nf); 
 
-HTML
+[](# '.HTML')
 
     <p>The result of the above computation is <span id="result"></span>.</p>
 
@@ -178,7 +181,7 @@ HTML
 
 Here we define the loop, get the result and format it appropriately. n is already defined as its definition differs. 
 
-JS
+[](# '.JS')
 
     var lf = 0, nf;
     //sum ove the logs
@@ -195,14 +198,15 @@ JS
 
 It might be nice to see a variety of factorials. We'll do a cresendo of 1, 5, 10, 50, 100, 500, ....
 
-MD |1 marked 
+[](# '.MD |1 marked ')
+
     ## A few factorials
 
     To see the growth of the factorial, let's compute a few of them. 
 
     __":Factorial Table| eval  | htmltable(rowswheader)"
 
-JS Factorial Table |jshint
+[Factorial Table](# '.JS  |jshint')
 
     var i = 1;
     var fact = function (n) {
@@ -228,13 +232,13 @@ Not active as we have a default jquery macro in the common standard plugins. But
         (v || '1.9.0') + '/jquery.min.js"></script>';
     }
 
- DEFINE jquery
+[](# 'DEFINE: jquery')
 
 ## Testing the factorial
 
 Let's make sure our factorial function is working. 
 
-JS  |jshint | eval 
+[](# 'JS  |jshint | eval')
 
     (function () {
         var factorial = function (n) {
@@ -286,7 +290,7 @@ Boiler plate taken from the well-written page: [SitePoint](http://www.sitepoint.
       </body>
     </html>
 
-FILE "Stand alone page" logs.html 
+
 
 
 Scripted Writing
@@ -294,7 +298,7 @@ Scripted Writing
 
 Our own homebrew solutions for a bit of scripted writing action. This will be split off into its own place, but for now it is here for demo purposes.
 
-CSS  | wrap(style) 
+[](# '.CSS  | wrap(style) ')
 
     .runnable { border : 3px solid lightblue; width : 100%}
 
@@ -302,7 +306,7 @@ CSS  | wrap(style)
 
     .hide { display : none} 
 
-JS  | jshint | wrap(script) 
+[](# '.JS  | jshint | wrap(script) ')
 
     $(document).ready(function ()  {
 
@@ -312,7 +316,7 @@ JS  | jshint | wrap(script)
 
     });
 
-JS run 
+[run](# '.JS  ')
 
 The class .run should have runnable, escaped code that we unescape and then run. 
 
@@ -324,7 +328,7 @@ The class .run should have runnable, escaped code that we unescape and then run.
         eval(code);
     });
 
-JS runnable
+[runnable](# '.JS')
 
     $(".runnable").each(function () {
         var el$ = $(this);
