@@ -7,7 +7,7 @@ Starting from the parent directory, type `literate-programming -r examples logs.
 This literate program compiles into the following files: 
 
 * [logs.htm](#structure 'Save: ":main"')
-* [logs.html](#Stand-alone-page 'Save')
+* [logs.html](#stand-alone-page 'Save')
 
 Structure
 =========
@@ -328,7 +328,7 @@ The class .run should have runnable, escaped code that we unescape and then run.
         eval(code);
     });
 
-[runnable](# '.JS')
+[](# 'runnable.JS')
 
     $(".runnable").each(function () {
         var el$ = $(this);
