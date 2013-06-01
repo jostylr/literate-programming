@@ -25,14 +25,14 @@ Structure
     _"Comments"
 
 
-[logs.htm](#structure 'Save: ":main" logs.htm 
+[logs.htm](#structure 'Save: ":main" logs.htm')
 
 Introduction
-= 
+===== 
 
 Introduce the problem
 
-MD
+[](# '.MD')
 
     # Big Factorial? Log it down to size
 
