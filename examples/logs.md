@@ -234,28 +234,25 @@ Not active as we have a default jquery macro in the common standard plugins. But
 
 Let's make sure our factorial function is working. 
 
-JS  |jshint | eval 
+JS  |ife(return = "", j = 5) |jshint | eval 
 
-    (function () {
-        var factorial = function (n) {
-            _"common factorial"
-            return nf;
-        };
-        var factorials = {1 : 1, 2: 2, 3: 6, 4: 24, 5:120, 6:720};
-        var n, flag = false; 
-        for (n in factorials) {
-            if (factorial(n) != factorials[n] ) {
-                console.log(n + " does not work");
-                flag = true;
-            }
+    var factorial = function (n) {
+        _"common factorial"
+        return nf;
+    };
+    var factorials = {1 : 1, 2: 2, 3: 6, 4: 24, 5:120, 6:720};
+    var n, flag = false; 
+    for (n in factorials) {
+        if (factorial(n) != factorials[n] ) {
+            console.log(n + " does not work");
+            flag = true;
         }
-        if (flag) {
-            console.log( "factorial function had errors");
-        } else {
-            console.log("factorial function passed test");  
-        }
-        return "";
-    })();
+    }
+    if (flag) {
+        console.log( "factorial function had errors");
+    } else {
+        console.log("factorial function passed test");  
+    }
 
 
 Stand alone page

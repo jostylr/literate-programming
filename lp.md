@@ -1805,7 +1805,7 @@ If it is not an array, then it should be a Doc and we load the current doc into 
         return true; 
     } else {
         // never seen before
-        doc.repo[name] = [doc, name];
+        doc.repo[fname] = [[doc, name]];
         doc.loading[name] = true;
     }
 
