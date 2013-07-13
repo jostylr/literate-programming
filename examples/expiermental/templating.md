@@ -66,16 +66,18 @@ The wrap will wrap the given content into an HTML script tag. This already exist
 
     <div class="row-fluid">
         <div class="span8">
-            <div id="_"*:name">
+            <div id="_"*:name"" _"*:attr">
                 _"*:main"
             </div>
         </div>
         <div class="span4">
-            <div id="_"*:name"Nav">
+            <div id="_"*:name"Nav" _"*:attrNav">
                 _"*:side"
             </div>
         </div>
     </div>
+
+It is okay not to have it; then it is just a blank. 
 
 
 ## Example snippet
