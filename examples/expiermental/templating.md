@@ -2,19 +2,24 @@
 
 The idea is that we want to write something which gets used over and over again. This is a common pattern. 
 
-## Brackets
+We want to implement various scenarios. One is to have subcblocks that can be used to fill in the template. Another is to have a list of items that get wrapped. The third is to allow for smart insertion somehow. Let's try to figure this stuff out. 
 
-A common templating covnention is double brackets we will use that. Perhaps we will use handlebars
+We will use the new syntax that is coming. 
+
+## Boilerplate
+
+We use asterisks in the usual litpro quotes. 
 
     <!DOCTYPE html>
     <html lang="en">
         <head>
             <meta charset="utf-8">
-            <title>{{title}}</title>
+            <title>_"*:title"</title>
         </head>
         <body>
-        {{body}}
-        {{scripts}}
+        <h1>_"*:title"</h1>
+        _"*:body"
+        _"*:scripts"
         </body>
     </html>
 
@@ -22,36 +27,78 @@ A common templating covnention is double brackets we will use that. Perhaps we w
 
 We could then invoke this with 
 
-FILE "First page" first.html | hbar(brackets)
+[first.html](#First-page "Save: *boilerplate")
 
-That is, we use the template function taking the template from the parenthetical, parsing it as a name of a section. The context for the template is the text being fed in from the pipe
+We look at the section first-page and pull out the relevant subsections. This is hard to accomplish at the moment as the feeder evaluates this stuff first. But probably it can get access to the cblocks. 
 
 ## First page
 
 This first page is a bunch of content in a context that gets filled in
 
-JSON
+[title](# )
 
-    {
-        title : "Great",
-        body : _":some content",
-        scripts : SCRIPT(jQuery, d3, canvg, "http://great.com/zooks.js") 
-    }
+    Great Smokey Mountains
 
-MD  some content | marked
+[body](# ".md | marked")
 
-    I once was a mathematician
+    These are the great and magnificent mountains.
 
-    But then I became a programmer
+    _":history"
 
-    How could that be
+[scripts](# )
 
-    How not
-
-As for the SCRIPT macro, that should output the script tags for each of them with src and whatever. Maybe there can be a config file the lit pro loads to get a bunch of these things predefined? Start with the global and then descend down into the project and maybe have a directive like CONFIG jquery http://link to file. 
-
-## Named sub
-
-We can use hbar(brackets, varname)  to replace varname with the piped content.
+    SCRIPT(jQuery,d3,canvg,http://great.com/zooks.js)
+    _"scriptxt | wrap(script)"
 
 
+
+[history](# )
+
+    The mountains rose from the ground over so many years...
+    
+## Script and wrap
+
+The SCRIPT macro would take in various comma-delimited texts and put them in the usual script format. 
+
+The wrap will wrap the given content into an HTML script tag. This already exists, I believe. 
+
+## BS Snippets
+
+    <div class="row-fluid">
+        <div class="span8">
+            <div id="_"*:name">
+                _"*:main"
+            </div>
+        </div>
+        <div class="span4">
+            <div id="_"*:name"Nav">
+                _"*:side"
+            </div>
+        </div>
+    </div>
+
+
+## Example snippet
+
+Some nice stuff
+
+[name](# ) 
+
+    Scratch
+
+[main](# )
+
+    yadda yadda 
+
+[side](# )
+
+    more yadda yadda but with sliders
+
+[script](# )
+
+    somejavascript
+
+
+### Body
+
+    _"Example Snippet*bs snippets"
