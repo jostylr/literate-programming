@@ -6,7 +6,7 @@ var fs = require('fs');
 var Doc = require('../lib/literate-programming').Doc;
 
 program
-    .version('0.6.1')
+    .version('0.7.0-pre')
     .usage('[options] <file>')
     .option('-o --output <root>', 'Root directory for output')
     .option('-i --input <root>',  'Root directory for input')

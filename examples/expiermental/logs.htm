@@ -1,0 +1,70 @@
+<h1>Big Factorial? Log it down to size</h1>
+<h2>Problem</h2>
+<p>Factorials get too big too fast. For example, $69! \approx 1.7\times 10^{98}$ is the maximum factorial a calculator can handle. And Google maxes out around 170!</p>
+<p>The issue is that the numbers get too big for the computer to store in memory in its default way to store numbers.</p>
+<h2>Key Insight</h2>
+<p>Logarithms cut numbers down to size, but we cannot use the logarithm of the answer without computing it. Or can we?</p>
+<p>The logarithm of a product is the sum of the logarithms...</p>
+<h2>Solution</h2>
+<p>Using logarithms, I claim $1000! \approx 4.02\times 10^{2567}$. </p>
+<p>To start with, computing $\ln(1000!)$ does not help since $1000!$ is computed first before the logarithm can act. </p>
+<p>But remember that logarithms convert products to sums: 
+$$\ln (1000* 999* 998* ... *3 *2 *1) = \ln(1000) + \ln(999) + \ln(998) + \cdots + \ln(3)+\ln(2) + \ln(1) $$</p>
+<p>For example, if you run the following command in <a href="http://geogebra.org">GeoGebra</a>: <code>sum(sequence(ln(n), n, 1, 1000))</code> you will get $5912.13$.</p>
+<p>Now we cannot exponentiate that directly since it would generate too large a number. It is currently in base $e$, i.e., \(e^{5912} \approx 1000!\) </p>
+<p>How do we get it to base 10? Divide by $\ln(10)$</p>
+<p>Once in base 10, the integer part is the power of 10. The fractional part could then be exponentiated. </p>
+<p><code>sum(sequence(ln(n), n, 1, 1000))/ln(10) = 2567.6046</code></p>
+<p>Therefore, 
+$$1000! \approx  10^{0.6046} \times 10^{2567} \approx 4.02 \times 10^{2567}$$</p>
+<h2>A few factorials</h2>
+<p>To see the growth of the factorial, let&#39;s compute a few of them. </p>
+<table ><tr><th>n</th><th>n!</th><th>\(\log_{10}(n!)\)</th></tr><tr><td>5</td><td>120</td><td>2.08</td></tr><tr><td>10</td><td>3.62880E6</td><td>6.56</td></tr><tr><td>50</td><td>3.04141E64</td><td>64.5</td></tr><tr><td>100</td><td>9.33262E157</td><td>158</td></tr><tr><td>500</td><td>1.22014E1134</td><td>1.13e+3</td></tr><tr><td>1000</td><td>4.02387E2567</td><td>2.57e+3</td></tr><tr><td>5000</td><td>4.22858E16325</td><td>1.63e+4</td></tr><tr><td>10000</td><td>2.84626E35659</td><td>3.57e+4</td></tr><tr><td>50000</td><td>3.34732E213236</td><td>2.13e+5</td></tr><tr><td>100000</td><td>2.82423E456573</td><td>4.57e+5</td></tr><tr><td>500000</td><td>1.02280E2632341</td><td>2.63e+6</td></tr><tr><td>1000000</td><td>8.26393E5565708</td><td>5.57e+6</td></tr></table>
+
+<h2>Factorial Computer</h2>
+<p>To use, put in a positive integer.</p>
+<input type="text" name="n" id="n"></input><button id="computeFactorial">Compute!</button>
+
+<div id="factorial"></div>
+
+<div class='hide run'>/*global $*/
+$("#computeFactorial").click(function () {
+    var n = $("#n").val();
+    if ((n &amp;lt; 0) || (Math.floor(n) !== n) ) {
+        $("#factorial").text("Input a positive integer");
+    }
+    var lf = 0, nf;
+    //sum ove the logs
+    var i; 
+    for (i = 0; i &amp;lt; n; i += 1) {
+      lf += Math.log(i+1);
+    }
+    var lf10 = lf/Math.LN10;
+    nf = lf10 &amp;lt; 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10);
+    var text = n + "! = " + nf;
+    $("#factorial").text(text );      
+});</div>
+
+<h2>Working code</h2>
+<p>Would you like to play around with the code that generated this? Try editing the follow code block:</p>
+<textarea cols='120' rows = '10' class='runnable'>var n = 1000;
+var lf = 0, nf;
+//sum ove the logs
+var i; 
+for (i = 0; i < n; i += 1) {
+  lf += Math.log(i+1);
+}
+var lf10 = lf/Math.LN10;
+nf = lf10 < 6 ? Math.round(Math.pow(10, lf10) ) : Math.pow(10, lf10-Math.floor(lf10)).toPrecision(6) + "E" + Math.floor(lf10);
+$("#result").text(nf);</textarea>
+
+<p>The result of the above computation is <span id="result"></span>.</p>
+
+<p>This is the implementation described above. We first compute the some of the logarithms, then we compute the logarithm relative to 10. The final line is just an attempt to present the result nicely. </p>
+<p>Feel free to modify the code to see how it works.</p>
+
+
+<h2>Conclusion</h2>
+<p>Factorials are large. For example, suffling a deck of cards leads to about $52! \approx 8.13 \times 10^{67}$ different possible outcomes. That is a number with 67 digits. To put that into perspective, the number of estimated molecules in the observed universe is about $10^{80}$. </p>
+<p>While Google maxes out at $170!$, one can use <a href="http://www.wolframalpha.com/input/?i=1000%21">Wolfram Alpha</a> to compute the factorial and check our work. </p>
+<p>Always keep in mind the power of logarithms. </p>

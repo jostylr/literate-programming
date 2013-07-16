@@ -4,7 +4,7 @@
 
 This is the sixth cycle of literate programming. Here we implement a more asynchronous environment, particularly during the compile stage. 
 
-VERSION literate-programming | 0.6.1
+VERSION literate-programming | 0.7.0-pre
 
 
 ## Directory structure
@@ -140,7 +140,7 @@ Each line is of one of four basic types:
 
 1. Header. This signifies a new hblock. 
 2. Code line. This is a line indented with (possibly a tab followed by) 4 spaces. Stored in cblock.
-3. Directive/Type switch. If a line starts with all caps or a ., then it has the potential to be a directive (such as FILE command)  or to create/switch the code block to a new type or name. What happens is very dependent on what is found there.  
+3. Directive/Type switch. If a line starts with all caps or a ., then it has the potential to be a directive (such as FILE command)  or to create/switch the code block to a new type or name. What happens is very dependent on what is found there. The directive/switch can also be in a line syntax. It should be at the start of a line.  
 4. Plain text. This just is for reading and gets put into a plain text block without it being useful, presumably.
 
 All lines in a block do get put into storage in order for safe-keeping (some raw output, for example, could be useful).
@@ -199,7 +199,9 @@ JS
     [ 
     _"Code parser", 
     _"Head parser", 
-    _"Directives parser", 
+    _"Directives parser caps", 
+    _"Directives parser link",
+    _"Switch parser link",
     _"Plain parser" 
     ]
 
@@ -249,7 +251,9 @@ JS Add empty line
 
 
 
-### Directives parser
+### Directives parser caps
+
+DEPRECATED.  This will be moved into an option to activate. 
 
 A directive will be recognized as, at the start of a line, as all caps and a matching word. This may conflict with some uses, but it seems unlikely since if there is no matching directive, then the original is left untouched. 
 
@@ -300,6 +304,72 @@ JS period triggers match
         return true;
       }
 
+### Directives parser link
+
+A directive can appear anywhere. This is a markdown link text that matches `[stuff](whatever "dir:")`. The dir must be a known directive. Otherwise it is ignored. 
+
+Double quotes need to be used for the title directive text. Single quotes can be used freely as far as lit pro is concerned. 
+
+The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
+
+
+JS
+
+    function (line, doc) {
+
+      var reg = /\[([^\]]*)\]\s*\(([^")]*)"([^:"]*)\:(.*)"\s*\)/;
+      var options, name, link, dir;
+      var match = reg.exec(line);
+      if (match) {
+        name = (match[1] || "").toLowerCase().trim();
+        link = (match[2] || "").toLowerCase().trim();
+        dir = (match[3] || "").toLowerCase().trim();
+        options = (match[4] || "").split("|").trim();
+        if (doc.directives.hasOwnProperty(dir) ) {
+            doc.directives[dir].call(doc, options, name, link);
+            doc.lastLineType = "directive";
+            return true;
+        } else {
+            doc.log("Directive link with no known directive:" + line);
+            return false;
+        }
+      } else {
+        return false;
+      }
+    }
+
+### Switch parser link
+
+
+A switch to a new code block will be recognized as, at the start of a line, a markdown link syntax: `[cname](whatever "ext | ..."). In the extremely unlikely event that you need to avoid matching, put a space or something at the start of the line if your link must be at the beginning of a line. Or put a non-space character after the link's parenthetical.  As long as a link is at the beginning of the line, it will cause a switch of cname.
+
+Double quotes need to be used for the title directive text. Single quotes can be used freely within the double quotes as far as lit pro is concerned. 
+
+The function takes in a line and the doc structure. It either returns true if a successful switch  match/execution occurs or it returns false. 
+
+JS
+
+    function (line, doc) {
+
+      var reg = /^\[([^\]]*)\]\s*\(([^")]*)(?:"([^"].*)")?\s*\)\s*$/;
+      var options, name, link, title, type;
+      var match = reg.exec(line);
+      if (match) {
+        name = (match[1] || "").toLowerCase().trim();
+        link = (match[2] || "");
+        title = (match[3] || "");
+ 
+        options = title.split("|").trim();
+        type = options.shift() || "";
+        doc.switchType(name, type, options);
+        doc.lastLineType = "type switch";
+        return true;   
+      } else {
+        return false;
+      }
+    }
+
+
 
 
 ### Switch type 
@@ -308,25 +378,38 @@ Here is the function for switching the type of code block one is parsing. The sy
 
 Anything works for the name except pipes.
 
+Because of the change to link syntax and how it was coded before, this function has two separate use cases, distinguished by number of arguments.
+
 JS main
 
-    function (type, options) {
+    function (a, b, c)  {
+        var name, type, options;
         var doc = this;
         var hcur = doc.hcur;
         var cname; 
 
-        type = type.toLowerCase(); 
-        if (typeof options === "undefined") {
-            options = "";
-        }
-        options = options.split("|").trim();
-        var name = options.shift();
-        if (name) {
-            name.trim();
-            cname = name.toLowerCase()+"."+type;
-        } else {
-            cname = "."+type;
-        }
+        if (arguments.length === 2) {
+            type = a.toLowerCase(); 
+            options = (b || "").split("|").trim();
+            name = options.shift();
+            if (name) {
+                cname = name.toLowerCase()+"."+type;
+            } else {
+                cname = "."+type;
+            }
+        } else { 
+            name = a.toLowerCase();
+            type = b.toLowerCase() || "none"; 
+            options = c;
+            if (name) {
+                cname = name.toLowerCase()+"."+type;
+            } else {
+                cname = "."+type;
+            }
+
+
+        } 
+
 
         hcur.cname = cname;
 
@@ -339,6 +422,7 @@ JS main
         _":Parse options"
 
     }
+
 
 JS Parse options
 
@@ -887,6 +971,7 @@ JS main
         var doc = this;
         ext = ext || ""; // only relevant in compiling file type
         var cblocks = hblock.cblocks;
+
 
         if (!cblocks) {
             if (cname) {
@@ -1592,6 +1677,7 @@ We use lower case for the keys to avoid accidental matching with macros.
 
     { 
         "file" : _"File directive",
+        "save" : _"Save directive",
         "version" : _"Version directive",
         "load" : _"The load directive:main",
         "require" : _"Require directive",
@@ -1717,6 +1803,75 @@ JS Msg
 Just a snippet of code I keep writing for reporting error location.
 
     +options.join[" | "]+","+ doc.hcur.heading
+
+
+
+### Save directive
+     
+The command is `[fname.ext](#block-name "sub block name | commands...")` where fname.ext is the filename and extension to use. 
+
+If the hash has no text after it, then use the current code block. 
+
+The rest of the options are pipe commands that get processed.
+
+To maintain compatibility with more of the directives that do not use name or link, the options comes first. 
+
+Unlike file, we do not support using the top block from a different file. Most likely that was because of a template issue 
+
+    function (options, filename, link) {
+        var doc = this; 
+        var heading, cname, litpro=""; 
+
+        if (!filename ) {
+            doc.log("No file name for saving: " + filename + link + options.join("|") );
+            return false;
+        }
+
+        var type = filename.split(".");
+        if (type.length > 1) {
+            type = type[type.length-1];            
+        } else {
+            type = "";
+        }
+
+        cname = options.shift();
+
+
+        heading = (link || "").slice(1).replace(/-/g, " ").toLowerCase();
+
+        if (! heading) {
+            //current block
+            heading = doc.hcur.heading;
+            cname = cname || doc.hcur.cname;
+        }
+
+
+        doc.actions["File not saved: " + filename] = {
+            f: _":the action function",
+            litpro: litpro,
+            heading : heading,
+            cname : cname, 
+            pipes: options.slice(1),
+            filename : filename,
+            msg : "File not saved: " + filename,
+            state : {indent : false},
+            type: type
+        };
+    }
+
+JS The action function
+
+
+This should receive the passin object as this which will contain the action object. The argument is the text.
+
+All postCompile functions should expect a passin object with a text from compiling. 
+
+    function (text) {
+        doc.postCompile.call(this, text);
+    }
+
+
+
 
 
 ### The load directive
@@ -1908,7 +2063,7 @@ Example:   `DEFINE darken`  and in the code block above it is a function and onl
             doc.log("Error with DEFINE directive. Need a name.");
             return false; 
         }
-        code = hcur.code[hcur.cname].join("\n");
+        code = hcur.cblocks[hcur.cname].lines.join("\n");
         var macrof;
         eval("macrof="+code);
         var newm = {};
@@ -2703,6 +2858,14 @@ You can also define your own directives; see [literate-programming-standard](htt
 
 ## TODO
 
+Implement link text for directives and type switches
+
+Implement template solution
+
+Make sure missing blocks don't cause problems. 
+
+Add in a toggl to enable immediate console logging from doc.log calles. 
+
 Make sure non-existent blocks do not hang program (cname). More generally, make sure that looped references (alice calls bob, bob calls alice) do not hang program; emit doc.log problem and move on. Also have a check at the end for ready to compile docs. This should allow for saving of files that are fine and the hung up files do not get saved. 
 
 Deal with line spacing. 
@@ -2801,6 +2964,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ## Change Log
+
+v.0.6.1
+
+Implemented using underlines for headings per markdown spec.
 
 v.0.6.0
 
