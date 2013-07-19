@@ -27,9 +27,13 @@ We use asterisks in the usual litpro quotes.
 
 We could then invoke this with 
 
-[first.html](#First-page "Save: *boilerplate")
+[first.html](#First-page "Save: files")
 
 We look at the section first-page and pull out the relevant subsections. This is hard to accomplish at the moment as the feeder evaluates this stuff first. But probably it can get access to the cblocks. 
+
+## Files
+
+    _"First page*boilerplate"
 
 ## First page
 

@@ -317,25 +317,26 @@ JS
 
     function (line, doc) {
 
-      var reg = /\[([^\]]*)\]\s*\(([^")]*)"([^:"]*)\:(.*)"\s*\)/;
-      var options, name, link, dir;
-      var match = reg.exec(line);
-      if (match) {
-        name = (match[1] || "").toLowerCase().trim();
-        link = (match[2] || "").toLowerCase().trim();
-        dir = (match[3] || "").toLowerCase().trim();
-        options = (match[4] || "").split("|").trim();
-        if (doc.directives.hasOwnProperty(dir) ) {
-            doc.directives[dir].call(doc, options, name, link);
-            doc.lastLineType = "directive";
-            return true;
+        var reg = /\[([^\]]*)\]\s*\(([^")]*)"([^:"]*)\:(.*)"\s*\)/;
+        var options, name, link, dir;
+        line = line.toLowerCase();
+        var match = reg.exec(line);
+        if (match) {
+            name = (match[1] || "").trim();
+            link = (match[2] || "").trim();
+            dir = (match[3] || "").trim();
+            options = (match[4] || "").split("|").trim();
+            if (doc.directives.hasOwnProperty(dir) ) {
+                doc.directives[dir].call(doc, options, name, link);
+                doc.lastLineType = "directive";
+                return true;
+            } else {
+                doc.log("Directive link with no known directive:" + line);
+                return false;
+            }
         } else {
-            doc.log("Directive link with no known directive:" + line);
             return false;
         }
-      } else {
-        return false;
-      }
     }
 
 ### Switch parser link
@@ -820,6 +821,8 @@ Each action should have an object of the form
 * pipe: an array of pipes to act on the compiled text first
 * state : whatever state variables need to be passed. For files, this is {indent : false}
 
+Star is added for filename properties to allow for start substitution. 
+
 
 JS Main
 
@@ -843,7 +846,7 @@ JS Main
             type = (action.type || "" ).trim(); 
             cblock = fdoc.getcblock(hblock, cname, type);
             if (cblock === false) {
-                fdoc.piping.call({doc:fdoc, hblock: hblock, cblock: {}, name:action.filename, state : action.state, action:action}, action.pipes || [], hblock.full.join("\n"), action.f);
+                fdoc.piping.call({doc:fdoc, hblock: hblock, cblock: {}, name:action.filename, state : action.state, action:action, star:action.star}, action.pipes || [], hblock.full.join("\n"), action.f);
             } else {
                 go = goFact({doc:fdoc, hblock: hblock, cblock: cblock, name:action.filename, state : action.state,  action:action});
                 cblock.waiting.push(go);
@@ -972,7 +975,6 @@ JS main
         ext = ext || ""; // only relevant in compiling file type
         var cblocks = hblock.cblocks;
 
-
         if (!cblocks) {
             if (cname) {
                 doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
@@ -995,7 +997,9 @@ JS main
                 return cblocks[keys[0]];
             } else {
                 if (cname) {
-                    doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+
+
+                    doc.log("1 Key, no match in " + hblock.heading + " The request was for " + cname);
                 }
             return false;                
             }
@@ -1004,7 +1008,7 @@ JS main
         // no code segments
         if (keys.length === 0) {
             if (cname) {
-                doc.log("No code blocks in " + hblock.heading + " The request was for " + cname);
+                doc.log("Code length 0 in " + hblock.heading + " The request was for " + cname);
             }
             return false;
         }
@@ -1275,7 +1279,7 @@ JS main
         var doc = passin.doc;        
         var hblock = passin.hblock;
 
-        var reg =  /(?:(\_+)(?:(?:\"([^"]+)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
+        var reg =  /(?:(\_+)(?:(?:\"([^"*][^"]*)\")|(?:\`([^`]+)\`))|(?:([A-Z][A-Z.]*[A-Z])(?:\(([^)]*)\))?))/g;
  
         var rep = [];
         var match, lower, args, ext;
@@ -1435,6 +1439,8 @@ This is pretty simple. We take the stuff in the backticks and eval it. The outpu
 
 There is no async mechanism for this call.
 
+The purpose of the eval is more for authoring documents with data that may need to get recompiled. Complicated analysis should be in its own block. 
+
     _":Matching block, multi-level"
 
     rep.push([match[0], eval(match[3])]);
@@ -1466,10 +1472,31 @@ A macro will be called with the passin object. It can have a callback flag.
 
 JS cblock substitution
 
+Here we need to do the fancy dancing for star substitution. Essentially, if a star substtution is requested, we replace the hblock with a copy of the star block, but with all "*:..." replaced with the hblock name. Then we send it on its merry way. 
+
+The idea is to create a new hblock that will have _"*..." replaced with _"litpro::heading..."  Then we can just use the usual substitution which is good. 
+
+So we need get the star block, copy it, replace it, and then we should be good. 
+
+For templating, no cblocks for the insertion, please.
+
+
 
     pipes = match[2].split("|").trim();
     fullname = pipes.shift().toLowerCase(); 
     
+    names = {fullname: fullname};
+    var insert;
+
+    temp = fullname.split("*");
+
+    if (temp.length === 2) {
+        insert = temp[0];    
+        temp = temp[1];
+    } else {
+        temp = temp[0];
+    }
+
     _":parse fullname"
 
     _":get relevant hblock"
@@ -1484,6 +1511,22 @@ JS cblock substitution
         _":Matching block, multi-level"
     }
 
+    // do star replacement
+    var newcb, newhb;
+    if (insert) {
+        newcb = doc.makeCode();
+        newcb.lines = gotcblock.lines.map(function (el) {
+            return el.replace(/_"\*([^"]*)"/g, '_"'+insert+'$1"');
+        });
+        newhb = new HBlock();
+        newhb.heading = fullname;
+        newhb.cblocks[names.heading] = newcb;
+        doc.hblocks[newhb.heading] = newhb;
+        doc.fullSub(newhb);
+        gotcblock = newcb;
+    }
+
+
     if (passin.gocall) {
         doc.log("go called again", passin.gocall, names.fullname, gotcblock.cname);
     } else {
@@ -1495,15 +1538,18 @@ JS cblock substitution
         }
     }
 
+
 JS Parse fullname
 
 We will put all parsed bits into `names`. The temp variable will the bits that have yet to be parsed. 
 
-First we get any reference to an external litpro document. This is the "::".  Next, we check to see if there is no ":". If so, we check for a "."; the last period starts the extension and becomes the cname. If there is a ":", then that becomes the cname. 
+We start to check whether this is a star substitution call. If so, we split the star into two pieces as the template may very well be in an exteranl litpro document. But we will not worry about cblocks for templates or extensions. The data will be stored in the names object under a new object called star. 
 
-    names = {fullname: fullname};
+We get any reference to an external litpro document. This is the "::".  Next, we check to see if there is no ":". If so, we check for a "."; the last period starts the extension and becomes the cname. If there is a ":", then that becomes the cname. 
 
-    temp = fullname.split("::").trim();
+
+    
+    temp = temp.split("::").trim();
     if (temp.length === 1) {
         names.litpro = "";
         temp = temp[0];
@@ -1526,7 +1572,6 @@ First we get any reference to an external litpro document. This is the "::".  Ne
         names.cname = temp[1];
         names.heading = temp[0];
     }
-
 
 JS Get relevant hblock
 
@@ -1558,11 +1603,10 @@ We have the names object and now we use it to get an hblock to then get the cblo
                 return null;
             }
         } else {
-            // use the code already compiled in codeBlocks
+            // use the code already compiled in codeBlocks ?: looks like using current?
             reqhblock = hblock;
         }                    
     } 
-
 
 
 
@@ -1819,6 +1863,7 @@ To maintain compatibility with more of the directives that do not use name or li
 Unlike file, we do not support using the top block from a different file. Most likely that was because of a template issue 
 
     function (options, filename, link) {
+
         var doc = this; 
         var heading, cname, litpro=""; 
 
@@ -1836,6 +1881,20 @@ Unlike file, we do not support using the top block from a different file. Most l
 
         cname = options.shift();
 
+        var temp, star;
+        if (cname[0] === "*") {
+            star = {};
+            temp = cname.slice(1).split("::").trim();
+            if (temp.length === 1) {
+                star.litpro = "";
+                star.heading = temp[0];
+            } else {
+                star.litpro = temp[0];
+                star.heading = temp[1];
+            }
+        } else {
+            star = false;
+        }
 
         heading = (link || "").slice(1).replace(/-/g, " ").toLowerCase();
 
@@ -1846,12 +1905,14 @@ Unlike file, we do not support using the top block from a different file. Most l
         }
 
 
+
         doc.actions["File not saved: " + filename] = {
             f: _":the action function",
             litpro: litpro,
             heading : heading,
             cname : cname, 
-            pipes: options.slice(1),
+            star : star,
+            pipes: options,
             filename : filename,
             msg : "File not saved: " + filename,
             state : {indent : false},
