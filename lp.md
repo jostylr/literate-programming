@@ -1852,7 +1852,7 @@ Just a snippet of code I keep writing for reporting error location.
 
 ### Save directive
      
-The command is `[fname.ext](#block-name "sub block name | commands...")` where fname.ext is the filename and extension to use. 
+The command is `[fname.ext](#block-name "save: sub block name | commands...")` where fname.ext is the filename and extension to use. 
 
 If the hash has no text after it, then use the current code block. 
 
@@ -1860,7 +1860,10 @@ The rest of the options are pipe commands that get processed.
 
 To maintain compatibility with more of the directives that do not use name or link, the options comes first. 
 
-Unlike file, we do not support using the top block from a different file. Most likely that was because of a template issue 
+Unlike file, we do not support using the top block from a different file. Most likely that use case was from lack of templates. To allow file directives to directly access templates, we allow for the syntax `[..](.. "save: *templateblock...") 
+
+When this is detected, a fake block is created and queued. It consists of a simple line of substitution which allows all the templating magic to happen. The issue with trying to deal with templates at this point is that being a directive, it is being setup before all the blocks have been parsed. I think. 
+
 
     function (options, filename, link) {
 
@@ -1879,24 +1882,9 @@ Unlike file, we do not support using the top block from a different file. Most l
             type = "";
         }
 
-        cname = options.shift();
-
-        var temp, star;
-        if (cname[0] === "*") {
-            star = {};
-            temp = cname.slice(1).split("::").trim();
-            if (temp.length === 1) {
-                star.litpro = "";
-                star.heading = temp[0];
-            } else {
-                star.litpro = temp[0];
-                star.heading = temp[1];
-            }
-        } else {
-            star = false;
-        }
-
         heading = (link || "").slice(1).replace(/-/g, " ").toLowerCase();
+
+        cname = options.shift();
 
         if (! heading) {
             //current block
@@ -1904,6 +1892,17 @@ Unlike file, we do not support using the top block from a different file. Most l
             cname = cname || doc.hcur.cname;
         }
 
+        var newcb, newhb;
+        if (cname[0] === "*") {
+            newcb = doc.makeCode();
+            newcb.lines = ['_"'+heading+cname+options.join("|")+'"'];
+            newhb = new HBlock();
+            newhb.heading = heading+cname;
+            newhb.cblocks[filename] = newcb;
+            doc.hblocks[newhb.heading] = newhb;
+            heading = newhb.heading;
+            cname = filename;
+        } 
 
 
         doc.actions["File not saved: " + filename] = {
@@ -1911,7 +1910,6 @@ Unlike file, we do not support using the top block from a different file. Most l
             litpro: litpro,
             heading : heading,
             cname : cname, 
-            star : star,
             pipes: options,
             filename : filename,
             msg : "File not saved: " + filename,

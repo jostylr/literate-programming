@@ -27,19 +27,16 @@ We use asterisks in the usual litpro quotes.
 
 We could then invoke this with 
 
-[first.html](#First-page "Save: files")
+[first.html](#First-page "Save: *boilerplate")
 
 We look at the section first-page and pull out the relevant subsections. This is hard to accomplish at the moment as the feeder evaluates this stuff first. But probably it can get access to the cblocks. 
 
-## Files
-
-    _"First page*boilerplate"
 
 ## First page
 
 This first page is a bunch of content in a context that gets filled in
 
-[title](# "js | jshint")
+[title](# )
 
     Great Smokey Mountains
 
@@ -70,12 +67,12 @@ The wrap will wrap the given content into an HTML script tag. This already exist
 
     <div class="row-fluid">
         <div class="span8">
-            <div id="_"*:name"" _"*:attr">
+            <div id="_"*:name"" _"*:attr?class='cool'">
                 _"*:main"
             </div>
         </div>
         <div class="span4">
-            <div id="_"*:name"Nav" _"*:attrNav">
+            <div id="_"*:name"Nav" _"*:attrNav?">
                 _"*:side"
             </div>
         </div>
