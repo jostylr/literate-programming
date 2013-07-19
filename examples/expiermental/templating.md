@@ -104,4 +104,4 @@ Some nice stuff
 
 ### Body
 
-    _"Example Snippet*bs snippets"
+    _"Example Snippet*bs snippets | log"

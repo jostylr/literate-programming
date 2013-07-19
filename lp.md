@@ -621,6 +621,7 @@ JS
     }, []];
 
     Doc.prototype.log = function (text) {this.logarr.push(text);};
+    Doc.prototype.logpop = function () {return this.logarr.pop();};
 
     Doc.prototype.parseLines = _"Parse lines";
 
@@ -1417,6 +1418,7 @@ We allow for "block name.ext" to mean "block name:.ext"
 For each valid match, we add a replacement string on the array rep for replacement after all matches have been analyzed. 
 We are splitting the first part of the command as `external lit program :: heading block name : internal name . type`
 
+Experimenting with ? syntax. So if the first part of a sub has `?` possibly followed by something, then the code block is optional (Generally a template thing), and the stuff that follows is the substitution. Nothing means nothing is inserted. 
 
 The go function is used to keep coming back to the block after the subbing. When the go thinks all is done, it calls next to do the next match. 
 
@@ -1504,12 +1506,21 @@ For templating, no cblocks for the insertion, please.
     gotcblock = doc.getcblock(reqhblock, names.cname); 
 
     if (gotcblock === false) {
-        doc.log("No cblock found with givename:" + names.cname);
-        next();
-        return null;
-    } else {
-        _":Matching block, multi-level"
-    }
+        if (typeof passin.question !== "undefined") {
+            gotcblock = {
+                isCompiled : true,
+                compiled : passin.question
+            };
+            doc.logpop();
+        } else {
+            doc.log("No cblock found with givename:" + names.cname);
+            next();
+            return null;
+        }
+    } 
+    
+    _":Matching block, multi-level"
+    
 
     // do star replacement
     var newcb, newhb;
@@ -1530,7 +1541,7 @@ For templating, no cblocks for the insertion, please.
     if (passin.gocall) {
         doc.log("go called again", passin.gocall, names.fullname, gotcblock.cname);
     } else {
-        passin.gocall = names.fullname; 
+        passin.gocall = names.fullname;
         if (gotcblock.isCompiled) {
             go(gotcblock.compiled);
         } else {
@@ -1547,8 +1558,10 @@ We start to check whether this is a star substitution call. If so, we split the 
 
 We get any reference to an external litpro document. This is the "::".  Next, we check to see if there is no ":". If so, we check for a "."; the last period starts the extension and becomes the cname. If there is a ":", then that becomes the cname. 
 
+passin.question is there to deal with possible non-existent blocks. It is something to check for.
 
-    
+
+    passin.question = temp.split("?")[1];
     temp = temp.split("::").trim();
     if (temp.length === 1) {
         names.litpro = "";
@@ -1572,6 +1585,7 @@ We get any reference to an external litpro document. This is the "::".  Next, we
         names.cname = temp[1];
         names.heading = temp[0];
     }
+
 
 JS Get relevant hblock
 
