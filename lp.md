@@ -306,7 +306,7 @@ JS period triggers match
 
 ### Directives parser link
 
-A directive can appear anywhere. This is a markdown link text that matches `[stuff](whatever "dir:")`. The dir must be a known directive. Otherwise it is ignored. 
+A directive can appear anywhere. This is a markdown link text that matches `[stuff](whatever "dir_")` where the _ should be a colon. The dir must be a known directive. Otherwise it is ignored with a warning emitted. 
 
 Double quotes need to be used for the title directive text. Single quotes can be used freely as far as lit pro is concerned. 
 
@@ -1482,6 +1482,7 @@ So we need get the star block, copy it, replace it, and then we should be good.
 
 For templating, no cblocks for the insertion, please.
 
+Since question mark template cannot be detected in gotcblock.
 
 
     pipes = match[2].split("|").trim();
@@ -1866,7 +1867,7 @@ Just a snippet of code I keep writing for reporting error location.
 
 ### Save directive
      
-The command is `[fname.ext](#block-name "save: sub block name | commands...")` where fname.ext is the filename and extension to use. 
+The command is `[fname.ext](#block-name "save_ sub block name | commands...")` where fname.ext is the filename and extension to use and _ should be a colon.
 
 If the hash has no text after it, then use the current code block. 
 
@@ -1874,7 +1875,7 @@ The rest of the options are pipe commands that get processed.
 
 To maintain compatibility with more of the directives that do not use name or link, the options comes first. 
 
-Unlike file, we do not support using the top block from a different file. Most likely that use case was from lack of templates. To allow file directives to directly access templates, we allow for the syntax `[..](.. "save: *templateblock...") 
+Unlike file, we do not support using the top block from a different file. Most likely that use case was from lack of templates. To allow file directives to directly access templates, we allow for the syntax `[..](.. "save_ *templateblock...")` where underscore is colon.
 
 When this is detected, a fake block is created and queued. It consists of a simple line of substitution which allows all the templating magic to happen. The issue with trying to deal with templates at this point is that being a directive, it is being setup before all the blocks have been parsed. I think. 
 

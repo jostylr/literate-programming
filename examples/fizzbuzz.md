@@ -4,13 +4,13 @@ FizzBuzz is a trivial program that [weeds out programmers](http://www.codinghorr
 
 The goal of the program is to to print out the numbers from 1 to 100 except multiples of 3 should output Fizz, of 5 Buzz, and of both FizzBuzz. 
 
-FILE "structure" fizzbuzz.js | jstidy()
+We create just one file. To run it, run node on [fizzbuzz.js](#structure "save:| jstidy()")
 
 ## Structure
 
 We will approach this problem by making an array of all 100 numbers and then writing over the appropriate multiples by going over the array 3 more times though only touching the relevant multiples. 
 
-JS | jshint 
+[](# "js | jshint() ")
 
     /*global console */
     var overwrite = _"Overwrite multiples in array";
@@ -25,7 +25,7 @@ JS | jshint
     _"Output array"
 
 
-JS Initial array
+[Initial array](# "js")
 
 This is a simple loop that puts in the right digit. Note that we want the value of the arrays to start at 1 while the index starts at 0. 
 
@@ -55,6 +55,6 @@ This is a function that takes in an array, a multiple, and a string and replaces
 
 Because this is a literate program, we can pipe text through a command. In this case, we will evaluate it. 
 
-JS | eval
+[](# "|eval")
 
     _"Structure"
