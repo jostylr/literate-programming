@@ -359,7 +359,6 @@ JS
         name = (match[1] || "").toLowerCase().trim();
         link = (match[2] || "");
         title = (match[3] || "");
- 
         options = title.split("|").trim();
         type = options.shift() || "";
         doc.switchType(name, type, options);
@@ -400,7 +399,7 @@ JS main
             }
         } else { 
             name = a.toLowerCase();
-            type = b.toLowerCase() || "none"; 
+            type = b.toLowerCase() || ""; 
             options = c;
             if (name) {
                 cname = name.toLowerCase()+"."+type;
@@ -898,7 +897,7 @@ JS End action
 
     doc.log(action.msg);
     delete actions[action.msg];
-    return;
+    continue;
 
 
 ### HBlock constructor
@@ -945,6 +944,8 @@ JS
         for (heading in doc.hblocks) {
             doc.fullSub(doc.hblocks[heading]);
         }
+
+        doc.postCompile.call({doc:doc}, "");
 
         return doc;
     }
@@ -1795,7 +1796,7 @@ The rest of the options are pipe commands that get processed
 JS The action function
 
 
-This should receive the passin object as this which will contain the aciton object. The argument is the text.
+This should receive the passin object as this which will contain the action object. The argument is the text.
 
 All postCompile functions should expect a passin object with a text from compiling. 
 
@@ -2421,7 +2422,6 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
     postCompile.push([_"Action cleanup", {}]);
 
-
     var doc = new Doc(md, {
         standardPlugins : standardPlugins,
         postCompile : postCompile, 
@@ -2478,7 +2478,10 @@ We need to delete the associated action after it is done.
 
     function (text, next) {
         var doc = this.doc;
-        delete doc.actions[this.action.msg];
+        try {
+            delete doc.actions[this.action.msg];
+        } catch (e) {
+        }
         next(text);
     }
 
@@ -2488,15 +2491,19 @@ We need to delete the associated action after it is done.
     function (text, next, obj) {
         var passin = this;
         var doc = passin.doc;
-        var fname = passin.action.filename;
+        if (passin.action && passin.action.filename) {
+            var fname = passin.action.filename;
 
-        process.chdir(originalroot);
-        if (obj.dir) {
-            process.chdir(dir);
-        }            
-        var cb = _":Callback ";
+            process.chdir(originalroot);
+            if (obj.dir) {
+                process.chdir(dir);
+            }            
+            var cb = _":Callback ";
 
-        fs.writeFile(fname, text, 'utf8', cb);
+            fs.writeFile(fname, text, 'utf8', cb);
+        } else {
+            next(text);
+        }
     }
 
 JS Callback Factory
@@ -2932,13 +2939,10 @@ You can also define your own directives; see [literate-programming-standard](htt
 
 ## TODO
 
-Implement link text for directives and type switches
-
-Implement template solution
 
 Make sure missing blocks don't cause problems. 
 
-Add in a toggl to enable immediate console logging from doc.log calles. 
+Add in a toggle to enable immediate console logging from doc.log calls. 
 
 Make sure non-existent blocks do not hang program (cname). More generally, make sure that looped references (alice calls bob, bob calls alice) do not hang program; emit doc.log problem and move on. Also have a check at the end for ready to compile docs. This should allow for saving of files that are fine and the hung up files do not get saved. 
 
@@ -3038,6 +3042,14 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ## Change Log
+
+v.0.7.0 
+
+Implemented link syntax for directives and type switching.
+
+Implemented templates using asterisk notation. 
+
+Added a postCompile function to have postCompile actions even if no file is being saved. 
 
 v.0.6.1
 

@@ -2,13 +2,13 @@
 
 We just need a place to do some minor tests.
 
-FILE "Body" testpro.js  |jshint 
+[testpro.js](#Body "js|jshint")
 
 ## Body
 
 The body of the test
 
-JS 
+[](# "js")
 
     te = (function () {
         return  _"f1";
@@ -41,11 +41,23 @@ A function
 
 What happens if to blocks refer to each other? 
 
-. Alice
+[Alice](# )
 
     Alice needs _":Bob"
 
-. Bob
+[Bob](# )
 
     Bob needs _":Alice"
+
+## Now for some bad stuff
+
+What happens if to blocks refer to each other? 
+
+[Alex](# )
+
+    Alex is good.
+
+[Bobby](# "|log" )
+
+    Bobby needs _":Alex"
 

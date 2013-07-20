@@ -84,22 +84,26 @@ if (program.preview) {
     postCompile.push([function (text, next, obj) {
             var passin = this;
             var doc = passin.doc;
-            var fname = passin.action.filename;
+            if (passin.action && passin.action.filename) {
+                var fname = passin.action.filename;
         
-            process.chdir(originalroot);
-            if (obj.dir) {
-                process.chdir(dir);
-            }            
-            var cb = function (err) {
-                    if (err) {
-                        doc.log("Error in saving file " + fname + ": " + err.message);
-                    } else {
-                        doc.log("File "+ fname + " saved");
-                    }
-                    next(text);
-                };
+                process.chdir(originalroot);
+                if (obj.dir) {
+                    process.chdir(dir);
+                }            
+                var cb = function (err) {
+                        if (err) {
+                            doc.log("Error in saving file " + fname + ": " + err.message);
+                        } else {
+                            doc.log("File "+ fname + " saved");
+                        }
+                        next(text);
+                    };
         
-            fs.writeFile(fname, text, 'utf8', cb);
+                fs.writeFile(fname, text, 'utf8', cb);
+            } else {
+                next(text);
+            }
         }, {dir: dir}]);
 }
 
@@ -124,7 +128,10 @@ if (!program.quiet) {
 
 postCompile.push([function (text, next) {
         var doc = this.doc;
-        delete doc.actions[this.action.msg];
+        try {
+            delete doc.actions[this.action.msg];
+        } catch (e) {
+        }
         next(text);
     }, {}]);
 

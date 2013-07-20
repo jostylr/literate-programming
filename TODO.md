@@ -1,10 +1,6 @@
-Implement link text for directives and type switches
-
-Implement template solution
-
 Make sure missing blocks don't cause problems. 
 
-Add in a toggl to enable immediate console logging from doc.log calles. 
+Add in a toggle to enable immediate console logging from doc.log calls. 
 
 Make sure non-existent blocks do not hang program (cname). More generally, make sure that looped references (alice calls bob, bob calls alice) do not hang program; emit doc.log problem and move on. Also have a check at the end for ready to compile docs. This should allow for saving of files that are fine and the hung up files do not get saved. 
 
