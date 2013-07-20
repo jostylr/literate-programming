@@ -30,7 +30,7 @@ Structure
 
 
 Introduction
-===== 
+============
 
 Introduce the problem
 
