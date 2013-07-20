@@ -4,7 +4,7 @@ So you want to make a literate program? Let's have a program that outputs all nu
 
 Let's save it in file count.js
 
-FILE "Structure" count.js
+[count.js](#Structure "save:")
 
 ## Structure 
 

@@ -575,6 +575,7 @@ JS
         this.type = ".";
 
 
+
         _":Async structures"
 
         this.types = _":Types"; 
@@ -2167,20 +2168,28 @@ Example:   `DEFINE darken`  and in the code block above it is a function and onl
 
 The eval function will use a function to protect var declarations from polluting the global scope. It does not prevent global access. Maybe a "use strict" version, but need to experiment and think of use case need. 
 
-
+We throw into that environment the variables options, inputs, and program to allow for interactive constructs in the code. doc is also available though probably should not be used. But could be useful for some debugging purposes, I suppose. State object also available.
 
 JS
 
-    function (code) {
+    function (code, options) {
+        var doc = this.doc;
+        var state = this.state;
+        // just cli environment? 
+        var program;
+        program = this.program || {};
+        var inputs;
+        inputs = doc.inputs || [];
+        options = options || [];
         try {
-            this.state.obj = eval("(function(){"+code+"})()");
-            if (typeof this.state.obj === "undefined") {
+            state.obj = eval("(function(){"+code+"})()");
+            if (typeof state.obj === "undefined") {
                 return "";
             } else {
-                return this.state.obj.toString();
+                return state.obj.toString();
             }
         } catch(e) {
-            this.doc.log("Eval error: " + e + "\n" + code);
+            doc.log("Eval error: " + e + "\n" + code);
             return "";
         }
     }
@@ -2249,7 +2258,6 @@ JS
         return code;
     }
 
-   
 
 
 ### No Compile
@@ -2426,7 +2434,9 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
         standardPlugins : standardPlugins,
         postCompile : postCompile, 
         parents : null,
-        fromFile : null
+        fromFile : null,
+        inputs : inputs,
+        program : program
     });
 
 
@@ -2574,9 +2584,11 @@ Here we define what the various configuration options are.
 
 The preview option is used to avoid overwriting what exists without checking first. Eventually, I will hookup a diff view. There might also be a test-safe mode which runs the tests and other stuff and will not save if they do not pass. 
 
+Added ability to pass in arguments to the literate program. It is in the array variable inputs.
+
     program
         .version('DOCVERSION')
-        .usage('[options] <file>')
+        .usage('[options] <file> <arg1> ...')
         .option('-o --output <root>', 'Root directory for output')
         .option('-i --input <root>',  'Root directory for input')
         .option('-r --root <root>', 'Change root directory for both input and output')
@@ -2601,6 +2613,8 @@ The preview option is used to avoid overwriting what exists without checking fir
     }
 
     var md = fs.readFileSync(program.args[0], 'utf8');
+
+    var inputs =  program.args.slice(1);
 
 #### On exit
 

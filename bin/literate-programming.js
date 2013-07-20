@@ -7,7 +7,7 @@ var Doc = require('../lib/literate-programming').Doc;
 
 program
     .version('0.7.0-pre')
-    .usage('[options] <file>')
+    .usage('[options] <file> <arg1> ...')
     .option('-o --output <root>', 'Root directory for output')
     .option('-i --input <root>',  'Root directory for input')
     .option('-r --root <root>', 'Change root directory for both input and output')
@@ -31,6 +31,8 @@ if (indir) {
 }
 
 var md = fs.readFileSync(program.args[0], 'utf8');
+
+var inputs =  program.args.slice(1);
 
 var postCompile; 
 
@@ -139,7 +141,9 @@ var doc = new Doc(md, {
     standardPlugins : standardPlugins,
     postCompile : postCompile, 
     parents : null,
-    fromFile : null
+    fromFile : null,
+    inputs : inputs,
+    program : program
 });
 
 process.on('exit', function () {
