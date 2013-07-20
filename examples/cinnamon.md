@@ -8,17 +8,17 @@ There are two versions. One is for loading a single file that handles both CSS a
 
 ## Files 
 
-FILE "One file" cinnamon.js  | jshint
+[cinnamon.js ](#One-file  "Save:| jshint")
 
 And then there is the more mebeddable, separated version. 
 
-FILE "Making it hidden.css" cinnamon.css
+[cinnamon.css](#Making-it-hidden "Save: .css")
 
-FILE "Embedded" cinnamon_emb.js  | jshint
+[cinnamon_emb.js](#Embedded  "save:| jshint")
 
 And the example file, 
 
-FILE "A sample document" cinnamon.html 
+[cinnamon.html](#A-sample-document "save:")
 
 ## One file
 
@@ -91,13 +91,13 @@ Note that this should be at the end of the body so that it has all the elements 
 
 ## Making it hidden
 
-HTML
+[](# "html")
     
     <style>
         _":CSS"
     </style>
 
-CSS
+[](# "CSS")
 
     [data-cinnamon] { 
         position: relative; 
@@ -119,15 +119,15 @@ CSS
             opacity: 0.25; } 
     }
 
-CSS  Default over font
+[Default over font](# "css")
 
     overflow: hidden; font-size: 999px; 
 
-CSS Safari over font
+[Safari over font](# "css")
 
     overflow: visible; font-size: inherit; 
 
-CSS Dealing with Safari
+[Dealing with Safari](# "css")
 
 Safari has some issues so we need to do some replacing in that case. 
 
