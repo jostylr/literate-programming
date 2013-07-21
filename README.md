@@ -90,9 +90,17 @@ For both 1 and 3, if there is no match, then the text is unchanged. One can have
 
 A directive is a command that interacts with external input/output. Just about every literate program has at least one save directive that will save some compiled block to a file. 
 
-The syntax for the save directive is `[file.ext](#name-the-heading "save: named code block | pipe commands")  where file.ext is the name of the file to save to,  name-the-heading is the heading of the block whose compiled version is being saved (spaces in the heading get converted to dashes for id linking purposes), `save:` is the directive to save a file, `named code block` is the (generally not needed) name of the code block within the heading block, and the pipe commands are optional as well for further processing of the text before saving. 
+The syntax for the save directive is 
 
-For other directives, what the various parts mean depends, but it is always [some](#stuff "dir: whatever")  where the `dir` should be replaced with a directive name. 
+    [file.ext](#name-the-heading "save: named code block | pipe commands")  
+
+where file.ext is the name of the file to save to,  name-the-heading is the heading of the block whose compiled version is being saved (spaces in the heading get converted to dashes for id linking purposes), `save:` is the directive to save a file, `named code block` is the (generally not needed) name of the code block within the heading block, and the pipe commands are optional as well for further processing of the text before saving. 
+
+For other directives, what the various parts mean depends, but it is always 
+
+    [some](#stuff "dir: whatever")  
+
+where the `dir` should be replaced with a directive name. 
 
 ### Pipes
 

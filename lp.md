@@ -1,10 +1,8 @@
-# Literate Programming
+# [Literate-Programming](# "version:0.7.0-pre")
 
 "Its like writing sphagetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
 This is the sixth cycle of literate programming. Here we implement a more asynchronous environment, particularly during the compile stage. 
-
-VERSION literate-programming | 0.7.0-pre
 
 
 ## Directory structure
@@ -44,9 +42,6 @@ The MIT license as I think that is the standard in the node community.
 
 FILE "license-mit" LICENSE   | clean raw
 
----
-
-FILE "Blog doc" blog.md | clean raw
 
 ## How to write a literate program
 
@@ -483,7 +478,7 @@ For new global blocks, we use the heading string as the block name. We lower cas
 JS
 
     function (line, doc) {
-      var hcur, heading;
+      var hcur, heading, linkhead;
       var head = /^(\#+)\s*(.+)$/;
       var match = head.exec(line);
       var setext = /^(=+|-+)\s*$/;
@@ -498,6 +493,8 @@ JS
       if (heading) {
         _":Remove empty code blocks"
 
+        _":Deal with possible link in heading"
+
         hcur = new HBlock();
         hcur.heading = heading;
         hcur.cname = doc.type;    
@@ -510,7 +507,11 @@ JS
         doc.processors = [].concat(doc.defaultProcessors);
         
         doc.lastLineType = "heading";
-        return true;
+        if (linkhead) {
+            return false;
+        } else {
+            return true;
+        }
       } 
       return false;
     }
@@ -534,6 +535,17 @@ We do not want empty code blocks left. So we delete them just before we are goin
 
 
 This suffered from having empty lines put into the code block. Solution: do not add empty lines in "code parser" unless there is a non-empty line of code before it. Has an issue that this does not apply to the final block as it refers to the previous block. 
+
+[deal with possible link in heading](# "js")
+
+One use case is a heading with a directive. This could be with the version directive, for example. So we detect it and if it is present, then we extract the name of the link to be part of the heading. If we return false, then the parser will eventually parse it as a directive and we can get both the header of a new block and a directive. To return false, we set linkhead to true.
+
+If the regex does not match, then the original is returned and the function is not executed leading to linkhead being falsy. 
+
+    heading = heading.replace(/^([^\[]*)\[([^\]]*)\]\s*\([^)]*\)(.*)$/, function (a, b, c) {
+        linkhead = true;
+        return a+b+c;
+    });
 
 
 ### Plain parser
@@ -2097,11 +2109,16 @@ JS bit check and run
 
 Version control directive for the literate program. Generally at the base of the first intro block. This would be useful for setting up a npm-like setup. 
 
-    function (options) {
+    function (options, docname) {
         var doc = this;
 
-        doc.addConstants({docname: (options[0] || ""), 
+        if (arguments.length === 3) {
+            doc.addConstants({docname: (docname || ""), 
+                docversion : (options[0] || "0.0.0")});
+        } else {
+            doc.addConstants({docname: (options[0] || ""), 
                 docversion : (options[1] || "0.0.0")});
+        }
     }
 
 
@@ -2743,9 +2760,17 @@ For both 1 and 3, if there is no match, then the text is unchanged. One can have
 
 A directive is a command that interacts with external input/output. Just about every literate program has at least one save directive that will save some compiled block to a file. 
 
-The syntax for the save directive is `[file.ext](#name-the-heading "save: named code block | pipe commands")  where file.ext is the name of the file to save to,  name-the-heading is the heading of the block whose compiled version is being saved (spaces in the heading get converted to dashes for id linking purposes), `save:` is the directive to save a file, `named code block` is the (generally not needed) name of the code block within the heading block, and the pipe commands are optional as well for further processing of the text before saving. 
+The syntax for the save directive is 
 
-For other directives, what the various parts mean depends, but it is always [some](#stuff "dir: whatever")  where the `dir` should be replaced with a directive name. 
+    [file.ext](#name-the-heading "save: named code block | pipe commands")  
+
+where file.ext is the name of the file to save to,  name-the-heading is the heading of the block whose compiled version is being saved (spaces in the heading get converted to dashes for id linking purposes), `save:` is the directive to save a file, `named code block` is the (generally not needed) name of the code block within the heading block, and the pipe commands are optional as well for further processing of the text before saving. 
+
+For other directives, what the various parts mean depends, but it is always 
+
+    [some](#stuff "dir: whatever")  
+
+where the `dir` should be replaced with a directive name. 
 
  ### Pipes
 
