@@ -1,16 +1,19 @@
 # [literate-programming](# "version:0.7.0-pre")
 
-"Its like writing sphagetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
+"This is like writing sphagetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
-This is the sixth cycle of literate programming. Here we implement a more asynchronous environment, particularly during the compile stage. 
+This file creates the literate program parser using the literate program parser (requires v 0.7+ to compile).  
 
+A literate program is a series of chunks of explanatory text and code blocks that get woven together. The compilation of a literate program can grunt, after a fashion, as it weaves. 
+
+Note that this is version 0.7 branch. It introduces a variety of changes, but it also marks the deprecation of CAPS directives/switch types. A future version will remove them but allow them to be used as a plugin.
 
 ## Directory structure
 
 * [lib/literate-programming.js](#the-lp-module "save:   | jshint | jstidy") The bulk of the work is in the node module. That has all the core weaving. It also hasthe ability to load other literate programs / directives which ties it currently to the file system. 
-* [bin/literate-programming.js](#cli "save: | jshint")The literate program compiler is activated by a command line program.
+* [bin/literate-programming.js](#cli "save: | jshint") The literate program compiler is activated by a command line program.
 * [README.md](#readme "save:| clean raw") The standard README.
-* [package.json](#NPM-package "save: json  | jshint")The requisite package file for a npm project. 
+* [package.json](#npm-package "save: json  | jshint") The requisite package file for a npm project. 
 * [TODO.md](#todo "save: | clean raw") A list of growing and shrinking items todo.
 * [LICENSE](#license-mit "save: | clean raw") The MIT license as I think that is the standard in the node community. 
 
@@ -21,10 +24,10 @@ Use markdown. Each heading is a new heading block (hblock) and can be referenced
 
 Within each hBlock, one can write free form markdown explanatory text, directives, code lines, or initiate a new code block (cblock). 
 
-* hblock is initiated by number signs at the beginnning of a line. 
-* Directive is initiated by a block of at least 2 capital letters and a mixture of caps and dots. The rest of the line is taken as arguments to the directive function with a pipe being the delimiter.
-* A new cblock is initiated with a caps if recognized or a .caps if not known. 
-* cblock lines are recognized by 4 spaces. 
+* hblock is initiated by number signs at the beginnning of a line. seText style works too. See [markdown syntax](#http://daringfireball.net/projects/markdown/syntax).
+* Directive is initiated by a markdown link syntax with "dir:..." as part of the title. 
+* A new cblock is initiated with a non-directive link at the beginning of a line.
+* cblock lines are recognized by 4 spaces (not tabs). 
 
 To reference a cblock, the full precise name, a cblock name, is  "litprodoc :: hblock : cblock.ext"  where all but hblock is optional. Also hblock.ext grabs the unnamed extension relevant to it. 
 
@@ -32,12 +35,17 @@ To use a cblock, use the substitution command  _"cblock name | commands ..."  wh
 
 Examples:  _"Great:jack|marked",  _"Great:.md" or "Great.md",  _"Great|marked", _"Great:jack.md",  ":jack"  will load the internal block named jack
 
-The FILE command is of the form FILE "cblock name"  filename | commands...  If the cblock name is missing, it uses the current cblock.
+The save directive is used to save a file:
+
+    [file.ext](#heading-name "save: cblock | commands")
+
+If the heading name is missing, it uses the current cblock.
 
 ### Advice
 
-1. Setup an hblock as a body of code, such as a funciton. Use the subcblocks to break that body into manageable chunks. Use new hblocks for new functions or for very important behavior. 
-2. Write function blocks without punctuation so that they can be inserted in multiple ways. Put the punctuation after the substitution quote. 
+1. Setup an hblock as a body of code, such as a function. Use the subcblocks to break that body into manageable chunks. Use new hblocks for new functions or for very important behavior. 
+2. Write function blocks without ending (semicolon, comma) punctuation so that they can be inserted in multiple ways. Put the punctuation after the substitution quote. 
+3. Use this for getting a good overview of flow control. Strip out the complicated, but easily identifiable chunks and focus on how the code flows. 
 
 ### Runnable Code
 
@@ -48,17 +56,7 @@ The eval output (last evaluated value) is what is placed in the code to replace 
 
 ### Multi-level substitutions
 
-There may be need to run substitutions after a first pass or more. For example, compiling a jade template into html and then running the substitutions that put in the text of the template. 
-
-The number of underscores gives which loop number the substitution happens. In other words, for each loop iteration, one underscore is removed until only one is left at which point the substitution is made. 
-
-Example:
-
-    #example
-        _"nav jade"
-        #text
-             __"markdown text"
-    
+There may be need to run substitutions after a first pass or more. For example, markdown segments could have snippets that need to be inserted after the markdown parser has run. See [logs.md](#https://github.com/jostylr/literate-programming/blob/master/examples/logs.md) for an example. 
 
 
 ## The lp module
@@ -69,11 +67,10 @@ It takes the string and makes a document that has the markdown parsed out into v
 
 1. The parsing is down line-by-line. lineparser parses each line, adding the lines to each relevant block or creating new blocks or even retrieving/compiling other literate programs. 
 2. After all literate programs have been loaded and parsed, then the compile phase starts. This is asynchronous and all the cblocks are compiled into the cblock property compiled. If a block is compiled, it has isCompiled set to true. 
-3. Post-compile will send those compiled blocks into files as directed by the directives. 
+3. postCompile will send those compiled blocks into files as directed by the directives. 
 
-This currently uses the filesystem to load external programs. This needs to be refactored.
 
-JS  
+[](# "js")
 
     /*global require, module, process*/
     /*jslint evil:true*/
@@ -95,22 +92,24 @@ JS
     module.exports.Doc = Doc;
 
 
-We also need a repository for files that are loaded up, both literate programs and plugins. The same repo will be seen in all instances of Doc; this prevents multiple uploading and parsing of the same file. I see no reason for not having it globally accessible. 
+The repo value is a repository for files that are loaded up, both literate programs and plugins. The same repo will be seen in all instances of Doc; this prevents multiple uploading and parsing of the same file. I see no reason for not having it globally accessible. 
 
 
 
 ## Document parsing
 
-Each literate program gets its own document style. It starts off life with lineparser. 
+Each literate program gets its own document container. It starts off life with lineparser. 
 
-Each line is of one of four basic types:
+Each line is of one of the following basic types:
 
-1. Header. This signifies a new hblock. 
-2. Code line. This is a line indented with (possibly a tab followed by) 4 spaces. Stored in cblock.
-3. Directive/Type switch. If a line starts with all caps or a ., then it has the potential to be a directive (such as FILE command)  or to create/switch the code block to a new type or name. What happens is very dependent on what is found there. The directive/switch can also be in a line syntax. It should be at the start of a line.  
-4. Plain text. This just is for reading and gets put into a plain text block without it being useful, presumably.
+1. Code line. This is a line indented with (possibly tabs followed by) 4 spaces. Stored in current cblock.
+1. Header. This signifies the start of a new hblock and a new cblock. If it has a link in it, it will also see the directive link parser.
+1. DEPRECATED Directive/Type switch. If a line starts with all caps or a ., then it has the potential to be a directive (such as FILE command)  or to create/switch the code block to a new type or name. What happens is very dependent on what is found there. The directive/switch can also be in a line syntax. It should be at the start of a line.  
+1. Directive link syntax. 
+1. Switch type link syntax.
+1. Plain text. This just is for reading and gets put into a plain text block without it being useful, presumably.
 
-All lines in a block do get put into storage in order for safe-keeping (some raw output, for example, could be useful).
+All lines in a block do get put into storage. This allows for an hblock to be used in a raw output form.
 
 ### Parse lines
 
@@ -118,9 +117,11 @@ This is the function that takes in a literate program, splits it into lines, and
 
 The Document consists mostly of blocks constructed by the Hblock constructor. The doc.processors is where the magic happens. 
 
-This is largely synchronous. The directives can create hooks that prevent the compiling stage from beginning. The main cause of this is the LOAD directive. Those files will be loaded asynchronously and will register themselves as loading and prevent compilation until they are loaded. See the LOAD directive. The REQUIRE command is synchronous and will block until it is loaded. 
+This is largely synchronous. The directives can create hooks that prevent the compiling stage from beginning. The main cause of this is the load directive. Those files will be loaded asynchronously and will register themselves as loading and prevent compilation until they are loaded. 
 
-JS
+Because the require directive adds in functionality that might be used in the parsing phase, it is synchronous and will block until it is fully loaded. 
+
+[](# "js")
 
     function () {
         var doc = this;
@@ -151,7 +152,7 @@ Each processor, corresponding to the 4 types mentioned above, will check to see 
 
 The substitution is to make sure the final block is also trimmed. 
 
-JS Check for compile time
+[Check for compile time](# "js")
 
     if (Object.keys( doc.loading ).length === 0) {
        doc.compile();
@@ -161,7 +162,7 @@ JS Check for compile time
 
 The processors array, a property of the Document, allows us to change the behavior of the parser based on directives. They should return true if processing is done for the line. The argument is always the current line and the doc structure. 
 
-JS
+[](# "js")
 
     [ 
     _"Code parser", 
@@ -183,7 +184,7 @@ Note that tabs do not trigger a code block. This allows for the use of tabs for 
 
 This also means that if one wants a code block that is not to be compiled, you can use tabs as long as it is not followed by 4 spaces. 
 
-JS
+[](# "js"
 
     function (line, doc) {
       var hcur = doc.hcur;
@@ -208,7 +209,7 @@ JS
 
 Added the following clause to add empty lines to the code. Stuff before and after the code block is probably trimmed, but in between extra lines could be added. This was to enable blank lines being there which is important for markdown and other markup languages. 
 
-JS Add empty line 
+[Add empty line](# "js")  
 
     var carr = hcur.cblocks[hcur.cname];
     if (carr && carr.lines.length > 0 && carr.lines[carr.lines.length -1 ] !== "") {
@@ -231,7 +232,7 @@ A directive could also be a code block create/switch command. This is either a r
 The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
 
 
-JS
+[](# "js")
 
     function (line, doc) {
 
@@ -262,7 +263,7 @@ JS
 The starting period for a type change trigger may or may not be followed by capitals. Any . starting a line will be interpreted as a type switch. 
 
 
-JS period triggers match
+[period triggers match](# "js") 
 
       var fileext = /^\.([A-Z]*)(?:$|\s+(.*)$)/;
       var match = fileext.exec(line);
@@ -280,7 +281,7 @@ Double quotes need to be used for the title directive text. Single quotes can be
 The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
 
 
-JS
+[](# "js")
 
     function (line, doc) {
 
@@ -315,7 +316,7 @@ Double quotes need to be used for the title directive text. Single quotes can be
 
 The function takes in a line and the doc structure. It either returns true if a successful switch  match/execution occurs or it returns false. 
 
-JS
+[](# "js")
 
     function (line, doc) {
 
@@ -347,7 +348,7 @@ Anything works for the name except pipes.
 
 Because of the change to link syntax and how it was coded before, this function has two separate use cases, distinguished by number of arguments.
 
-JS main
+[main](# "js") 
 
     function (a, b, c)  {
         var name, type, options;
@@ -391,7 +392,7 @@ JS main
     }
 
 
-JS Parse options
+[Parse options](# "js") 
 
 And now we work on getting the options to parse. The syntax is an optional number to indicate when to process (0 for pre, 1+ for during, nothing for post), followed by whatever until parentheses, followed by optional arguments separated by commas. Examples: `0 marked (great, file)` and `marked` and `marked awesome(great)`
 
@@ -417,7 +418,7 @@ And now we work on getting the options to parse. The syntax is an optional numbe
             _":Add command"
         }
 
-JS Add command
+[Add command](# "js") 
 
 The setup is that the code array has a property named commands which is an associative array of arrays. Each array contains a function and an arguments array that will be used to work on the code (see Full Substition). The doc.commands object has the list of active functions that can be named and used. 
 
@@ -447,7 +448,7 @@ We will also recognize a seText underline heading by the combination of a line c
 
 For new global blocks, we use the heading string as the block name. We lower case the whole name to avoid capitalization issues (it was really annoying!)
 
-JS
+[](# "js")
 
     function (line, doc) {
       var hcur, heading, linkhead;
@@ -490,7 +491,7 @@ JS
 
 In the above, we are defining the default processors again fresh. This prevents any kind of manipulations from leaking from one section to another. It could be a performance penalty, but probably not a big deal. Garbage collection should remove old processors. 
 
-JS Remove empty code blocks
+[Remove empty code blocks](# "js") 
 
 We do not want empty code blocks left. So we delete them just before we are going to move onto a new processing section. 
 
@@ -524,7 +525,7 @@ If the regex does not match, then the original is returned and the function is n
 
 It means there is nothing special about the line. So we simply add it to the plain block because, why not?
 
-JS
+[](# "js")
     function (line, doc) {
         doc.hcur.plain.push(line);
         if (line.match(/^\s*$/) ) {
@@ -545,7 +546,7 @@ We also create a Block object for each section of a literate program. Within tha
 
 ### Document constructor
 
-JS
+[](# "js")
 
     Doc = function (md, options) {
 
@@ -631,7 +632,7 @@ JS
 
     Doc.prototype.processActions = _"Process actions";
 
-JS Merge in options
+[Merge in options](# "js") 
 
 In order to have more custom behavior, such as linking in behavior for visual editing, we want to be able to pass in options to the functions. 
 
@@ -644,7 +645,7 @@ We have just created the doc object. Now we take it and merge it in with the opt
         }
     }
 
-JS Types
+[Types](# "js") 
 
 We use file extensions as keys and we provide the mime type for the kind which may be useful for CodeMirror and the IDE or for serving content directly from a server without files or ???
 
@@ -653,7 +654,7 @@ We use file extensions as keys and we provide the mime type for the kind which m
         css: "text/css"
     }    
 
-JS Make constants
+[Make constants](# "js") 
 
     function (obj) {
         var doc = this;
@@ -665,7 +666,7 @@ JS Make constants
         doc.addMacros(newobj);
     }
 
-JS Wrap values in function
+[Wrap values in function](# "js") 
 
     function (val) {
         return function () {
@@ -674,7 +675,7 @@ JS Wrap values in function
     }
 
 
-JS Merge
+[Merge](# "js") 
 
 This handles adding properties to macros, commands, etc.. The value of OBJTYPE needs to be substituted in. 
 
@@ -690,7 +691,7 @@ This handles adding properties to macros, commands, etc.. The value of OBJTYPE n
         }
     }
 
-JS Add in plugins
+[Add in plugins](# "js") 
 
 This is laregly for loading the standard library. 
 
@@ -708,7 +709,7 @@ This is laregly for loading the standard library.
         return true;
     }
 
-JS Async structures
+[Async structures](# "js") 
 
 We need some storage structures for the async aspect of LOADing and compiling. 
 
@@ -734,7 +735,7 @@ If a function is doing a callback (calling out to some external resource or some
 
 When it is all done, the final function is called with the passin object and passed the code object. The passin object allows for whatever is stashed there to be offloaded by default if we want to do that. 
 
-JS
+[](# "js")
 
     function (commands, code, passin, final) {
         var i=0, n=commands.length; 
@@ -777,7 +778,7 @@ JS
 
 We need an array of the code lines and a property that holds any processing functions to use during the substitution phase. Might want to make this a constructor some day. 
 
-JS
+[](# "js")
 
     function (cname) {
         var doc = this;
@@ -809,7 +810,7 @@ Each action should have an object of the form
 Star is added for filename properties to allow for start substitution. 
 
 
-JS Main
+[Main](# "js") 
 
     function () {
         var doc = this;
@@ -839,7 +840,7 @@ JS Main
         }
     }
 
-JS  The go function to pass for waiting
+[The go function to pass for waiting](# "js")  
 
 We generate a function to sit patiently waiting for compilation.
 
@@ -851,7 +852,7 @@ We generate a function to sit patiently waiting for compilation.
 
     
 
-JS Check for block existence
+[Check for block existence](# "js") 
 
 First we check whether there is an external literate program trying to be used. We either assign it or doc to fdoc. Then we load up the block with headname. The code block name is left to another portion. 
 
@@ -878,7 +879,7 @@ First we check whether there is an external literate program trying to be used. 
                 _":End action"
             }
  
-JS End action
+[End action](# "js") 
 
     doc.log(action.msg);
     delete actions[action.msg];
@@ -889,7 +890,7 @@ JS End action
 
 This just creates a basic structore for a block that corresponds to a heading and the rest. The cblocks property is the most useful and it is an object whose keys correspond to the name.type of each code block, each block containing an array of lines as created in "Make code block".
 
-JS
+[](# "js")
 
     HBlock = function () {
 
@@ -911,7 +912,7 @@ Most likely, many cblocks will call other cblocks that are not compiled. But tha
 
 This also is where the files are loaded into the waiting array of the called compile block. As soon as the block is compiled the file it is associated with gets saved. 
 
-JS
+[](# "js")
 
     function () {
         var doc = this;
@@ -955,7 +956,7 @@ We need to get the right block of text. First we check if there is a request fro
 6. If that fails, grab something.
 
 
-JS main
+[main](# "js")
     
     function (hblock, cname, ext) {
         var doc = this;
@@ -1056,7 +1057,7 @@ JS main
 
     }
 
-JS Filter internal
+[Filter internal](# "js")
 
 
         // try and find a match for the internal
@@ -1069,7 +1070,7 @@ JS Filter internal
         });
 
 
-JS Filter ext
+[Filter ext](# "js") 
 
         var extkeys = newkeys.filter(function(val) {
             if (val.match(ext) ) {
@@ -1079,7 +1080,7 @@ JS Filter ext
             }
         });
 
-JS Filter main
+[Filter main](# "js")
 
         var morekeys = finalkeys.filter(function (val) {
             if (val.match("main") ) {
@@ -1095,7 +1096,7 @@ JS Filter main
 
 This compiles a block to its fullly substituted values.
 
-JS
+[](# "js")
 
     function fullSub (hblock) {
         var doc = this;
@@ -1116,7 +1117,7 @@ JS
     }
 
 
-JS Compiling status prep
+[Compiling status prep](# "js") 
 
 We create a call object for next and commands, etc. We prune the lines first, removing any blank lines at the beginning or end. 
 
@@ -1138,7 +1139,7 @@ We create a call object for next and commands, etc. We prune the lines first, re
     }
 
 
-JS Run next
+[Run next](# "js") 
 
     for (cname in compiling) {
         compiling[cname].next(cblocks[cname].compiled); 
@@ -1146,7 +1147,7 @@ JS Run next
 
 
 
-JS Next function
+[Next function](# "js") 
 
 This is where the magic happens. It should always be called on the block being compiled as the this object.
 
@@ -1180,7 +1181,7 @@ Depending on the status, it either will execute oneSub to further compile it aft
 
     }
 
-JS Final function
+[Final function](# "js") 
 
 This is where all the cleanup happens. 
 
@@ -1207,7 +1208,7 @@ One added to a waiting list, it should be a block with a go method.
 
     }
 
-JS Prune
+[Prune](# "js") 
 
 We need to remove empty blank lines at the beginning or end. We do this by creating a new array. 
 
@@ -1257,7 +1258,7 @@ For evaling, no substitutions are done. It is just straight, one line code. If e
 
 
 
-JS main
+[main](# "js") 
 
     function oneSub (code, ignore, done) {
     
@@ -1290,7 +1291,7 @@ JS main
             
     }
 
-JS Next match
+[Next match](# "js") 
 
 This keeps going while there are matches executing. We are using closures in a big way here.
 
@@ -1304,7 +1305,7 @@ This keeps going while there are matches executing. We are using closures in a b
     }
 
 
-JS  Ready to replace
+[Ready to replace](# "js")
 
 All the substitutions have been obtained and we are ready to do the replacing. We are using the closured variable rep. 
 
@@ -1313,14 +1314,7 @@ All the substitutions have been obtained and we are ready to do the replacing. W
         //do the replacements or return false
         if (rep.length > 0) {
             for (var i = 0; i < rep.length; i += 1) {
-                if (typeof rep[i][1] === "string" ) {
-                  code = code.replace(rep[i][0], rep[i][1].rawString());
-                } else {
-                    // error
-                  doc.log("ERROR in replacing:", rep[i][0], rep[i][1]);
-
-                  code = code.replace(rep[i][0], "");
-                }
+                code = code.replace(rep[i][0], rep[i][1].toString().rawString());
             }
             cblock.compiled = code; 
         } else {
@@ -1330,7 +1324,7 @@ All the substitutions have been obtained and we are ready to do the replacing. W
         done.call(passin, cblock.compiled); 
     }
 
-JS go substituting next
+[go substituting next](# "js")
 
 This function hangs out in doc.waiting just hoping to get a bit of code to continue the compiling of the cblock. 
 
@@ -1339,7 +1333,7 @@ This function hangs out in doc.waiting just hoping to get a bit of code to conti
         doc.piping.call(passin, pipes, reptext, preprep);
     }
 
-JS do some indenting
+[do some indenting](# "js") 
 
 
 We want to have an automated indentation of code that is intelligent. If we have something like `argh = _"cool"` then the first line is not indented, but the rest of the lines are indented by an additional 4 spaces (or doc.defaultIndentation). If we have ` _"cool" ` then all lines use the indentation of _"cool".
@@ -1380,7 +1374,7 @@ The code is a closure variable to the original code text that we are going to su
     }
 
 
-JS push it on rep
+[push it on rep](# "js") 
 
 Presumably this needs to execute the next step
 
@@ -1409,7 +1403,7 @@ Experimenting with ? syntax. So if the first part of a sub has `?` possibly foll
 The go function is used to keep coming back to the block after the subbing. When the go thinks all is done, it calls next to do the next match. 
 
 
-JS 
+[](# "js")
 
 
     if (match[2]) {
@@ -1421,7 +1415,7 @@ JS
     }
 
 
-JS eval backticks
+[eval backticks](# "js") 
 
 This is pretty simple. We take the stuff in the backticks and eval it. The output is the replacement string. If evalling for side effects, make the last statement an empty string.
 
@@ -1436,7 +1430,7 @@ The purpose of the eval is more for authoring documents with data that may need 
     return null;
 
 
-JS macro call
+[macro call](# "js") 
 
 A macro is a function, even if it is being used to simply return a constant value. This lowercases the macro name and preps the arguments. Then if the macro exists, it will run it, possibly in an async fashion
 
@@ -1458,7 +1452,7 @@ A macro is a function, even if it is being used to simply return a constant valu
 
 A macro will be called with the passin object. It can have a callback flag. 
 
-JS cblock substitution
+[cblock substitution](# "js") 
 
 Here we need to do the fancy dancing for star substitution. Essentially, if a star substtution is requested, we replace the hblock with a copy of the star block, but with all "*:..." replaced with the hblock name. Then we send it on its merry way. 
 
@@ -1537,7 +1531,7 @@ Since question mark template cannot be detected in gotcblock.
     }
 
 
-JS Parse fullname
+[Parse fullname](# "js") 
 
 We will put all parsed bits into `names`. The temp variable will the bits that have yet to be parsed. 
 
@@ -1574,7 +1568,7 @@ passin.question is there to deal with possible non-existent blocks. It is someth
     }
 
 
-JS Get relevant hblock
+[Get relevant hblock](# "js") 
 
 We have the names object and now we use it to get an hblock to then get the cblock. 
 
@@ -1611,7 +1605,7 @@ We have the names object and now we use it to get an hblock to then get the cblo
 
 
 
-JS Matching block, multi-level
+[Matching block, multi-level](# "js")
 
 There is a match, but the level is not yet ready  for full substitution
 
@@ -1633,7 +1627,7 @@ If there is such a command, it is invoked with a this object of {doc, block, nam
 
 This is a very simple setup which hopefully will suffice for most needs. 
 
-JS 
+[](# "js") 
     
     function (pieces, code, final){
 
@@ -1778,7 +1772,7 @@ The rest of the options are pipe commands that get processed
         };
     }
 
-JS The action function
+[The action function](# "js") 
 
 
 This should receive the passin object as this which will contain the action object. The argument is the text.
@@ -1789,7 +1783,7 @@ All postCompile functions should expect a passin object with a text from compili
         doc.postCompile.call(this, text);
     }
 
-JS Split quotes
+[Split quotes](# "js") 
 
     temp = options[0].split('"').trim();
     if (temp.length === 1) {
@@ -1806,7 +1800,7 @@ JS Split quotes
     }
 
 
-JS Parse out quoted name
+[Parse out quoted name](# "js") 
 
 First splite out on "::" to get external literate program name and then split on ":" to get heading/cname split. Fill in reasonable defaults as one can; abort if it doesn't make sense. 
 
@@ -1844,7 +1838,7 @@ First splite out on "::" to get external literate program name and then split on
     }
 
 
-JS Msg
+[Msg](# "js") 
 Just a snippet of code I keep writing for reporting error location.
 
     +options.join[" | "]+","+ doc.hcur.heading
@@ -1919,7 +1913,7 @@ When this is detected, a fake block is created and queued. It consists of a simp
         };
     }
 
-JS The action function
+[The action function](# "js") 
 
 
 This should receive the passin object as this which will contain the action object. The argument is the text.
@@ -1945,7 +1939,7 @@ We use doc.repo[name] as an array of those trying to load the file. Once loaded,
 
 The filterCompileFiles option is an array for list which files of the FILE in a lit pro to save using the inherited save function from the parent document. 
 
-JS Main
+[Main](# "js")
  
     
     function (options) {
@@ -1998,7 +1992,7 @@ JS Main
         return true;
     }
 
-JS Already encountered
+[Already encountered](# "js")
 
 If it is an array in the repo, then that is a list of docs LAODing it, but the file has not yet returned. We load up the current doc and its name for this file. 
 
@@ -2067,7 +2061,7 @@ The file should be a node module that exports functions that take in the doc and
         }
     }
 
-JS bit check and run
+[bit check and run](# "js") 
 
     if ( (bits.hasOwnProperty(bit)) && (typeof bits[bit] === "function")) {
       bits[bit](doc); //each one is responsible for modifying
@@ -2159,7 +2153,7 @@ The eval function will use a function to protect var declarations from polluting
 
 We throw into that environment the variables options, inputs, and program to allow for interactive constructs in the code. doc is also available though probably should not be used. But could be useful for some debugging purposes, I suppose. State object also available.
 
-JS
+[](# "js")
 
     function (code, options) {
         var doc = this.doc;
@@ -2190,7 +2184,7 @@ To be able to indent the code in the final production (for appearance or say in 
 
 If no argument, then 
 
-JS
+[](# "js")
 
     function (code, options) {
 
@@ -2234,7 +2228,7 @@ Actually, the way it is written, it need not be in the macro form. In fact, it i
 This allows one to output the compiled code of a block to the doc log and probably to console log evenutally. Optional argument of a first line name. The default is the name.type
 
 
-JS
+[](# "js")
 
     function (code, options) {
         var doc = this.doc;
@@ -2294,7 +2288,7 @@ This is like raw, but it removes any Directives, and it removes one space from t
 
 If one is trying to insert a long text into a JavaScript function, it can have issues. So here is a little helper command that will split new lines, escape quotes, and then put it out as an array of strings joined with new lines.
 
-JS 
+[](# "js")
 
     function (code) {
         code = code.replace(/\\/g, '\\\\');
@@ -2436,7 +2430,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
 This takes in a text and is called in the context of a passin object. 
 
-JS 
+[](# "js")
 
     postCompile = function (text) {
         var passin = this;
@@ -2451,13 +2445,13 @@ JS
 
     postCompile.steps = [];
 
-JS Push
+[Push](# "js") 
 
     function (arr) {
         this.steps.push(arr);
     }
 
-JS Next function
+[Next function](# "js") 
 
     function(text) {
         if (i  < steps.length) {
@@ -2505,7 +2499,7 @@ We need to delete the associated action after it is done.
         }
     }
 
-JS Callback Factory
+[Callback Factory](# "js") 
 
 Information about what happened with the file writing and then next is called. 
 
@@ -2831,7 +2825,7 @@ explore using node to run stuff between browser/lit pro/python:r:tex:sage...
 
 The requisite npm package file. 
 
-JSON 
+[](# "json") 
 
     {
       "name": "DOCNAME",

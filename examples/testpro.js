@@ -5,6 +5,8 @@ te = (function () {
         };
 })();
 
+three = 3;
+
 function () {
     console.log("I was here");
     

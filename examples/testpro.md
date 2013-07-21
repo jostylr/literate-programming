@@ -2,17 +2,19 @@
 
 We just need a place to do some minor tests.
 
-[testpro.js](#Body "js|jshint")
 
 ## Body
 
-The body of the test
+The body of the test  [testpro.js](# "save: js|jshint")
+
 
 [](# "js")
 
     te = (function () {
         return  _"f1";
     })();
+
+    three = _`1+1+1`;
 
     function () {
         _"cl"
