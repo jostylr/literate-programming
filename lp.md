@@ -147,12 +147,12 @@ Because the require directive adds in functionality that might be used in the pa
         return doc;
     }
 
-Each processor, corresponding to the 4 types mentioned above, will check to see if the line matches its type. If so, they do their default action, return true, the line is stored in the full block for posterity, and the other processors are skipped. 
+Each processor, corresponding to the types mentioned above, will check to see if the line matches its type. If so, they do their default action, return true, the line is stored in the full block for posterity, and the other processors are skipped. The exception is a link in the header which will process it as a header and then return false so it can be processed as a directive link. 
 
-
-The substitution is to make sure the final block is also trimmed. 
 
 [Check for compile time](# "js")
+
+Is it ready to be compiled yet? Mainly this will be waiting for load directives to finish.
 
     if (Object.keys( doc.loading ).length === 0) {
        doc.compile();
@@ -161,6 +161,8 @@ The substitution is to make sure the final block is also trimmed.
 ### Default processors
 
 The processors array, a property of the Document, allows us to change the behavior of the parser based on directives. They should return true if processing is done for the line. The argument is always the current line and the doc structure. 
+
+`Directives parser caps` will be removed in the future.
 
 [](# "js")
 
@@ -184,7 +186,7 @@ Note that tabs do not trigger a code block. This allows for the use of tabs for 
 
 This also means that if one wants a code block that is not to be compiled, you can use tabs as long as it is not followed by 4 spaces. 
 
-[](# "js"
+[](# "js")
 
     function (line, doc) {
       var hcur = doc.hcur;
@@ -274,7 +276,9 @@ The starting period for a type change trigger may or may not be followed by capi
 
 ### Directives parser link
 
-A directive can appear anywhere. This is a markdown link text that matches `[stuff](whatever "dir_")` where the _ should be a colon. The dir must be a known directive. Otherwise it is ignored with a warning emitted. 
+A directive can appear anywhere. This is a markdown link text that matches `[name](link "dire: options")`
+
+where dire should be replaced with a valid directive. If you have a link title text with a colon, but the presumed directive does not match, then it is ignored except for a warning. The warning will be emitted if verbose is set. 
 
 Double quotes need to be used for the title directive text. Single quotes can be used freely as far as lit pro is concerned. 
 
@@ -299,7 +303,7 @@ The function takes in a line and the doc structure. It either returns true if a 
                 doc.lastLineType = "directive";
                 return true;
             } else {
-                doc.log("Directive link with no known directive:" + line);
+                doc.log("Directive link with no known directive:" + line, 1);
                 return false;
             }
         } else {
@@ -605,7 +609,7 @@ We also create a Block object for each section of a literate program. Within tha
         return code.trim();
     }, []];
 
-    Doc.prototype.log = function (text) {this.logarr.push(text);};
+    Doc.prototype.log = function (text, flag) {this.logarr.push([text, flag]);};
     Doc.prototype.logpop = function () {return this.logarr.pop();};
 
     Doc.prototype.parseLines = _"Parse lines";
@@ -2419,7 +2423,8 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
         parents : null,
         fromFile : null,
         inputs : inputs,
-        program : program
+        program : program,
+        verbose : verbose
     });
 
 
@@ -2554,9 +2559,13 @@ This is where we report the logs.
 
     function (text, next) {
         var doc = this.doc;
+        var logitem;
         var i, n = doc.logarr.length;
         for (i = 0; i < n; i += 1) {
-            console.log(doc.logarr.shift() );
+            logitem = doc.logarr.shift();
+            if ( (logitem[1] || 0) <= doc.verbose) {
+                console.log(logitem[0] );
+            } 
         }
         next(text);
     }
@@ -2578,6 +2587,7 @@ Added ability to pass in arguments to the literate program. It is in the array v
         .option('-p --preview',  'Do not save the changes. Output first line of each file')
         .option('-f --free', 'Do not use the default standard library of plugins') 
         .option('-d --diff', 'Compare diffs of old file and new file')
+        .option('--verbose', 'Full warnings turned on')
     ;
 
     program.parse(process.argv);
@@ -2594,6 +2604,8 @@ Added ability to pass in arguments to the literate program. It is in the array v
     if (indir) {
         process.chdir(indir);
     }
+
+    var verbose = program.verbose || 0;
 
     var md = fs.readFileSync(program.args[0], 'utf8');
 

@@ -14,6 +14,7 @@ program
     .option('-p --preview',  'Do not save the changes. Output first line of each file')
     .option('-f --free', 'Do not use the default standard library of plugins') 
     .option('-d --diff', 'Compare diffs of old file and new file')
+    .option('--verbose', 'Full warnings turned on')
 ;
 
 program.parse(process.argv);
@@ -29,6 +30,8 @@ var originalroot = process.cwd();
 if (indir) {
     process.chdir(indir);
 }
+
+var verbose = program.verbose || 0;
 
 var md = fs.readFileSync(program.args[0], 'utf8');
 
@@ -120,9 +123,13 @@ if (!program.free) {
 if (!program.quiet) {
     postCompile.push([function (text, next) {
             var doc = this.doc;
+            var logitem;
             var i, n = doc.logarr.length;
             for (i = 0; i < n; i += 1) {
-                console.log(doc.logarr.shift() );
+                logitem = doc.logarr.shift();
+                if ( (logitem[1] || 0) <= doc.verbose) {
+                    console.log(logitem[0] );
+                } 
             }
             next(text);
         }, {}]);
@@ -143,7 +150,8 @@ var doc = new Doc(md, {
     parents : null,
     fromFile : null,
     inputs : inputs,
-    program : program
+    program : program,
+    verbose : verbose
 });
 
 process.on('exit', function () {
