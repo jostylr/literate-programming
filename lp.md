@@ -1,4 +1,4 @@
-# [Literate-Programming](# "version:0.7.0-pre")
+# [literate-programming](# "version:0.7.0-pre")
 
 "Its like writing sphagetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -7,40 +7,12 @@ This is the sixth cycle of literate programming. Here we implement a more asynch
 
 ## Directory structure
 
-The bulk of the work is in the node module. That has all the core weaving. It also hasthe ability to load other literate programs / directives which ties it currently to the file system. 
-
-FILE "the lp module" lib/literate-programming.js   | jshint | jstidy
-
----
-
-The literate program compiler is activated by a command line program.
-
-
-FILE "cli" bin/literate-programming.js  | jshint
-
----
-
-The standard README.
-
-FILE "readme" README.md  | clean raw
-
----
-
-The requisite package file for a npm project. 
-
-FILE "NPM package : json" package.json  | jshint
-
----
-
-A list of growing and shrinking items todo.
-
-FILE "todo" TODO.md | clean raw
-
----
-
-The MIT license as I think that is the standard in the node community. 
-
-FILE "license-mit" LICENSE   | clean raw
+* [lib/literate-programming.js](#the-lp-module "save:   | jshint | jstidy") The bulk of the work is in the node module. That has all the core weaving. It also hasthe ability to load other literate programs / directives which ties it currently to the file system. 
+* [bin/literate-programming.js](#cli "save: | jshint")The literate program compiler is activated by a command line program.
+* [README.md](#readme "save:| clean raw") The standard README.
+* [package.json](#NPM-package "save: json  | jshint")The requisite package file for a npm project. 
+* [TODO.md](#todo "save: | clean raw") A list of growing and shrinking items todo.
+* [LICENSE](#license-mit "save: | clean raw") The MIT license as I think that is the standard in the node community. 
 
 
 ## How to write a literate program
@@ -314,13 +286,13 @@ JS
 
         var reg = /\[([^\]]*)\]\s*\(([^")]*)"([^:"]*)\:(.*)"\s*\)/;
         var options, name, link, dir;
-        line = line.toLowerCase();
+        line = line;
         var match = reg.exec(line);
         if (match) {
             name = (match[1] || "").trim();
-            link = (match[2] || "").trim();
-            dir = (match[3] || "").trim();
-            options = (match[4] || "").split("|").trim();
+            link = (match[2] || "").toLowerCase().trim();
+            dir = (match[3] || "").toLowerCase().trim();
+            options = (match[4] || "").toLowerCase().split("|").trim();
             if (doc.directives.hasOwnProperty(dir) ) {
                 doc.directives[dir].call(doc, options, name, link);
                 doc.lastLineType = "directive";
@@ -2900,7 +2872,7 @@ JSON
 
 
 
-## LICENSE-MIT
+## LICENSE MIT
 
 
 The MIT License (MIT)
@@ -2922,6 +2894,10 @@ Implemented link syntax for directives and type switching.
 Implemented templates using asterisk notation. 
 
 Added a postCompile function to have postCompile actions even if no file is being saved. 
+
+Implemented being able to use a literate program directly as a command line program. See primes.md
+
+Updated docs to reflex new syntax.
 
 v.0.6.1
 
