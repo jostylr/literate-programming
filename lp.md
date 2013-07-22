@@ -148,8 +148,7 @@ Because the require directive adds in functionality that might be used in the pa
         return doc;
     }
 
-Each processor, corresponding to the types mentioned above, will check to see if the line matches its type. If so, they do their default action, return true, the line is stored in the full block for posterity, and the other processors are skipped. The exception is a link in the header which will process it as a header and then return false so it can be processed as a directive link. 
-
+Each processor, corresponding to the types mentioned above, will check to see if the line matches its type. If so, they do their default action, return true, the line is stored in the full block for posterity, and the other processors are skipped. The exception dre directive links that modify the line and allow further processing.
 
 [Check for compile time](# "js")
 
@@ -163,7 +162,7 @@ Is it ready to be compiled yet? Mainly this will be waiting for load directives 
 
 The processors array, a property of the Document, is a sequence of parsers. They should return true if processing is done for the line. The argument is always the current line and the doc structure. 
 
-You can mutate the processors array to have different behavior in any given hblock (presumably a directive) or you can modify the defaultProcessors to permanently affect the parsing. I have yet to have a use case for doing either.
+You can mutate the processors array to have different behavior (presumably a directive). You can use document.defaultProcessors to get the original array. 
 
 `Directives parser caps` will be removed in the future.
 
@@ -301,15 +300,11 @@ For new global blocks, we use the heading string as the block name. We lower cas
                 
         doc.hblocks[heading] = hcur; 
         doc.hcur = hcur; 
-        // new processors for each section
-        doc.processors = [].concat(doc.defaultProcessors);
         
         doc.lastLineType = "heading";
       } 
       return false;
     }
-
-In the above, we are defining the default processors again fresh. This prevents any kind of manipulations from leaking from one section to another. It could be a performance penalty, but probably not a big deal. Garbage collection should remove old processors. 
 
 [Remove empty code blocks](# "js") 
 
@@ -327,8 +322,7 @@ We do not want empty code blocks left. So we delete them just before we are goin
     }
 
 
-This suffered from having empty lines put into the code block. Solution: do not add empty lines in "code parser" unless there is a non-empty line of code before it. Has an issue that this does not apply to the final block as it refers to the previous block. 
-
+This suffered from having empty lines put into the code block. Solution: do not add empty lines in "code parser" unless there is a non-empty line of code before it. 
 
 
 ### Directives parser caps
@@ -546,13 +540,15 @@ We also create a Block object for each section of a literate program. Within tha
 
 ### Document constructor
 
+The first Hblock is stored under the name firstHblock. It contains whatever happens before the first heading. 
+
 [](# "js")
 
     Doc = function (md, options) {
 
         this.litpro = md; 
         this.hblocks = {};
-        this.hcur = new HBlock();
+        this.hcur = this.hblocks.firstHblock = new HBlock();
         this.actions = {};
         this.logarr = [];
         this.subtimes = 0;
@@ -582,6 +578,8 @@ We also create a Block object for each section of a literate program. Within tha
 
         this.addPlugins(this.standardPlugins);
         this.parseLines();  // which then initiates .compile().process().end(); 
+
+
 
         return this;
     };
