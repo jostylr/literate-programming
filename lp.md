@@ -121,23 +121,24 @@ This is largely synchronous. The directives can create hooks that prevent the co
 
 Because the require directive adds in functionality that might be used in the parsing phase, it is synchronous and will block until it is fully loaded. 
 
+
 [](# "js")
 
     function () {
         var doc = this;
-        var i, line, nn; 
+        var i, nn, original; 
 
         var lines = doc.litpro.split("\n");
         var n = lines.length;
         for (i = 0; i < n; i += 1) {
-            line = lines[i];
+            doc.currentLine = original = lines[i];
             nn = doc.processors.length;
             for (var ii = 0; ii < nn; ii += 1) {
-                if (doc.processors[ii](line, doc) ) {
-                    doc.hcur.full.push(line);
+                if (doc.processors[ii](doc.currentLine, doc, original)) {
                     break;
                 }
             }
+            doc.hcur.full.push(original);
         }
 
         _"Head parser:Remove empty code blocks"
@@ -160,17 +161,19 @@ Is it ready to be compiled yet? Mainly this will be waiting for load directives 
 
 ### Default processors
 
-The processors array, a property of the Document, allows us to change the behavior of the parser based on directives. They should return true if processing is done for the line. The argument is always the current line and the doc structure. 
+The processors array, a property of the Document, is a sequence of parsers. They should return true if processing is done for the line. The argument is always the current line and the doc structure. 
+
+You can mutate the processors array to have different behavior in any given hblock (presumably a directive) or you can modify the defaultProcessors to permanently affect the parsing. I have yet to have a use case for doing either.
 
 `Directives parser caps` will be removed in the future.
 
 [](# "js")
 
     [ 
-    _"Code parser", 
+    _"Code parser",
+    _"Directives parser link", 
     _"Head parser", 
     _"Directives parser caps", 
-    _"Directives parser link",
     _"Switch parser link",
     _"Plain parser" 
     ]
@@ -218,6 +221,113 @@ Added the following clause to add empty lines to the code. Stuff before and afte
         hcur.cblocks[hcur.cname].lines.push(line);
     }
 
+
+### Directives parser link
+
+A directive can appear anywhere. This is a markdown link text that matches `[name](link "dire: options")`
+
+where dire should be replaced with a valid directive. If you have a link title text with a colon, but the presumed directive does not match, then it is ignored except for a warning. The warning will be emitted if verbose is set. 
+
+Double quotes need to be used for the title directive text. Single quotes can be used freely as far as lit pro is concerned. 
+
+The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
+
+Directives may appear multiple times on a line (not recommended) and it may be on lines that have different roles. If a directive is matched, then the name is substituted in for the link. A leading backtick in front of the link syntax will prevent a match from occurring. 
+
+This function always returns false so that further processing can occur. 
+
+[](# "js")
+
+    function (line, doc) {
+        var reg = /\[([^\]]*)\]\s*\(([^")]*)"([^:"]*)\:(.*)"\s*\)/g;
+        doc.currentLine = line.replace(reg, _":match function");
+        return false;
+    }
+
+[match function](# "js")
+
+First check whether a backtick is present. After prepping, check to see if there is a matching directive. 
+
+        function (match, name, link, dir, options, offset, str) {
+            if (str[offset-1] === "`") {
+                return match; 
+            }
+            name = (name || "").trim();
+            link = (link || "").toLowerCase().trim();
+            dir = (dir || "").toLowerCase().trim();
+            options = (options || "").toLowerCase().split("|").trim();
+            if (doc.directives.hasOwnProperty(dir) ) {
+                doc.directives[dir].call(doc, options, name, link);
+                doc.lastLineType = "directive";
+                return name;
+            } else {
+                doc.log("Directive link with no known directive:" + line, 1);
+                return match;
+            }
+        }
+
+
+### Head parser
+
+We recognize a heading by the start of a line having '#'. We ignore any '#' found at the end of the line (this is the replace at the end of heading). 
+
+We will also recognize a seText underline heading by the combination of a line consisting of only '=' or '-' that is preceded by a line of type plain text.
+
+For new global blocks, we use the heading string as the block name. We lower case the whole name to avoid capitalization issues (it was really annoying!)
+
+[](# "js")
+
+    function (line, doc) {
+      var hcur, heading;
+      var head = /^(\#+)\s*(.+)$/;
+      var match = head.exec(line);
+      var setext = /^(=+|-+)\s*$/;
+      var matchse = setext.exec(line);
+      if (match) {
+        heading = match[2].trim().toLowerCase().replace(/(\#+)$/, '').trim();
+      } else if (matchse ) {
+        if (doc.lastLineType === "text") {
+            heading = doc.hcur.plain.pop().trim().toLowerCase();
+        }
+      }
+      if (heading) {
+        _":Remove empty code blocks"
+
+        hcur = new HBlock();
+        hcur.heading = heading;
+        hcur.cname = doc.type;    
+        hcur.cblocks[hcur.cname] = doc.makeCode(cname);
+
+                
+        doc.hblocks[heading] = hcur; 
+        doc.hcur = hcur; 
+        // new processors for each section
+        doc.processors = [].concat(doc.defaultProcessors);
+        
+        doc.lastLineType = "heading";
+      } 
+      return false;
+    }
+
+In the above, we are defining the default processors again fresh. This prevents any kind of manipulations from leaking from one section to another. It could be a performance penalty, but probably not a big deal. Garbage collection should remove old processors. 
+
+[Remove empty code blocks](# "js") 
+
+We do not want empty code blocks left. So we delete them just before we are going to move onto a new processing section. 
+
+    var cname;
+    var oldh = doc.hcur; 
+    if (oldh) {
+        for (cname in oldh.cblocks) {
+            if (oldh.cblocks[cname].lines.length === 0) {
+                delete oldh.cblocks[cname];
+
+            }
+        }
+    }
+
+
+This suffered from having empty lines put into the code block. Solution: do not add empty lines in "code parser" unless there is a non-empty line of code before it. Has an issue that this does not apply to the final block as it refers to the previous block. 
 
 
 
@@ -274,42 +384,7 @@ The starting period for a type change trigger may or may not be followed by capi
         return true;
       }
 
-### Directives parser link
 
-A directive can appear anywhere. This is a markdown link text that matches `[name](link "dire: options")`
-
-where dire should be replaced with a valid directive. If you have a link title text with a colon, but the presumed directive does not match, then it is ignored except for a warning. The warning will be emitted if verbose is set. 
-
-Double quotes need to be used for the title directive text. Single quotes can be used freely as far as lit pro is concerned. 
-
-The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
-
-
-[](# "js")
-
-    function (line, doc) {
-
-        var reg = /\[([^\]]*)\]\s*\(([^")]*)"([^:"]*)\:(.*)"\s*\)/;
-        var options, name, link, dir;
-        line = line;
-        var match = reg.exec(line);
-        if (match) {
-            name = (match[1] || "").trim();
-            link = (match[2] || "").toLowerCase().trim();
-            dir = (match[3] || "").toLowerCase().trim();
-            options = (match[4] || "").toLowerCase().split("|").trim();
-            if (doc.directives.hasOwnProperty(dir) ) {
-                doc.directives[dir].call(doc, options, name, link);
-                doc.lastLineType = "directive";
-                return true;
-            } else {
-                doc.log("Directive link with no known directive:" + line, 1);
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
 
 ### Switch parser link
 
@@ -444,85 +519,6 @@ The setup is that the code array has a property named commands which is an assoc
 
 
 
-### Head parser
-
-We recognize a heading by the start of a line having '#'. We ignore any '#' found at the end of the line (this is the replace at the end of heading). 
-
-We will also recognize a seText underline heading by the combination of a line consisting of only '=' or '-' that is preceded by a line of type plain text.
-
-For new global blocks, we use the heading string as the block name. We lower case the whole name to avoid capitalization issues (it was really annoying!)
-
-[](# "js")
-
-    function (line, doc) {
-      var hcur, heading, linkhead;
-      var head = /^(\#+)\s*(.+)$/;
-      var match = head.exec(line);
-      var setext = /^(=+|-+)\s*$/;
-      var matchse = setext.exec(line);
-      if (match) {
-        heading = match[2].trim().toLowerCase().replace(/(\#+)$/, '').trim();
-      } else if (matchse ) {
-        if (doc.lastLineType === "text") {
-            heading = doc.hcur.plain.pop().trim().toLowerCase();
-        }
-      }
-      if (heading) {
-        _":Remove empty code blocks"
-
-        _":Deal with possible link in heading"
-
-        hcur = new HBlock();
-        hcur.heading = heading;
-        hcur.cname = doc.type;    
-        hcur.cblocks[hcur.cname] = doc.makeCode(cname);
-
-                
-        doc.hblocks[heading] = hcur; 
-        doc.hcur = hcur; 
-        // new processors for each section
-        doc.processors = [].concat(doc.defaultProcessors);
-        
-        doc.lastLineType = "heading";
-        if (linkhead) {
-            return false;
-        } else {
-            return true;
-        }
-      } 
-      return false;
-    }
-
-In the above, we are defining the default processors again fresh. This prevents any kind of manipulations from leaking from one section to another. It could be a performance penalty, but probably not a big deal. Garbage collection should remove old processors. 
-
-[Remove empty code blocks](# "js") 
-
-We do not want empty code blocks left. So we delete them just before we are going to move onto a new processing section. 
-
-    var cname;
-    var oldh = doc.hcur; 
-    if (oldh) {
-        for (cname in oldh.cblocks) {
-            if (oldh.cblocks[cname].lines.length === 0) {
-                delete oldh.cblocks[cname];
-
-            }
-        }
-    }
-
-
-This suffered from having empty lines put into the code block. Solution: do not add empty lines in "code parser" unless there is a non-empty line of code before it. Has an issue that this does not apply to the final block as it refers to the previous block. 
-
-[deal with possible link in heading](# "js")
-
-One use case is a heading with a directive. This could be with the version directive, for example. So we detect it and if it is present, then we extract the name of the link to be part of the heading. If we return false, then the parser will eventually parse it as a directive and we can get both the header of a new block and a directive. To return false, we set linkhead to true.
-
-If the regex does not match, then the original is returned and the function is not executed leading to linkhead being falsy. 
-
-    heading = heading.replace(/^([^\[]*)\[([^\]]*)\]\s*\([^)]*\)(.*)$/, function (a, b, c) {
-        linkhead = true;
-        return a+b+c;
-    });
 
 
 ### Plain parser
