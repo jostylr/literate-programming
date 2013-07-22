@@ -1,6 +1,6 @@
 # [literate-programming](# "version:0.7.0-pre")
 
-"This is like writing sphagetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
+"This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
 This file creates the literate program parser using the literate program parser (requires v 0.7+ to compile).  
 
@@ -20,11 +20,11 @@ Note that this is version 0.7 branch. It introduces a variety of changes, but it
 
 ## How to write a literate program
 
-Use markdown. Each heading is a new heading block (hblock) and can be referenced by using _"title". This substitution has more features, documented below. 
+Use markdown. Each heading is a new heading block (hblock) and can be referenced by using `_"title"`. This substitution has more features, documented below. 
 
 Within each hBlock, one can write free form markdown explanatory text, directives, code lines, or initiate a new code block (cblock). 
 
-* hblock is initiated by number signs at the beginnning of a line. seText style works too. See [markdown syntax](#http://daringfireball.net/projects/markdown/syntax).
+* hblock is initiated by number signs at the beginning of a line. seText style works too. See [markdown syntax](#http://daringfireball.net/projects/markdown/syntax).
 * Directive is initiated by a markdown link syntax with "dir:..." as part of the title. 
 * A new cblock is initiated with a non-directive link at the beginning of a line.
 * cblock lines are recognized by 4 spaces (not tabs). 
@@ -314,15 +314,14 @@ We do not want empty code blocks left. So we delete them just before we are goin
     var oldh = doc.hcur; 
     if (oldh) {
         for (cname in oldh.cblocks) {
-            if (oldh.cblocks[cname].lines.length === 0) {
+            if (oldh.cblocks[cname].lines.join("").match(/^\s*$/) ){
                 delete oldh.cblocks[cname];
-
             }
         }
     }
 
 
-This suffered from having empty lines put into the code block. Solution: do not add empty lines in "code parser" unless there is a non-empty line of code before it. 
+This suffered from having empty lines put into the code block. This may be rather inefficient, but empty lines seemed to creep in. So we join them all and if it is just whitespace, then we delete the codeblock. Sorry to all the [whitespace](http://compsoc.dur.ac.uk/whitespace/) languages!
 
 
 ### Directives parser caps
@@ -383,7 +382,7 @@ The starting period for a type change trigger may or may not be followed by capi
 ### Switch parser link
 
 
-A switch to a new code block will be recognized as, at the start of a line, a markdown link syntax: `[cname](whatever "ext | ..."). In the extremely unlikely event that you need to avoid matching, put a space or something at the start of the line if your link must be at the beginning of a line. Or put a non-space character after the link's parenthetical.  As long as a link is at the beginning of the line, it will cause a switch of cname.
+A switch to a new code block will be recognized as, at the start of a line, a markdown link syntax: `[cname](whatever "ext | ..."). In the extremely unlikely event that you need to avoid matching, put a space or something at the start of the line if your link must be at the beginning of a line.  As long as a link is at the beginning of the line with nothing else other than spaces, it will cause a switch of the cblock. 
 
 Double quotes need to be used for the title directive text. Single quotes can be used freely within the double quotes as far as lit pro is concerned. 
 
@@ -415,11 +414,11 @@ The function takes in a line and the doc structure. It either returns true if a 
 
 ### Switch type 
 
-Here is the function for switching the type of code block one is parsing. The syntax is the type (alread parsed and passed in) and then name of the block followed by pipes for the different functions to act on it. If there is no name, then use a pipe anyway. Examples:  `JS for running | run  ` or  `JS | hint`
-
-Anything works for the name except pipes.
+Here is the function for switching the type of code block one is parsing. The syntax is the type (alread parsed and passed in) and then name of the block followed by pipes for the different functions to act on it. Even without a code name, the commands are initiated with a pipe. Examples:  `[for running](# "js  | jshint") ` or  `[](# "JS | jshint")` or  `[](# "| jshint")` or even just `[](#)`
 
 Because of the change to link syntax and how it was coded before, this function has two separate use cases, distinguished by number of arguments.
+
+If a cblock with that name already exists, it will switch to it and then add the lines of code. If not, it creates a new one with that name. 
 
 [main](# "js") 
 
@@ -440,7 +439,7 @@ Because of the change to link syntax and how it was coded before, this function 
             }
         } else { 
             name = a.toLowerCase();
-            type = b.toLowerCase() || ""; 
+            type = b.toLowerCase() || doc.type; 
             options = c;
             if (name) {
                 cname = name.toLowerCase()+"."+type;
@@ -553,7 +552,7 @@ The first Hblock is stored under the name firstHblock. It contains whatever happ
         this.logarr = [];
         this.subtimes = 0;
         this.processing = 0;
-        this.type = ".";
+        this.type = "";
 
 
 
@@ -960,6 +959,7 @@ We need to get the right block of text. First we check if there is a request fro
         var doc = this;
         ext = ext || ""; // only relevant in compiling file type
         var cblocks = hblock.cblocks;
+
 
         if (!cblocks) {
             if (cname) {
@@ -2519,8 +2519,10 @@ This is a safety precaution to get a quick preview of the output.
     function (text, next) {
         var passin = this;
         var doc = passin.doc;
-        var fname = passin.action.filename;
-        doc.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+        if (passin.action && passin.action.filename) {
+            var fname = passin.action.filename;
+            doc.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+        }
         next(text);
     }
 

@@ -67,8 +67,10 @@ if (program.preview) {
     postCompile.push([function (text, next) {
             var passin = this;
             var doc = passin.doc;
-            var fname = passin.action.filename;
-            doc.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+            if (passin.action && passin.action.filename) {
+                var fname = passin.action.filename;
+                doc.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
+            }
             next(text);
         }, {}]);
 } else if (program.diff) {
