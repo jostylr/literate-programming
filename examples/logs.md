@@ -1,4 +1,5 @@
-# [Factorial](# "Version: 0.1.0")
+[Factorial](# "Version: 0.1.0")
+===
 
 This post is about computing factorials via the logarithm. We use loops to compute it. 
 

@@ -552,7 +552,7 @@ We also create a Block object for each section of a literate program. Within tha
 
         this.litpro = md; 
         this.hblocks = {};
-        this.chur = new HBlock();
+        this.hcur = new HBlock();
         this.actions = {};
         this.logarr = [];
         this.subtimes = 0;
