@@ -331,9 +331,7 @@ If a heading block is repeated, then we increment it to make it different; this 
 
     var count;
     if (doc.hblocks.hasOwnProperty(heading) ) {
-
         count = 1;
-        origh = heading;
         while (doc.hblocks.hasOwnProperty(heading+" "+count)) {
             count += 1;
         }
@@ -607,8 +605,6 @@ We attach a lot of functionality to a doc via the prototype.
     };
 
     Doc.prototype.defaultIndent = "    ";
-
-    Doc.prototype.maxsub = 1e5;
 
     Doc.prototype.oneSub = _"One cycle of substitution:main";
     Doc.prototype.oneSub.callback = true; 
