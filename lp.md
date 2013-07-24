@@ -293,11 +293,12 @@ For new global blocks, we use the heading string as the block name. We lower cas
         _":Remove empty code blocks"
 
         hcur = new HBlock();
-        hcur.heading = heading;
         hcur.cname = doc.type;    
         hcur.cblocks[hcur.cname] = doc.makeCode(cname);
 
                 
+        _":repeated heading block"
+        hcur.heading = heading;
         doc.hblocks[heading] = hcur; 
         doc.hcur = hcur; 
         
@@ -323,6 +324,23 @@ We do not want empty code blocks left. So we delete them just before we are goin
 
 This suffered from having empty lines put into the code block. This may be rather inefficient, but empty lines seemed to creep in. So we join them all and if it is just whitespace, then we delete the codeblock. Sorry to all the [whitespace](http://compsoc.dur.ac.uk/whitespace/) languages!
 
+[Repeated heading block](# "js") 
+
+If a heading block is repeated, then we increment it to make it different; this is the style used by github for markdown documents. One should not have repeated blocks, but if one wants to, then...
+
+
+    var count;
+    if (doc.hblocks.hasOwnProperty(heading) ) {
+
+        count = 1;
+        origh = heading;
+        while (doc.hblocks.hasOwnProperty(heading+" "+count)) {
+            count += 1;
+        }
+        heading = heading+" "+count;
+        doc.log("Repeated; New header: " +heading);
+    }
+
 
 ### Directives parser caps
 
@@ -347,6 +365,7 @@ The function takes in a line and the doc structure. It either returns true if a 
       var options, name;
       match = reg.exec(line);
       if (match) {
+        doc.log("Syntax deprecated. Rewrite: " + line, 1);
         name = match[1].toLowerCase();
         if (doc.directives.hasOwnProperty(name)) {
             options = (match[2] || "").split("|").trim();
@@ -535,11 +554,15 @@ It means there is nothing special about the line. So we simply add it to the pla
 
 We have a few prototypes we use. The main one is the Doc constructor which is what a literate programming string gets turned into. 
 
-We also create a Block object for each section of a literate program. Within that block, we have code blocks created which are augmented arrays and not a proper prototyped object. 
+We also create an Hblock object for each section of a literate program. Within that block, we have code blocks created which are objects with a lines array and a few other properties. See [Make Code](#make-code). 
+
+The most important part to understand of the structure is that doc.hblocks is an object with the heading names pointing to the relevant hblock. And that each hblock has a cblocks property with the various code blocks. And those code blocks carry the lines as well as information about being compiled. 
 
 ### Document constructor
 
 The first Hblock is stored under the name firstHblock. It contains whatever happens before the first heading. 
+
+We attach a lot of functionality to a doc via the prototype. 
 
 [](# "js")
 
@@ -682,7 +705,7 @@ This handles adding properties to macros, commands, etc.. The value of OBJTYPE n
         var name;
         for (name in newobj) {
             if (oldobj.hasOwnProperty(name) ) {
-                doc.log("Replacing " + name);
+                doc.log("Replacing " + name, 1);
             }
             oldobj[name] = newobj[name];
         }

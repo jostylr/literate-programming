@@ -63,3 +63,11 @@ What happens if to blocks refer to each other?
 
     Bobby needs _":Alex"
 
+## What is up 
+
+Can we refer to the second block?
+
+[out](# "|log")
+
+    George thinks _"Now for some bad stuff 1:Alex"
+
