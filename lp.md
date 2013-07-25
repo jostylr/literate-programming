@@ -672,12 +672,21 @@ We use file extensions as keys and we provide the mime type for the kind which m
 
 [Make constants](# "js") 
 
-    function (obj) {
+A constant is a macro. Thus, we wrap each constant in a function that will return the value. The obj is a wrapper so that multiple constants can be defined at once. 
+
+If it is a single argument, then it is an object of key:value. If it is two arguments, then it is key, val.
+
+    function (a,b) {
         var doc = this;
-        var name;
+        var name, obj, val;
         var newobj = {};
-        for (name in obj) {
-            newobj[name] = doc.wrapVal(obj[name]);
+        if (arguments.length === 1) {
+            obj = a;
+            for (name in obj) {
+                newobj[name] = doc.wrapVal(obj[name]);
+            }
+        } else if (arguments.length === 2) {
+            newobj[a] = doc.wrapVal(b);
         }
         doc.addMacros(newobj);
     }
