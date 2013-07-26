@@ -572,7 +572,6 @@ We attach a lot of functionality to a doc via the prototype.
         this.actions = {};
         this.logarr = [];
         this.subtimes = 0;
-        this.processing = 0;
         this.type = "";
 
 
@@ -678,7 +677,7 @@ If it is a single argument, then it is an object of key:value. If it is two argu
 
     function (a,b) {
         var doc = this;
-        var name, obj, val;
+        var name, obj;
         var newobj = {};
         if (arguments.length === 1) {
             obj = a;
@@ -740,21 +739,14 @@ We need some storage structures for the async aspect of LOADing and compiling.
 
 The loading object will keep track of which files are loading and we will delete them when the file is loaded. When all are deleted, then the doc is ready to be compiled. 
 
-The call array contains functions that should be called. It is last in, first out. 
-
-We also need a function that will run the calls. 
-
         this.loading = {}; // for the LOAD and compile
         this.loaded = {}; // can reference this for external litpro by names. 
         this.waiting = {}; // place to put blocks waiting for compiling
-        this.processing = 0; // Tracks status of processing. 
-        this.call = [];  // a list of functions to call upon a resume
-
 
 
 #### Doc commander
 
-This takes in array of commands to execute on the code. Each element of the array is [function, args, calling object]
+This takes in an array of commands to execute on the code. Each element of the array is [function, args, calling object]
 
 If a function is doing a callback (calling out to some external resource or something), then it needs to set the callback flag to true and it has responsibility for calling next with the compiled code as argument. No callback means the commands can/should ignore it all.
 
