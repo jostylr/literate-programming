@@ -818,13 +818,11 @@ Actions are functions that act on a compiled block of text. Mainly this would be
 Each action should have an object of the form
 
 * f: function that is to be called
-* a path to the cblock in the form of litpro:, heading:, cname: 
+* a path to the cblock in the form of litpro, heading, cname 
 * fullname : reference
 * msg : for unfinished business
 * pipe: an array of pipes to act on the compiled text first
 * state : whatever state variables need to be passed. For files, this is {indent : false}
-
-Star is added for filename properties to allow for start substitution. 
 
 
 [Main](# "js") 
@@ -957,7 +955,7 @@ This also is where the files are loaded into the waiting array of the called com
 
 ### Get correct code block
 
-Each compiled block has an associative array whose keys are cnames. They may be explicitly set, such as `JS main` becomes `main.js`.  But they might also be no name or even no extension. 
+Each compiled block has an associative array whose keys are cnames. They may be explicitly set, such as `[main](# "js")` becomes `main.js`.  But there might also be no name or no extension. 
 
 So this is a function that takes in a compiled hblock, the cname, and a possible extension (if coming from a file save request). It tries to find the right compiled block and returns that. 
 
@@ -1745,6 +1743,8 @@ We use lower case for the keys to avoid accidental matching with macros.
 
 ### File directive
      
+DEPRECATED
+
 The command is `FILE "litpro :: block name : internal name" fname.ext | commands...` where fname.ext is the filename and extension to use. 
 
 The quoted part is optional. Its omission means that one should use the current code block.
