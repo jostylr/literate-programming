@@ -2125,11 +2125,13 @@ Here we set constants as macros. If NAME is the name of a macro, either NAME or 
 
 ### Define Macro directive
 
-This is where we implement defining macros in the literate program. This may be rare. Probably they are already defined in a load-in file. The setup will be that the macro will be that there is exactly one code block in the section, it is already done, and we use that as the code of the function. 
+This is where we implement defining macros in the literate program. This may be rare. Probably they are already defined in a load-in file. 
+
+The setup will be that the macro will be that there is exactly one code block in the section, it is already done, and we use that as the code of the function. 
 
 Note DEFINE should be at the end of the section. No substitutions as this is all done before compilation which is what allows the macros to be useful. It can appear anywhere, however, as parsing is unaffected by this. 
 
-Example:   `DEFINE darken`  and in the code block above it is a function and only a function. The `this` is the document object. 
+Example:   `[darken](# "define: darken")`  and in the code block above it is a function and only a function. The `this` is the document object. 
 
     function (options) {
         var doc = this;
@@ -2623,7 +2625,13 @@ Added ability to pass in arguments to the literate program. It is in the array v
 
     var verbose = program.verbose || 0;
 
-    var md = fs.readFileSync(program.args[0], 'utf8');
+    var md;
+    try {
+        md = fs.readFileSync(program.args[0], 'utf8');
+    } catch (e) {
+        console.log("Not readable file " + program.args[0]);
+        md = ""; 
+    }
 
     var inputs =  program.args.slice(1);
 

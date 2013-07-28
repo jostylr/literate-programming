@@ -33,7 +33,13 @@ if (indir) {
 
 var verbose = program.verbose || 0;
 
-var md = fs.readFileSync(program.args[0], 'utf8');
+var md;
+try {
+    md = fs.readFileSync(program.args[0], 'utf8');
+} catch (e) {
+    console.log("Not readable file " + program.args[0]);
+    md = ""; 
+}
 
 var inputs =  program.args.slice(1);
 
