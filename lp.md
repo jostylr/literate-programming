@@ -2813,6 +2813,8 @@ I also like to use it compile an entire project from a single file, but a litera
 
 ## TODO
 
+Convert to event-style async. This should allow for easier hooking into the process. Create directives that allow eventing and hooking, somewhat along the lines of the define directive. 
+
 
 Make sure missing blocks don't cause problems. 
 
