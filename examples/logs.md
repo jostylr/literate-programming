@@ -68,7 +68,7 @@ Here we work out step by step how to compute out 1000!
     But remember that logarithms convert products to sums: 
     $$\ln (1000* 999* 998* ... *3 *2 *1) = \ln(1000) + \ln(999) + \ln(998) + \cdots + \ln(3)+\ln(2) + \ln(1) $$
 
-    For example, if you run the following command in [GeoGebra](http://geogebra.org): `sum(sequence(ln(n), n, 1, 1000))` you will get $5912.13$.
+    For example, if you run the following command in GEOGEBRA: `sum(sequence(ln(n), n, 1, 1000))` you will get $5912.13$.
 
     Now we cannot exponentiate that directly since it would generate too large a number. It is currently in base $e$, i.e., \(e^{5912} \approx 1000!\) 
      

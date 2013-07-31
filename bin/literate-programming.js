@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
 /*global process, require, console*/
+/*jslint evil:true*/
 var program = require('commander');
 var fs = require('fs');
 var Doc = require('../lib/literate-programming').Doc;
 
 program
-    .version('0.7.0')
+    .version('0.7.1-pre')
     .usage('[options] <file> <arg1> ...')
     .option('-o --output <root>', 'Root directory for output')
     .option('-i --input <root>',  'Root directory for input')
@@ -120,10 +121,34 @@ if (program.preview) {
         }, {dir: dir}]);
 }
 
-var standardPlugins; 
+var standardPlugins, plugins; 
 
 if (!program.free) {
     standardPlugins = require('literate-programming-standard');
+    var original = process.cwd();
+    var files;
+    
+    var matchf = function (el) {return el.match("lprc.js");};
+    
+    var module ={}; 
+    var file, old, current;
+    plugins = {};
+    do {
+        files = fs.readdirSync('.');
+        files = files.filter(matchf);
+        if (files.length === 1 ) {
+            file = fs.readFileSync(files[0], 'utf8');
+            eval(file);
+            plugins = module['exports'];
+            break;
+        } else {
+            process.chdir('..');
+            old = current;
+            current = process.cwd(); 
+        }
+    } while (old !== current);
+    
+    process.chdir(original);
 } else {
     standardPlugins = {};
 }
@@ -154,6 +179,7 @@ postCompile.push([function (text, next) {
 
 var doc = new Doc(md, {
     standardPlugins : standardPlugins,
+    plugins : plugins,
     postCompile : postCompile, 
     parents : null,
     fromFile : null,

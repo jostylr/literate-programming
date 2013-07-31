@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.7.0")
+# [literate-programming](# "version:0.7.1-pre")
 
 "This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -596,6 +596,7 @@ We attach a lot of functionality to a doc via the prototype.
 
 
         this.addPlugins(this.standardPlugins);
+        this.addPlugins(this.plugins);
         this.parseLines();  // which then initiates .compile().process().end(); 
 
 
@@ -717,7 +718,7 @@ This handles adding properties to macros, commands, etc.. The value of OBJTYPE n
 
 [Add in plugins](# "js") 
 
-This is laregly for loading the standard library. 
+This is laregly for loading the standard library and any lprc.js file found. 
 
     function (plugobj) {
         var doc = this;
@@ -2401,6 +2402,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     #!/usr/bin/env node
 
     /*global process, require, console*/
+    /*jslint evil:true*/
     var program = require('commander');
     var fs = require('fs');
     var Doc = require('../lib/literate-programming').Doc;
@@ -2411,6 +2413,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
     _"Post Compile function"
 
+
     if (program.preview) {
         postCompile.push([_"Preview files", {}]);
     } else if (program.diff) {
@@ -2419,10 +2422,11 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
         postCompile.push([_"Save files", {dir: dir}]);
     }
 
-    var standardPlugins; 
+    var standardPlugins, plugins; 
 
     if (!program.free) {
         standardPlugins = require('literate-programming-standard');
+        _"check for lprc file"
     } else {
         standardPlugins = {};
     }
@@ -2435,6 +2439,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
     var doc = new Doc(md, {
         standardPlugins : standardPlugins,
+        plugins : plugins,
         postCompile : postCompile, 
         parents : null,
         fromFile : null,
@@ -2445,6 +2450,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
 
     _"On exit"
+
 
 
 #### Post Compile function
@@ -2587,6 +2593,46 @@ This is where we report the logs.
         }
         next(text);
     }
+
+### Check for lprc file
+
+An lprc file is a JavaScript file that contains various plugin type stuff. This allows one to define it once for a project and then all the litpro programs can use it. Probably better than the require directive. 
+
+There should be just one such file 
+
+To find it, we start with the cwd and look for such files in each parent directory. 
+
+This can be made more complicated if there is a reason to do so, but I think a single plugin file for a project is probably sufficient. There is always require. 
+
+[](# "js: ife")
+
+    var original = process.cwd();
+    var files;
+
+    var matchf = function (el) {return el.match("lprc.js");};
+
+    var module ={}; 
+    var file, old, current;
+    plugins = {};
+    do {
+        files = fs.readdirSync('.');
+        files = files.filter(matchf);
+        if (files.length === 1 ) {
+            file = fs.readFileSync(files[0], 'utf8');
+            eval(file);
+            plugins = module['exports'];
+            break;
+        } else {
+            process.chdir('..');
+            old = current;
+            current = process.cwd(); 
+        }
+    } while (old !== current);
+
+    process.chdir(original);
+
+
+
 
 ### Command line options
 
