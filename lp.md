@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.7.1-pre")
+# [literate-programming](# "version:0.7.1")
 
 "This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -2604,6 +2604,7 @@ To find it, we start with the cwd and look for such files in each parent directo
 
 This can be made more complicated if there is a reason to do so, but I think a single plugin file for a project is probably sufficient. There is always require. 
 
+
 [](# "js: ife")
 
     var original = process.cwd();
@@ -2611,25 +2612,23 @@ This can be made more complicated if there is a reason to do so, but I think a s
 
     var matchf = function (el) {return el.match("lprc.js");};
 
-    var module ={}; 
-    var file, old, current;
+    var current;
     plugins = {};
+    var path = require('path');
+    var bits = original.split(path.sep);
+    var lead = ( original[0] === path.sep) ? path.sep : "";
     do {
-        files = fs.readdirSync('.');
+        current = lead + path.join.apply(path, bits);
+        files = fs.readdirSync(current);
         files = files.filter(matchf);
         if (files.length === 1 ) {
-            file = fs.readFileSync(files[0], 'utf8');
-            eval(file);
-            plugins = module['exports'];
+            plugins = require(current+path.sep+files[0]);
             break;
         } else {
-            process.chdir('..');
-            old = current;
-            current = process.cwd(); 
+            bits.pop();
         }
-    } while (old !== current);
+    } while (bits.length > 0);
 
-    process.chdir(original);
 
 
 
@@ -2964,6 +2963,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ## Change Log
+
+v.0.7.1 Added the ability to have a (single) plugin file called lprc.js. logs.md now uses it as an example. 
 
 v.0.7.0 
 
