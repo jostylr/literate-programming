@@ -5,6 +5,7 @@
 var program = require('commander');
 var fs = require('fs');
 var Doc = require('../lib/literate-programming').Doc;
+var path = require('path');
 
 program
     .version('0.7.1')
@@ -132,7 +133,6 @@ if (!program.free) {
     
     var current;
     plugins = {};
-    var path = require('path');
     var bits = original.split(path.sep);
     var lead = ( original[0] === path.sep) ? path.sep : "";
     do {

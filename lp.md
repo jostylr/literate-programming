@@ -2406,6 +2406,8 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     var program = require('commander');
     var fs = require('fs');
     var Doc = require('../lib/literate-programming').Doc;
+    var path = require('path');
+
 
     _"Command line options"
 
@@ -2614,7 +2616,6 @@ This can be made more complicated if there is a reason to do so, but I think a s
 
     var current;
     plugins = {};
-    var path = require('path');
     var bits = original.split(path.sep);
     var lead = ( original[0] === path.sep) ? path.sep : "";
     do {
