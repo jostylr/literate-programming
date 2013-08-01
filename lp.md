@@ -2113,15 +2113,22 @@ Version control directive for the literate program. Generally at the base of the
 
 Here we set constants as macros. If NAME is the name of a macro, either NAME or NAME() will return the value
 
-    function (options) {
-        var doc = this;
-        if (options.length >= 2) {
-            var name = options[0].toLowerCase();
-            var newc = {};
-            newc[name] = options.slice(1).join("|"); // a hack to undo pipe splitting--loses whitespacing
-            doc.addConstants(newc);
+    function (options, name) {
+        var doc = this,
+            value;
+            
+        if (arguments.length === 3) {
+            name = (name || "").toLowerCase();
         } else {
-            doc.log("Error with SET directive. Need exactly 2 arguments.");
+            name = (options.shift() || "").toLowerCase();
+        }
+        if (options.length >= 1) {
+            value = options.join("|"); // a hack to undo pipe splitting--loses whitespacing
+        } 
+        if (name && value) {
+            doc.addConstants(name, value);
+        } else {
+            doc.log("Error with SET directive. Need ");            
         }
     }
 
