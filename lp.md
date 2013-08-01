@@ -2044,10 +2044,11 @@ If it is not an array, then it should be a Doc and we load the current doc into 
 This is to load up macros, commands, and directives.
 
 The file should be a node module that exports functions that take in the doc and do something to it. 
+The syntax is `[whatever](somelink "require: filename | entry ? | ...")
 
- 
- REQUIRE file  | entry | entry ...
+The main thing is to add in the filename for require and you are good to go. While I could have had the filename come from some protocol, I think it conflicts with local use and remote reading. So if this was part of a repository in github, then the `somelink` should be the link to the version in the repo while for local development, one would want something else. 
 
+The `entry` part is a list of the names that you might want imported/run. If nothing is supplied, then all exposed bits are used.
 
     function (options) {
         var doc = this;
