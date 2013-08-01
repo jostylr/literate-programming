@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.7.1")
+# [literate-programming](# "version:0.7.2-pre")
 
 "This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -2116,7 +2116,7 @@ Here we set constants as macros. If NAME is the name of a macro, either NAME or 
     function (options, name) {
         var doc = this,
             value;
-            
+
         if (arguments.length === 3) {
             name = (name || "").toLowerCase();
         } else {
