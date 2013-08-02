@@ -1949,28 +1949,44 @@ All postCompile functions should expect a passin object with a text from compili
 
 ### The load directive
 
-This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block : internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is  LOAD file | shortname 
+This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block : internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is either 
 
+* `[shortname](whatever "load:file | save list...")`
+* `[shortname](github link maybe bitbucket "load: |...")`
+* `[shortname](somelink "load: |...")`
 
-This is being converted to async. Load the file async. The callback will parse the document and upon its completion, check to see if there are any files to be loaded. If so, then it puts a callback in the call array of the new doc to keep checking with a reference to the original document. If not files are being loaded, then it will remove itself from the load array and call the old doc's function to check for proceeding. If it is not 
+That is, it first checks to see if the load directive is followed by something. If so, that is the file location to go to. If there is nothing there, then it checks to see if it is a github link/bitbucket. If so, then it grabs the location from there and loads it locally. This is ideal in that the link will take someone to the repo remote, but still facilitates local development. The final form is to just load something over the network. If you really want it loaded remotely via a github link, then you can put `!!` after the load link.
+
+This will load the file asynchronously. The callback parses the document and upon its completion, checks to see if there are any files to be loaded. If so, then it puts a callback in the call array of the new doc to keep checking with a reference to the original document. If no files are being loaded, then it will remove itself from the load array and call the old doc's function to check for proceeding.
 
 We use doc.repo[name] as an array of those trying to load the file. Once loaded, they become the parents of the new doc along with any other docs calling it later on. 
 
-The filterCompileFiles option is an array for list which files of the FILE in a lit pro to save using the inherited save function from the parent document. 
+The filterCompileFiles option is an array for list which files of the `save` directive in the lit pro to save. The default is to save them all. THIS IS NOT IMPLEMENTED, as far as I know. But 
 
 [Main](# "js")
  
     
-    function (options) {
-        var doc = this;
-        var fname = options.shift();
+    function (options, name, link) {
+        var doc = this,
+            fname;
+
+        fname = options.shift();
+
+        if (arguments.length === 3) {
+            if (fname = "!!") {
+                _":load from link"
+            } else if (!fname) {
+                _":load based on repo"
+            } 
+        } else {
+            name = options.shift();
+            if (!name) {
+                name = fname;
+            }
+        }
         if (! fname) {
             doc.log("Error in LOAD. Please give a filename " + options.join(" | ") );
             return false;            
-        }
-        var name = options.shift();
-        if (!name) {
-            name = fname;
         }
         _":Already encountered"
         var file, i, n, par; 
