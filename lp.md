@@ -76,6 +76,7 @@ It takes the string and makes a document that has the markdown parsed out into v
     /*jslint evil:true*/
 
     var fs = require('fs');
+    var http = require('http');
 
 
     _"Utilities"
@@ -1952,10 +1953,12 @@ All postCompile functions should expect a passin object with a text from compili
 This is to load other literate programs. It loads them, compiles them, and stores the document in the global repo where it can then be accessed using   _"name::block : internal | ..."  where the name is the name given to the literate program (full filename by default).  The format is either 
 
 * `[shortname](whatever "load:file | save list...")`
-* `[shortname](github link maybe bitbucket "load: |...")`
+* `[shortname](github link "load: |...")`
 * `[shortname](somelink "load: |...")`
 
-That is, it first checks to see if the load directive is followed by something. If so, that is the file location to go to. If there is nothing there, then it checks to see if it is a github link/bitbucket. If so, then it grabs the location from there and loads it locally. This is ideal in that the link will take someone to the repo remote, but still facilitates local development. The final form is to just load something over the network. If you really want it loaded remotely via a github link, then you can put `!!` after the load link.
+That is, it first checks to see if the load directive is followed by something. If so, that is the file location to go to. If there is nothing there, then it checks to see if it is a github link to a master branch. If so, then it grabs the location from there and loads it locally. This is ideal in that the link will take someone to the repo remote, but still facilitates local development. The final form is to just load something over the network. If you really want it loaded remotely via a github link, then you can put `!!` after the load link.  
+
+!!Http loading not done yet
 
 This will load the file asynchronously. The callback parses the document and upon its completion, checks to see if there are any files to be loaded. If so, then it puts a callback in the call array of the new doc to keep checking with a reference to the original document. If no files are being loaded, then it will remove itself from the load array and call the old doc's function to check for proceeding.
 
@@ -1968,64 +1971,111 @@ The filterCompileFiles option is an array for list which files of the `save` dir
     
     function (options, name, link) {
         var doc = this,
-            fname;
+            fname, 
+            ind;
 
         fname = options.shift();
 
         if (arguments.length === 3) {
-            if (fname = "!!") {
-                _":load from link"
+            if (fname === "!!") {
+                fname = link;
             } else if (!fname) {
-                _":load based on repo"
+                _":check for github"
             } 
         } else {
             name = options.shift();
-            if (!name) {
-                name = fname;
-            }
         }
-        if (! fname) {
-            doc.log("Error in LOAD. Please give a filename " + options.join(" | ") );
-            return false;            
-        }
+
+        _":verify fname name"
         _":Already encountered"
-        var file, i, n, par; 
-        file = fs.readFile(fname, 'utf8', function (err, data) {
-            var tempdoc, tempname, newdoc;
-            if (err) {
-                doc.log("Issue with LOAD: " + fname + " " + name + " " + err.message );
-                par = doc.repo[fname];
-                delete doc.repo[fname] ;
-                n = par.length;
-                for (i = 0; i < n; i += 1) {
-                    tempdoc = par[i][0];
-                    tempname =  par[i][1];
-                    delete tempdoc.loading[tempname];
-                    // may want to abort instead?
-                    _"Parse lines: check for compile time" 
-                }
-            } else {
-                par = doc.repo[fname];
-                newdoc = doc.repo[name] = (new Doc(data, {
-                    standardPlugins : doc.standardPlugins,
-                    postCompile : doc.postCompile,
-                    filterCompileFiles: options, 
-                    parents : par,
-                    fromFile : fname
-                }));
-                n = par.length;
-                for (i = 0; i < n; i += 1) {
-                    tempdoc = par[i][0];
-                    tempname =  par[i][1];
-                    delete tempdoc.loading[tempname];
-                    tempdoc.loaded[tempname] = newdoc;
-                    _"Parse lines: check for compile time"
-                }
-                
-            }
-        });
+
+        var file;
+        var callback = _":load data";
+
+        if (fname.slice(0,4) === "http") {
+            _":request remote"
+        } else {
+            file = fs.readFile(fname, 'utf8', callback);
+        }
         return true;
     }
+
+[Check for github](# "js")
+
+We first match by whether it contains github.com  (note the . is probably an any character).  Then we are presuming that if it is and it is the master branch, then we can get the local file from what follows `master/`.  If none of that pans out, the link becomes the file name and a network call is probably called for. 
+
+This could probably be improved with some more information (such as the repo name, branch, whatever) but I think this gets the 90% of cases and the rest can use an explicit fname. 
+
+    if (link.search("github.com") !== -1) {
+        ind = link.search("master/");
+        if (ind !== -1) {
+            fname = link.slice(ind+7);
+        } else {
+            fname = link;
+        }
+    } else {
+        fname = link;
+    }
+
+[verify fname name](# "js")
+
+    if (! fname) {
+        doc.log("Error in LOAD. Please give a filename " + options.join(" | ") );
+        return false;            
+    }
+
+    if (!name) {
+        name = fname;
+    }
+
+
+[request remote](# "js")
+
+Need to figure this out. typeof http is to just shut up jshint about not using http.
+    
+
+    callback({ message: "http requests not done yet"}, typeof http);
+
+
+[load data](# "js")
+
+    function (err, data) {
+        var tempdoc, tempname, newdoc, i, n, par;
+        if (err) {
+            doc.log("Issue with LOAD: " + fname + " " + name + " " + err.message );
+            par = doc.repo[fname];
+            delete doc.repo[fname] ;
+
+            n = par.length;
+            for (i = 0; i < n; i += 1) {
+                tempdoc = par[i][0];
+                tempname =  par[i][1];
+                delete tempdoc.loading[tempname];
+                // may want to abort instead?
+                _"Parse lines: check for compile time" 
+            }
+        } else {
+            par = doc.repo[fname];
+            newdoc = doc.repo[name] = (new Doc(data, {
+                standardPlugins : doc.standardPlugins,
+                postCompile : doc.postCompile,
+                filterCompileFiles: options, 
+                parents : par,
+                fromFile : fname
+            }));
+            n = par.length;
+            for (i = 0; i < n; i += 1) {
+                tempdoc = par[i][0];
+                tempname =  par[i][1];
+                delete tempdoc.loading[tempname];
+                tempdoc.loaded[tempname] = newdoc;
+                _"Parse lines: check for compile time"
+            }
+            
+        }
+    }
+
+
 
 [Already encountered](# "js")
 
