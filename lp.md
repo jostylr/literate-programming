@@ -142,7 +142,7 @@ Because the require directive adds in functionality that might be used in the pa
             doc.hcur.full.push(original);
         }
 
-        _"Head parser:Remove empty code blocks"
+        _"Head parser:Deal with old hblock"
 
         _":Check for compile time"
 
@@ -291,7 +291,8 @@ For new global blocks, we use the heading string as the block name. We lower cas
         }
       }
       if (heading) {
-        _":Remove empty code blocks"
+
+        _":Deal with old hblock"
 
         hcur = new HBlock();
         hcur.cname = doc.type;    
@@ -308,22 +309,6 @@ For new global blocks, we use the heading string as the block name. We lower cas
       return false;
     }
 
-[Remove empty code blocks](# "js") 
-
-We do not want empty code blocks left. So we delete them just before we are going to move onto a new processing section. 
-
-    var cname;
-    var oldh = doc.hcur; 
-    if (oldh) {
-        for (cname in oldh.cblocks) {
-            if (oldh.cblocks[cname].lines.join("").match(/^\s*$/) ){
-                delete oldh.cblocks[cname];
-            }
-        }
-    }
-
-
-This suffered from having empty lines put into the code block. This may be rather inefficient, but empty lines seemed to creep in. So we join them all and if it is just whitespace, then we delete the codeblock. Sorry to all the [whitespace](http://compsoc.dur.ac.uk/whitespace/) languages!
 
 [Repeated heading block](# "js") 
 
@@ -339,6 +324,50 @@ If a heading block is repeated, then we increment it to make it different; this 
         heading = heading+" "+count;
         doc.log("Repeated; New header: " +heading);
     }
+
+
+[Deal with old hblock](# "js") 
+
+We need to run any waiting functions on the hblock and cblock. Then we remove empty code blocks. 
+
+    var cname;
+    var waiting, f;
+    var oldh = doc.hcur; 
+    if (oldh) {
+        _":run hblock waiting"
+        
+        var cblock = oldh.cblocks[oldh.cname];
+        _"switch type:run cblock waiting"
+
+        _":remove empty cblocks"
+    }
+
+[remove empty cblocks](# "js")
+
+This suffered from having empty lines put into the code block. This may be rather inefficient, but empty lines seemed to creep in. So we join them all and if it is just whitespace, then we delete the codeblock. Sorry to all the [whitespace](http://compsoc.dur.ac.uk/whitespace/) languages!
+
+    for (cname in oldh.cblocks) {
+        if (oldh.cblocks[cname].lines.join("").match(/^\s*$/) ){
+            delete oldh.cblocks[cname];
+        }
+    }
+
+
+[run hblock waiting](# "js") 
+
+It is possible via the define directive (and maybe others in the future) to run stuff when the hblock is switched. We look for a waiting array and then call the given functions in the context of the doc. 
+
+    if (oldh.waiting) {
+        waiting = oldh.waiting;
+        while (waiting.length > 0) {
+            f = waiting.pop();
+            if (typeof f === "function") {
+                f.call(doc);
+            } else {
+                doc.log("Error. Expected function in waiting list of hblock " + oldh.heading);
+            }
+        }
+    } 
 
 
 ### Directives parser caps
@@ -446,6 +475,10 @@ If a cblock with that name already exists, it will switch to it and then add the
         var hcur = doc.hcur;
         var cname; 
 
+        var cblock, waiting, f; 
+        cblock = hcur.cblocks[hcur.cname];
+        _":run cblock waiting"
+
         if (arguments.length === 2) {
             type = a.toLowerCase(); 
             options = (b || "").split("|").trim();
@@ -526,6 +559,27 @@ The setup is that the code array has a property named commands which is an assoc
                    codearr.commands[ind] = [[doc.commands[funname], funargs]];
                 }             
             }
+
+
+[run cblock waiting](# "js") 
+
+We need to see if there are any functions hanging around to execute when the cblock switches. 
+
+We use the swtichWaiting identifier instead of waiting as the waiting array is for the functions waiting for compilation -- very important. 
+
+    
+    if (cblock && cblock.hasOwnProperty("switchWaiting")) {
+        waiting = cblock.switchWaiting;
+        while (waiting.length > 0) {
+            f = waiting.pop();
+            if (typeof f === "function") {
+                f.call(doc);
+            } else {
+                doc.log("Error. Expected function in waiting list of cblock " + cname);
+            }
+        }
+        delete cblock.switchWaiting; 
+    } 
 
 
 
@@ -630,7 +684,7 @@ We attach a lot of functionality to a doc via the prototype.
     Doc.prototype.getcblock = _"Get correct code block:main.js";
     
     Doc.prototype.compile = _"Compile time";
-
+    
     Doc.prototype.addConstants = _":Make constants";
 
     Doc.prototype.wrapVal = _":Wrap values in function";
@@ -680,16 +734,16 @@ If it is a single argument, then it is an object of key:value. If it is two argu
     function (a,b) {
         var doc = this;
         var name, obj;
-        var newobj = {};
         if (arguments.length === 1) {
+            var newobj = {};
             obj = a;
             for (name in obj) {
                 newobj[name] = doc.wrapVal(obj[name]);
             }
+            doc.addMacros(newobj);
         } else if (arguments.length === 2) {
-            newobj[a] = doc.wrapVal(b);
+            doc.addMacros(a, doc.wrapVal(b));
         }
-        doc.addMacros(newobj);
     }
 
 [Wrap values in function](# "js") 
@@ -705,15 +759,24 @@ If it is a single argument, then it is an object of key:value. If it is two argu
 
 This handles adding properties to macros, commands, etc.. The value of OBJTYPE needs to be substituted in. 
 
-    function (newobj) {
+    function (newobj, value) {
         var doc = this;
         var oldobj = doc.OBJTYPE;
         var name;
-        for (name in newobj) {
+        if (arguments.length === 2) {
+            name = newobj.toLowerCase().trim();
             if (oldobj.hasOwnProperty(name) ) {
                 doc.log("Replacing " + name, 1);
             }
-            oldobj[name] = newobj[name];
+            oldobj[name] = value;
+        } else {
+            for (name in newobj) {
+                name = name.toLowerCase().trim();
+                if (oldobj.hasOwnProperty(name) ) {
+                    doc.log("Replacing " + name, 1);
+                }
+                oldobj[name] = newobj[name];
+            }
         }
     }
 
@@ -1766,7 +1829,7 @@ We use lower case for the keys to avoid accidental matching with macros.
         "load" : _"The load directive:main",
         "require" : _"Require directive",
         "set" : _"Set Constant directive",
-        "define" : _"Define Macro directive"
+        "define" : _"Define directive"
     }
 
 
@@ -2236,42 +2299,120 @@ Here we set constants as macros. If NAME is the name of a macro, either NAME or 
         }
     }
 
-### Define Macro directive
+### Define directive
 
 This is where we can implement directives, commands, macros, or other in a file. While rare, this gives us a great deal of power in compiling. 
 
 The syntax is `[name](#whatever "define: type | path | when")` where the name is the name of the directive/command/macro or whatever for the other and the type should be one of directive, command, macro, eval. The path is optional and if present will dictate an alternate cblock to use. Note that the cblock must have already been seen and there are no substiutions. The when is either "now", "h", or "c" meaning to use it now, or when a new hblock is used, or when a new cblock is used. 
 
-!! path not implemented. Just uses current cblock. 
+Defaults:  type = macro if there is a name, eval otherwise. when = h
 
     function (options, name) {
         var doc = this;
         var hcur = doc.hcur;
-        var code, type, path, when;
+        var type, path, when, cblock, code;
 
         if (arguments.length === 3) {
-            type = options.shift();
+            type = options.shift() || ( name ? "macro" : "eval");
             path = options.shift();
-            when = options.shift();
+            when = options.shift() || ("h");
         } else {
             name = options.shift();
             type = "macro";
             when = "now";
         }
-        if (type !== "eval" and !name) {
+        if (type !== "eval" && (!name) ) {
             doc.log("Error with DEFINE directive. Need a name.");
             return false; 
         }
+
         name = (name || "").toLowerCase().trim(); 
-        code = hcur.cblocks[hcur.cname].lines.join("\n");
-        // need to deal with when, convert below to function. 
-        if (type === "eval") {
-            eval()
+        var execute = _":execute when ready";
+
+        if (when === "now") {
+            execute();
+        } else if (when === "h") {
+            if (!hcur.waiting) {
+                hcur.waiting = [];
+            }
+            hcur.waiting.push(execute);
+        } else if (when === "c") {
+            cblock = hcur.cblocks[hcur.cname];
+            if (!cblock.hasOwnProperty("switchWaiting")) {
+                cblock.switchWaiting = [];
+            }
+            cblock.switchWaiting = [];
         }
-        eval("macrof="+code);
-        var newm = {};
-        newm[fname] = macrof;
-        doc.addMacros(newm);
+
+    }
+
+[execute when ready](# "js")
+
+This is the execution code. It first gets the appropriate cblock based on path. If no path, then the current cblock at the time of calling is used. Then it evals it and plugs in to the right place. 
+
+    function () {
+        var bits, block, cblock, cname; 
+
+        if (path) {
+            bits = path.split(":");
+            block = bits[0];
+            cblock = bits[1];
+            if (block) {
+                if (doc.hblocks.hasOwnProperty(block) ) {
+                    block = doc.hblocks[block];
+                    _":get cblock from block"
+                } else {
+                    doc.log("Error with DEFINE directive. Block " + block + " requested, but did not exist at the requested time." + type + path + when);
+                    return false;
+                }
+            } else if (cblock) {
+                block = hcur;
+                _":get cblock from block"
+            } else {
+                doc.log("Error with DEFINE directive. Path " + path + " is not understood");
+                return false;
+            }
+
+        } else {
+            code = hcur.cblocks[hcur.cname].lines.join("\n");
+        }           
+
+
+        var f;
+        if (type !== "eval") {
+            eval("f="+code);
+            switch (type) {
+                case "macro":
+                    doc.addMacros(name, f);
+                break;
+                case "command" :
+                    doc.addCommands(name, f);
+                break;
+                case "directive" :
+                    doc.addDirectives(name, f);
+                break;
+                default : 
+                    doc.log("Error in DEFINE directive. Type unknown: " + type);
+            }
+        } else {
+            eval(code);
+        }
+    }
+
+[get cblock from block](# "js")
+
+    if (block.cblocks.hasOwnProperty(cblock) ) {
+        code = block.cblocks[cblock].lines.join("\n");
+    } else {
+        for (cname in block.cblocks) {
+            if (cblock.indexOf(cname) !== -1) {
+                code = block.cblocks[cname].lines.join("\n");
+                break;
+            }
+        }
+        if (!code) {
+            doc.log("Error with DEFINE directive. Code block " +path+ " not found.");
+        }
     }
 
 
