@@ -719,13 +719,40 @@ This handles adding properties to macros, commands, etc.. The value of OBJTYPE n
 
 [Add in plugins](# "js") 
 
-This is laregly for loading the standard library and any lprc.js file found. 
+This is for loading plugins (lprc, require).
+
+0. If exports has a property called litpro, use that. This is to allow for the modules to serve other uses to. 
+1. If exports is a function, run that. 
+2. If it is an array, iterate over it and run those functions. 
+3. If it is an object, iterate over that and run the functions. 
+
+---
 
     function (plugobj) {
         var doc = this;
         if (!plugobj) {
             return false;
         }
+        if (plugobj.hasOwnProperty("litpro") ) {
+            plugobj = plugobj.litpro;
+        }
+
+        if (typeof plugobj === "function") {
+            plugobj(doc);
+            return true;
+        }
+
+        var i, n;
+        if (Array.isArray(plugobj) ) {
+            n = plugobj.length;
+            for (i = 0; i < n; i += 1) {
+                if (typeof plugobj[i] === "function") {
+                    plugobj[i](doc);
+                } 
+            }
+            return true;
+        }
+
         var type; 
         for (type in plugobj) {
             if ( (plugobj.hasOwnProperty(type)) && (typeof plugobj[type] === "function")) {
@@ -2112,9 +2139,22 @@ This is to load up macros, commands, and directives.
 The file should be a node module that exports functions that take in the doc and do something to it. 
 The syntax is `[whatever](somelink "require: filename | entry ? | ...")
 
-The main thing is to add in the filename for require and you are good to go. While I could have had the filename come from some protocol, I think it conflicts with local use and remote reading. So if this was part of a repository in github, then the `somelink` should be the link to the version in the repo while for local development, one would want something else. 
+The main thing is to add in the filename for require and you are good to go. I like require and that means local. 
 
 The `entry` part is a list of the names that you might want imported/run. If nothing is supplied, then all exposed bits are used.
+
+We use `doc.addPlugins` to load the file in no options. See that for options. 
+
+The plugin is the same setup as the lprc load:  
+
+0. If we have entries, then just use those entries if they exist, running anything that is a function. This is done here. 
+0. If exports has a property called litpro, use that. 
+1. If exports is a function, run that. 
+2. If it is an array, iterate over it and run those functions. 
+3. If it is an object, iterate over that and run the functions. 
+
+Got it? 
+
 
     function (options) {
         var doc = this;
@@ -2135,9 +2175,7 @@ The `entry` part is a list of the names that you might want imported/run. If not
         }
         var bit;
         if (options.length === 0) {
-            for (bit in bits) {
-                _":bit check and run"            
-            }
+            doc.addPlugins(bits);
         } else {
             var i, n = options.length;
             for (i = 0; i < n; i += 1) {
