@@ -2238,25 +2238,36 @@ Here we set constants as macros. If NAME is the name of a macro, either NAME or 
 
 ### Define Macro directive
 
-This is where we implement defining macros in the literate program. This may be rare. Probably they are already defined in a load-in file. 
+This is where we can implement directives, commands, macros, or other in a file. While rare, this gives us a great deal of power in compiling. 
 
-The setup will be that the macro will be that there is exactly one code block in the section, it is already done, and we use that as the code of the function. 
+The syntax is `[name](#whatever "define: type | path | when")` where the name is the name of the directive/command/macro or whatever for the other and the type should be one of directive, command, macro, eval. The path is optional and if present will dictate an alternate cblock to use. Note that the cblock must have already been seen and there are no substiutions. The when is either "now", "h", or "c" meaning to use it now, or when a new hblock is used, or when a new cblock is used. 
 
-Note DEFINE should be at the end of the section. No substitutions as this is all done before compilation which is what allows the macros to be useful. It can appear anywhere, however, as parsing is unaffected by this. 
+!! path not implemented. Just uses current cblock. 
 
-Example:   `[darken](# "define: darken")`  and in the code block above it is a function and only a function. The `this` is the document object. 
-
-    function (options) {
+    function (options, name) {
         var doc = this;
         var hcur = doc.hcur;
-        var code;
-        var fname = options.shift().toLowerCase();
-        if (!fname) {
+        var code, type, path, when;
+
+        if (arguments.length === 3) {
+            type = options.shift();
+            path = options.shift();
+            when = options.shift();
+        } else {
+            name = options.shift();
+            type = "macro";
+            when = "now";
+        }
+        if (type !== "eval" and !name) {
             doc.log("Error with DEFINE directive. Need a name.");
             return false; 
         }
+        name = (name || "").toLowerCase().trim(); 
         code = hcur.cblocks[hcur.cname].lines.join("\n");
-        var macrof;
+        // need to deal with when, convert below to function. 
+        if (type === "eval") {
+            eval()
+        }
         eval("macrof="+code);
         var newm = {};
         newm[fname] = macrof;
