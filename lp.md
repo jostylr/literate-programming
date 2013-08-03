@@ -2267,7 +2267,9 @@ Version control directive for the literate program. Generally at the base of the
 
         if (arguments.length === 3) {
             doc.addConstants({docname: (docname || ""), 
-                docversion : (options[0] || "0.0.0")});
+                docversion : (options[0] || "0.0.0"),
+                ghuser: (options[1] || "")
+            });
         } else {
             doc.addConstants({docname: (options[0] || ""), 
                 docversion : (options[1] || "0.0.0")});
