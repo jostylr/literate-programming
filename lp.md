@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.7.2")
+# [literate-programming](# "version:0.8.0-pre")
 
 "This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -6,7 +6,9 @@ This file creates the literate program parser using the literate program parser 
 
 A literate program is a series of chunks of explanatory text and code blocks that get woven together. The compilation of a literate program can grunt, after a fashion, as it weaves. 
 
-Note that this is version 0.7 branch. It introduces a variety of changes, but it also marks the deprecation of CAPS directives/switch types. A future version will remove them but allow them to be used as a plugin.
+Note that version 0.7 introduced a variety of changes, but it also marks the deprecation of CAPS directives/switch types. A future version will remove them but allow them to be used as a plugin.
+
+This will be version 0.8 and will be largely internal changes though will allow for more flexibility. The goal with this version is to have the flow be event-based. This allows for the injection of a lot more craziness in the processing of the file. It uses the [event-when](https://github.com/jostylr/event-when) library for the event emitters. 
 
 ## Directory structure
 
@@ -77,6 +79,7 @@ It takes the string and makes a document that has the markdown parsed out into v
 
     var fs = require('fs');
     var http = require('http');
+    var EventWhen = require('event-when');
 
 
     _"Utilities"
@@ -3205,7 +3208,8 @@ The requisite npm package file.
       },
       "dependencies":{
         "literate-programming-standard" : ">=0.1.0",
-        "commander" : "~1.1.1"
+        "commander" : "~1.1.1",
+        "event-when" : ">=0.2.0"
       },
       "keywords": ["literate programming"],
       "preferGlobal": "true",
