@@ -117,6 +117,12 @@ All lines in a block do get put into storage. This allows for an hblock to be us
 
 ### Parse lines
 
+This is the function that takes in the text and parses it out, emitting events as it goes along. When done, it emits that to the doc.emitter. The parser emitter is a separate event emitter found in doc.parserEmitter. 
+
+We want to allow for multiple lines for the command switch
+
+
+///
 This is the function that takes in a literate program, splits it into lines, and parses them, returning a structure for compilation. 
 
 The Document consists mostly of blocks constructed by the Hblock constructor. The doc.processors is where the magic happens. 
@@ -130,6 +136,17 @@ Because the require directive adds in functionality that might be used in the pa
 
     function () {
         var doc = this;
+        var emitter = doc.emitter;
+        var parser = doc.parser = new EventWhen;
+
+        _"setup parser listeners"
+
+        parser.on("ready to process text", [doc, _"start processing text"]
+
+        //parser events
+
+        parser.emit("ready to process text", doc.litpro);
+
         var i, nn, original; 
 
         var lines = doc.litpro.split("\n");
@@ -161,6 +178,35 @@ Is it ready to be compiled yet? Mainly this will be waiting for load directives 
     if (Object.keys( doc.loading ).length === 0) {
        doc.compile();
     }
+
+
+### Start processing text
+
+    function (text, parser) {
+        var doc = this;
+
+    }
+
+### Text consumer
+
+The idea for consuming the text is to go along not emitting events until something is recognized. 
+
+    function (text, emitter, ev, data) {
+        var tracker = this,
+            doc = tracker.doc,
+            i = tracker.i,
+            watchlist = doc.watchlist,
+            char;
+
+        while (i < text.length) {
+            char = text[i];
+        }
+
+        emitter.emit("text consumed");
+
+    }
+
+### Setup parser listeners
 
 ### Default processors
 
