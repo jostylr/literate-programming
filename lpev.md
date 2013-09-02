@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.7.2")
+# [literate-programming](# "version:0.8.0-pre")
 
 "This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -6,7 +6,9 @@ This file creates the literate program parser using the literate program parser 
 
 A literate program is a series of chunks of explanatory text and code blocks that get woven together. The compilation of a literate program can grunt, after a fashion, as it weaves. 
 
-Note that this is version 0.7 branch. It introduces a variety of changes, but it also marks the deprecation of CAPS directives/switch types. A future version will remove them but allow them to be used as a plugin.
+Note that version 0.7 introduced a variety of changes, but it also marks the deprecation of CAPS directives/switch types. A future version will remove them but allow them to be used as a plugin.
+
+This will be version 0.8 and will be largely internal changes though will allow for more flexibility. The goal with this version is to have the flow be event-based. This allows for the injection of a lot more craziness in the processing of the file. It uses the [event-when](https://github.com/jostylr/event-when) library for the event emitters. 
 
 ## Directory structure
 
@@ -77,6 +79,7 @@ It takes the string and makes a document that has the markdown parsed out into v
 
     var fs = require('fs');
     var http = require('http');
+    var EventWhen = require('event-when');
 
 
     _"Utilities"
@@ -97,6 +100,84 @@ The repo value is a repository for files that are loaded up, both literate progr
 
 
 
+
+## [parseremitter.js](#parseremitter.js "save:")
+
+It is not hooked up to anything yet. The idea is that we develop this separately here and then merge it in.  
+
+This is the function that takes in the text and parses it out, emitting events as it goes along. When done, it emits that to the doc.emitter. The parser emitter is a separate event emitter found in doc.parserEmitter. 
+
+We want to allow for multiple lines for the command switch
+
+
+[](# "js")
+
+    function () {
+        var doc = this;
+        var emitter = doc.emitter;
+        var parser = doc.parser = new EventWhen;
+
+        _"setup parser listeners"
+
+        parser.on("ready to process text", [doc, _"start processing text"]
+
+        //parser events
+
+        parser.emit("ready to process text", doc.litpro);
+
+        var i, nn, original; 
+
+        var lines = doc.litpro.split("\n");
+        var n = lines.length;
+        for (i = 0; i < n; i += 1) {
+            doc.currentLine = original = lines[i];
+            nn = doc.processors.length;
+            for (var ii = 0; ii < nn; ii += 1) {
+                if (doc.processors[ii](doc.currentLine, doc, original)) {
+                    break;
+                }
+            }
+            doc.hcur.full.push(original);
+        }
+
+        _"Head parser:Deal with old hblock"
+
+        _":Check for compile time"
+
+        return doc;
+    }
+
+
+### Start processing text
+
+    function (text, parser) {
+        var doc = this;
+
+    }
+
+### Text consumer
+
+The idea for consuming the text is to go along not emitting events until something is recognized. 
+
+    function (text, emitter, ev, data) {
+        var tracker = this,
+            doc = tracker.doc,
+            i = tracker.i,
+            watchlist = doc.watchlist,
+            char;
+
+        while (i < text.length) {
+            char = text[i];
+        }
+
+        emitter.emit("text consumed");
+
+    }
+
+### Setup parser listeners
+
+
+
 ## Document parsing
 
 Each literate program gets its own document container. It starts off life with lineparser. 
@@ -114,6 +195,7 @@ All lines in a block do get put into storage. This allows for an hblock to be us
 
 ### Parse lines
 
+
 This is the function that takes in a literate program, splits it into lines, and parses them, returning a structure for compilation. 
 
 The Document consists mostly of blocks constructed by the Hblock constructor. The doc.processors is where the magic happens. 
@@ -127,6 +209,7 @@ Because the require directive adds in functionality that might be used in the pa
 
     function () {
         var doc = this;
+
         var i, nn, original; 
 
         var lines = doc.litpro.split("\n");
@@ -156,6 +239,7 @@ Each processor, corresponding to the types mentioned above, will check to see if
 Is it ready to be compiled yet? Mainly this will be waiting for load directives to finish.
 
     if (Object.keys( doc.loading ).length === 0) {
+        doc.emitter.emit("compile ready");
        doc.compile();
     }
 
@@ -3205,7 +3289,8 @@ The requisite npm package file.
       },
       "dependencies":{
         "literate-programming-standard" : ">=0.1.0",
-        "commander" : "~1.1.1"
+        "commander" : "~1.1.1",
+        "event-when" : ">=0.2.0"
       },
       "keywords": ["literate programming"],
       "preferGlobal": "true",
