@@ -554,14 +554,15 @@ If a cblock with that name already exists, it will switch to it and then add the
 [main](# "js") 
 
     function (a, b, c)  {
-        var name, type, options;
-        var doc = this;
-        var hcur = doc.hcur;
-        var cname; 
+        var name, type, options, cname;
+        var doc = this,
+            emitter = doc.emitter,
+            hcur = doc.hcur; 
 
         var cblock, waiting, f; 
-        cblock = hcur.cblocks[hcur.cname];
-        _":run cblock waiting"
+        cblock = hcur.cblocks[hcur.cname]; //!!
+        emitter.emit("a cblock ends", [hcur, hcur.cname], "immediate");
+        _":run cblock waiting" //!!
 
         if (arguments.length === 2) {
             type = a.toLowerCase(); 
@@ -590,6 +591,7 @@ If a cblock with that name already exists, it will switch to it and then add the
 
         if (! hcur.cblocks.hasOwnProperty(cname) ) {
             hcur.cblocks[cname] = doc.makeCode(cname);
+            emitter.emit("new cblock created", [hcur, cname]);
         }
 
         var codearr = hcur.cblocks[cname];
