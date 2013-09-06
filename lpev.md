@@ -608,6 +608,7 @@ And now we work on getting the options to parse. The syntax is an optional numbe
         
         var funname, ind, funargs, match, funreg = /^(\d*)\s*([^(]+)(?:\(([^)]*)\))?$/;
         var i, n = options.length, option;
+        var parseloops = 1, cpath = name, ;
         for (i = 0; i < n; i += 1) {
             option = options[i].trim();
             match = option.match(funreg);
@@ -625,9 +626,14 @@ And now we work on getting the options to parse. The syntax is an optional numbe
             }
 
             _":Add command"
+
+            _":Add evented command"
+
         }
 
 [Add command](# "js") 
+
+//!! all of this should be removed when ready
 
 The setup is that the code array has a property named commands which is an associative array of arrays. Each array contains a function and an arguments array that will be used to work on the code (see Full Substition). The doc.commands object has the list of active functions that can be named and used. 
 
@@ -645,6 +651,33 @@ The setup is that the code array has a property named commands which is an assoc
                    codearr.commands[ind] = [[doc.commands[funname], funargs]];
                 }             
             }
+
+
+[Add evented command](# "js") 
+
+This attaches the parsed function calls to events associated with the loop parsing of the cblock. 
+
+It needs to be able to access the current state of the code and affect it. So I am thinking a data object gets passed in containing the cblock reference and the current text, at the least. doc could be the `this` for the handler. 
+
+Events are namespaced to cpath which consists of the unique identifier of litpro::blockname::cname. Need to implement the cpath part.
+
+
+            if ( doc.commands.hasOwnProperty(funname) ) {
+                handler = [doc, doc.commands[funname], funargs];
+
+                if (match[1] === '0') {
+                    emitter.on([cpath + ": compiling to start", handler);
+                } else if ( (ind = parseInt(match[1], 10 ) > 0 ) {
+                    emitter.when([cpath+": compiling", ind], handler);
+                    parseloops = Math.max(ind, parseloops);
+                } else {
+                    emitter.on(cpath+": final compiling", handler);
+                }
+            }
+
+
+
+
 
 
 [run cblock waiting](# "js") 
