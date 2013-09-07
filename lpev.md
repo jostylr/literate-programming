@@ -605,10 +605,12 @@ If a cblock with that name already exists, it will switch to it and then add the
 
 And now we work on getting the options to parse. The syntax is an optional number to indicate when to process (0 for pre, 1+ for during, nothing for post), followed by whatever until parentheses, followed by optional arguments separated by commas. Examples: `0 marked (great, file)` and `marked` and `marked awesome(great)`
 
+//!! Redo the parser bit. The switch type should have the parsed out stuff already. 
+
         
         var funname, ind, funargs, match, funreg = /^(\d*)\s*([^(]+)(?:\(([^)]*)\))?$/;
         var i, n = options.length, option;
-        var parseloops = 1, cpath = name, ;
+        var parseloops = 1, cpath = name, handler ;
         for (i = 0; i < n; i += 1) {
             option = options[i].trim();
             match = option.match(funreg);
@@ -625,9 +627,13 @@ And now we work on getting the options to parse. The syntax is an optional numbe
                 funargs = [];
             }
 
+            ind = match[1];
+
             _":Add command"
 
             _":Add evented command"
+
+            cblock.parseloops = parseloops; //or something like this //!!
 
         }
 
@@ -659,15 +665,17 @@ This attaches the parsed function calls to events associated with the loop parsi
 
 It needs to be able to access the current state of the code and affect it. So I am thinking a data object gets passed in containing the cblock reference and the current text, at the least. doc could be the `this` for the handler. 
 
-Events are namespaced to cpath which consists of the unique identifier of litpro::blockname::cname. Need to implement the cpath part.
+Events are namespaced to cpath which consists of the unique identifier of blockname:cname. Need to implement the cpath part.
+
+parseloops ensures the cblock is parsed that many times.
 
 
             if ( doc.commands.hasOwnProperty(funname) ) {
                 handler = [doc, doc.commands[funname], funargs];
 
-                if (match[1] === '0') {
-                    emitter.on([cpath + ": compiling to start", handler);
-                } else if ( (ind = parseInt(match[1], 10 ) > 0 ) {
+                if (ind === '0') {
+                    emitter.on(cpath + ": compiling to start", handler);
+                } else if ( (ind = parseInt(match[1], 10) ) > 0 ) {
                     emitter.when([cpath+": compiling", ind], handler);
                     parseloops = Math.max(ind, parseloops);
                 } else {
@@ -681,6 +689,9 @@ Events are namespaced to cpath which consists of the unique identifier of litpro
 
 
 [run cblock waiting](# "js") 
+
+
+//!! deletable once events running
 
 We need to see if there are any functions hanging around to execute when the cblock switches. 
 
@@ -734,7 +745,9 @@ The most important part to understand of the structure is that doc.hblocks is an
 
 The first Hblock is stored under the name firstHblock. It contains whatever happens before the first heading. 
 
-We attach a lot of functionality to a doc via the prototype. 
+//!! We attach a lot of functionality to a doc via the prototype. 
+
+The Doc should be constructed before 
 
 [](# "js")
 
@@ -2794,6 +2807,12 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     var path = require('path');
 
 
+    var doc = new Doc();
+
+    var emitter = doc.emitter;
+    var env = doc.environment = {};
+
+
     _"Command line options"
 
     var postCompile; 
@@ -2812,7 +2831,7 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     var standardPlugins, plugins; 
 
     if (!program.free) {
-        standardPlugins = require('literate-programming-standard');
+        env.standardPlugins = require('literate-programming-standard');
         _"check for lprc file"
     } else {
         standardPlugins = {};
@@ -2823,6 +2842,15 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     }
 
     postCompile.push([_"Action cleanup", {}]);
+
+
+    fs.readFile(program.args[0], 'utf8', function (err, text) {
+        if (err) {
+            emitter.emit("error in reading file", [err, program.args[0]);
+        } else {
+            emitter.emit("text received", text);
+        }
+    });
 
     var doc = new Doc(md, {
         standardPlugins : standardPlugins,
@@ -3047,24 +3075,19 @@ Added ability to pass in arguments to the literate program. It is in the array v
     }
 
 
-    var dir = program.dir || program.root || process.cwd(); 
-    var indir = program.change || program.root || process.cwd();
-    var originalroot = process.cwd();
-    if (indir) {
-        process.chdir(indir);
+    env.output = program.output || program.root || process.cwd(); 
+    env.input = program.input || program.root || process.cwd();
+    env.originalroot = process.cwd();
+    
+    if (env.input !== env.originalroot) {
+        process.chdir(env.input);
     }
 
-    var verbose = program.verbose || 0;
+    env.verbose = program.verbose || 0;
 
-    var md;
-    try {
-        md = fs.readFileSync(program.args[0], 'utf8');
-    } catch (e) {
-        console.log("Not readable file " + program.args[0]);
-        md = ""; 
-    }
+    env.inputs =  program.args.slice(1);
 
-    var inputs =  program.args.slice(1);
+
 
 #### On exit
 
