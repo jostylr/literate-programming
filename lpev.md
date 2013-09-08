@@ -2821,11 +2821,11 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
 
     if (program.preview) {
-        postCompile.push([_"Preview files", {}]);
+        emitter.on("compilation done", [doc, _"Preview files"]);
     } else if (program.diff) {
-        postCompile.push([_"Diff files", {dir:dir}]);
+        emitter.on("compilation done", [doc, _"diff files"]);
     } else {
-        postCompile.push([_"Save files", {dir: dir}]);
+        emitter.on("compilation done", [doc, _"Save files"]);
     }
 
     var standardPlugins, plugins; 
@@ -2838,15 +2838,13 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
     }
 
     if (!program.quiet) {
-        postCompile.push([_"Cli log", {}]);
+        emitter.on("compilation done", _"Cli log");
     }
-
-    postCompile.push([_"Action cleanup", {}]);
 
 
     fs.readFile(program.args[0], 'utf8', function (err, text) {
         if (err) {
-            emitter.emit("error in reading file", [err, program.args[0]);
+            emitter.emit("error in reading file", [err, program.args[0]]);
         } else {
             emitter.emit("text received", text);
         }
@@ -2907,27 +2905,26 @@ This takes in a text and is called in the context of a passin object.
     }
 
 
-#### Action cleanup
-
-We need to delete the associated action after it is done. 
-
-    function (text, next) {
-        var doc = this.doc;
-        try {
-            delete doc.actions[this.action.msg];
-        } catch (e) {
-        }
-        next(text);
-    }
 
 #### Save Files 
 
+This should listen for an event that requests saving a file. It then attaches an event listener for when the compile action on the relevant block is done and then it saves it. 
 
-    function (text, next, obj) {
-        var passin = this;
-        var doc = passin.doc;
+Something like `.on("file save requested", [block path, filename, options])` then attaches an event listener for `.on("block path:compilation done", {text: text})`  Need to figure out how options get used.  Presumably 
+
+The data of the event is wtext, an object that stores the current post-compiled text under the .text property. 
+
+
+    function (wtext, emitter, ev) {
+        var doc = this, 
+            text = wtext.text;
+
         if (passin.action && passin.action.filename) {
             var fname = passin.action.filename;
+
+            if (env.output !== env.originalroot) {
+                process.chdir(env.output);
+            }
 
             process.chdir(originalroot);
             if (obj.dir) {
