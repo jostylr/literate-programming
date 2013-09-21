@@ -71,4 +71,4 @@ while (remainder.length !== 0) {
 console.log(line.join(''));
 console.log(msg.join(''));
 
-console.log(traitor, success);
+console.log("traitor at "+ traitor + "\nNumber of Correct guesses: " + success);

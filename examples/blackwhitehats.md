@@ -4,6 +4,8 @@ This is a literate program to implement strategies concerning the following prob
 
 >You have 100 people in a line. Each is wearing a black or white hat, but they don't know which. Each hat is equally likely to be on each person's head. They are put in a line, and they can see all the people after them. Starting with the first, they are each asked to make a guess as to which color hat they are wearing. They can agree on a strategy and they can hear all previous guesses. There is also one person in the line that may not follow the strategy. What is the optimal strategy for maximizing the number of right guesses?
 
+What follows below is the solution and can also be found on [github](https://github.com/jostylr/literate-programming/blob/master/examples/blackwhitehats.md). There is a live version on [JS Bin](http://jsbin.com/UpeveZe/1/edit?js,console).
+
 ## [hats.js](#hats.js "save: | jshint")
 
 We are going to simulate this with a nodejs program. We first generate the line. Then we have a starting function followed by a function that works for the later ones, using the guesses and the next line. 
@@ -36,7 +38,7 @@ Our strategy will be the first person indicates the parity of the number of blac
     console.log(line.join(''));
     console.log(msg.join(''));
 
-    console.log(traitor, success);
+    console.log("traitor at "+ traitor + "\nNumber of Correct guesses: " + success);
 
 ## Make a line
 
