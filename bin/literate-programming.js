@@ -7,8 +7,13 @@ var fs = require('fs');
 var Doc = require('../lib/literate-programming').Doc;
 var path = require('path');
 
+var doc = new Doc();
+
+var emitter = doc.emitter;
+var env = doc.environment = {};
+
 program
-    .version('0.7.2')
+    .version('0.8.0-pre')
     .usage('[options] <file> <arg1> ...')
     .option('-o --output <root>', 'Root directory for output')
     .option('-i --input <root>',  'Root directory for input')
@@ -26,24 +31,17 @@ if ((! program.args[0]) ) {
     process.exit();
 }
 
-var dir = program.dir || program.root || process.cwd(); 
-var indir = program.change || program.root || process.cwd();
-var originalroot = process.cwd();
-if (indir) {
-    process.chdir(indir);
+env.output = program.output || program.root || process.cwd(); 
+env.input = program.input || program.root || process.cwd();
+env.originalroot = process.cwd();
+
+if (env.input !== env.originalroot) {
+    process.chdir(env.input);
 }
 
-var verbose = program.verbose || 0;
+env.verbose = program.verbose || 0;
 
-var md;
-try {
-    md = fs.readFileSync(program.args[0], 'utf8');
-} catch (e) {
-    console.log("Not readable file " + program.args[0]);
-    md = ""; 
-}
-
-var inputs =  program.args.slice(1);
+env.inputs =  program.args.slice(1);
 
 var postCompile; 
 
@@ -72,7 +70,7 @@ postCompile.push = function (arr) {
 postCompile.steps = [];
 
 if (program.preview) {
-    postCompile.push([function (text, next) {
+    emitter.on("file directive", [doc, function (text, next) {
             var passin = this;
             var doc = passin.doc;
             if (passin.action && passin.action.filename) {
@@ -80,9 +78,9 @@ if (program.preview) {
                 doc.log(fname + ": " + text.length  + "\n"+text.match(/^([^\n]*)(?:\n|$)/)[1]);
             }
             next(text);
-        }, {}]);
+        }]);
 } else if (program.diff) {
-    postCompile.push([function (text, next, obj) {        
+    emitter.on("file directive", [doc, function (text, next, obj) {        
             var passin = this;
             var doc = passin.doc;
             var fname = passin.action.filename;
@@ -94,38 +92,60 @@ if (program.preview) {
         
             doc.log(fname + " diff not activated yet ");
             next(text);
-        }, {dir:dir}]);
+        }]);
 } else {
-    postCompile.push([function (text, next, obj) {
-            var passin = this;
-            var doc = passin.doc;
-            if (passin.action && passin.action.filename) {
-                var fname = passin.action.filename;
+    emitter.on("file directive", [doc, function (data, emitter, ev) {
+            var filename = data.filename, 
+                cpath = data.cpath, 
+                commands = data.commands,
+                n = commands.length,
+                namespace, handler, 
+                shared = {}
+            ;
         
-                process.chdir(originalroot);
-                if (obj.dir) {
-                    process.chdir(dir);
-                }            
-                var cb = function (err) {
-                        if (err) {
-                            doc.log("Error in saving file " + fname + ": " + err.message);
-                        } else {
-                            doc.log("File "+ fname + " saved");
-                        }
-                        next(text);
-                    };
+            namespace = cpath+"->"+filename;
         
-                fs.writeFile(fname, text, 'utf8', cb);
-            } else {
-                next(text);
+            handler = emitter.when(namespace + "--block compiled", namespace+"--block ready for saving");
+        
+            function (wtext, emitter, ev) {
+                var doc = this, 
+                    text = wtext.text;
+            
+                if (passin.action && passin.action.filename) {
+                    var fname = passin.action.filename;
+            
+                    if (env.output !== env.originalroot) {
+                        process.chdir(env.output);
+                    }
+            
+                    process.chdir(originalroot);
+                    if (obj.dir) {
+                        process.chdir(dir);
+                    }            
+                    var cb = function (err) {
+                            if (err) {
+                                doc.log("Error in saving file " + fname + ": " + err.message);
+                            } else {
+                                doc.log("File "+ fname + " saved");
+                            }
+                            next(text);
+                        };
+            
+                    fs.writeFile(fname, text, 'utf8', cb);
+                } else {
+                    next(text);
+                }
             }
-        }, {dir: dir}]);
+        
+            emitter.on(namespace+"--block ready for saving");
+        
+        }]);
 }
 
 var standardPlugins, plugins; 
 
 if (!program.free) {
-    standardPlugins = require('literate-programming-standard');
+    env.standardPlugins = require('literate-programming-standard');
     var original = process.cwd();
     var files;
     
@@ -151,7 +171,7 @@ if (!program.free) {
 }
 
 if (!program.quiet) {
-    postCompile.push([function (text, next) {
+    emitter.on("compilation done", function (text, next) {
             var doc = this.doc;
             var logitem;
             var i, n = doc.logarr.length;
@@ -162,17 +182,16 @@ if (!program.quiet) {
                 } 
             }
             next(text);
-        }, {}]);
+        });
 }
 
-postCompile.push([function (text, next) {
-        var doc = this.doc;
-        try {
-            delete doc.actions[this.action.msg];
-        } catch (e) {
-        }
-        next(text);
-    }, {}]);
+fs.readFile(program.args[0], 'utf8', function (err, text) {
+    if (err) {
+        emitter.emit("error in reading file", [err, program.args[0]]);
+    } else {
+        emitter.emit("text received", text);
+    }
+});
 
 var doc = new Doc(md, {
     standardPlugins : standardPlugins,

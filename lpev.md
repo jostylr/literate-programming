@@ -2821,11 +2821,11 @@ postCompile is a an array of arrays of the form [function, "inherit"/"", dataObj
 
 
     if (program.preview) {
-        emitter.on("compilation done", [doc, _"Preview files"]);
+        emitter.on("file directive", [doc, _"Preview files"]);
     } else if (program.diff) {
-        emitter.on("compilation done", [doc, _"diff files"]);
+        emitter.on("file directive", [doc, _"diff files"]);
     } else {
-        emitter.on("compilation done", [doc, _"Save files"]);
+        emitter.on("file directive", [doc, _"Save files"]);
     }
 
     var standardPlugins, plugins; 
@@ -2910,9 +2910,34 @@ This takes in a text and is called in the context of a passin object.
 
 This should listen for an event that requests saving a file. It then attaches an event listener for when the compile action on the relevant block is done and then it saves it. 
 
-Something like `.on("file save requested", [block path, filename, options])` then attaches an event listener for `.on("block path:compilation done", {text: text})`  Need to figure out how options get used.  Presumably 
+Something like `.emit("file directive", [block path, filename, options])` then attaches an event listener for namespace+
 
 The data of the event is wtext, an object that stores the current post-compiled text under the .text property. 
+
+    function (data, emitter, ev) {
+        var filename = data.filename, 
+            cpath = data.cpath, 
+            commands = data.commands,
+            n = commands.length,
+            namespace, handler, 
+            shared = {}
+        ;
+
+        namespace = cpath+"->"+filename;
+
+        handler = emitter.when(namespace + "--block compiled", namespace+"--block ready for saving");
+
+        _":assign commands to emitter and handler"
+
+
+        emitter.on(namespace+"--block ready for saving");
+
+    }
+
+
+[assign commands to emitter and handler]()
+
+So here we assign the post compile, pre save commands. There are different ways to do this, but my current thinking is 
 
 
     function (wtext, emitter, ev) {
@@ -3345,7 +3370,7 @@ The requisite npm package file.
       "dependencies":{
         "literate-programming-standard" : ">=0.1.0",
         "commander" : "~1.1.1",
-        "event-when" : ">=0.2.0"
+        "event-when" : "=0.5.0"
       },
       "keywords": ["literate programming"],
       "preferGlobal": "true",
@@ -3370,6 +3395,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ## Change Log
+
+v.0.8.0 Rearchitecting the underlying programming to be event-based. This should enable more ability to control the flow. 
 
 v.0.7.1 Added the ability to have a (single) plugin file called lprc.js. logs.md now uses it as an example. 
 
