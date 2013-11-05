@@ -8,7 +8,7 @@ var Doc = require('../lib/literate-programming').Doc;
 var path = require('path');
 
 program
-    .version('0.7.4')
+    .version('0.7.5')
     .usage('[options] <file> <outdir> <arg1> ...')
     .option('-o --output <root>', 'Root directory for output')
     .option('-i --input <root>',  'Root directory for input')
@@ -37,7 +37,7 @@ if (indir) {
 var verbose = program.verbose || 0;
 
 if (program.extension) {
-    if (program.args[0].substr(program.extension.length) !== program.extension.length) {
+    if (program.args[0].substr(-program.extension.length) !== program.extension) {
         console.log("Requires extension: " + program.extension);
         process.exit();
     }

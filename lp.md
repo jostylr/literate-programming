@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.7.4")
+# [literate-programming](# "version:0.7.5")
 
 "This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -2941,7 +2941,7 @@ Added ability to pass in arguments to the literate program. It is in the array v
     var verbose = program.verbose || 0;
 
     if (program.extension) {
-        if (program.args[0].substr(program.extension.length) !== program.extension.length) {
+        if (program.args[0].substr(-program.extension.length) !== program.extension) {
             console.log("Requires extension: " + program.extension);
             process.exit();
         }
@@ -3263,6 +3263,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ## Change Log
+
+v.0.7.5 fixing what was done in 0.7.4 to actually work. A little too hasty.
 
 v.0.7.4  Added extension restriction for use with live reload plugin
 
