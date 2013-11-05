@@ -8,7 +8,7 @@ var Doc = require('../lib/literate-programming').Doc;
 var path = require('path');
 
 program
-    .version('0.7.3')
+    .version('0.7.4')
     .usage('[options] <file> <outdir> <arg1> ...')
     .option('-o --output <root>', 'Root directory for output')
     .option('-i --input <root>',  'Root directory for input')
@@ -16,6 +16,7 @@ program
     .option('-p --preview',  'Do not save the changes. Output first line of each file')
     .option('-f --free', 'Do not use the default standard library of plugins') 
     .option('-d --diff', 'Compare diffs of old file and new file')
+    .option('-e --extension <ext>', 'requires a ext as extension for the file')
     .option('--verbose', 'Full warnings turned on')
 ;
 
@@ -34,6 +35,13 @@ if (indir) {
 }
 
 var verbose = program.verbose || 0;
+
+if (program.extension) {
+    if (program.args[0].substr(program.extension.length) !== program.extension.length) {
+        console.log("Requires extension: " + program.extension);
+        process.exit();
+    }
+}
 
 var md;
 try {

@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.7.3")
+# [literate-programming](# "version:0.7.4")
 
 "This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -2919,6 +2919,7 @@ Added ability to pass in arguments to the literate program. It is in the array v
         .option('-p --preview',  'Do not save the changes. Output first line of each file')
         .option('-f --free', 'Do not use the default standard library of plugins') 
         .option('-d --diff', 'Compare diffs of old file and new file')
+        .option('-e --extension <ext>', 'requires a ext as extension for the file')
         .option('--verbose', 'Full warnings turned on')
     ;
 
@@ -2938,6 +2939,13 @@ Added ability to pass in arguments to the literate program. It is in the array v
     }
 
     var verbose = program.verbose || 0;
+
+    if (program.extension) {
+        if (program.args[0].substr(program.extension.length) !== program.extension.length) {
+            console.log("Requires extension: " + program.extension);
+            process.exit();
+        }
+    }
 
     var md;
     try {
@@ -3210,7 +3218,7 @@ The requisite npm package file.
         "commander" : "~1.1.1"
       },
       "devDependencies" : {
-        "literate-programming" : "~0.7.2"
+        "literate-programming" : "~0.7.3"
       },
       "scripts" : { 
         "prepublish" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
@@ -3255,6 +3263,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ## Change Log
+
+v.0.7.4  Added extension restriction for use with live reload plugin
 
 v.0.7.3 Added ability to specify output directory as a second argument after file. 
 
