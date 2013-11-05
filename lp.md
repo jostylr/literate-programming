@@ -3232,9 +3232,13 @@ The requisite npm package file.
 ## npmignore
 
 
+    archive
     test
     examples
     ghpages
+    fixed_examples
+    temp
+    node_modules
     *.md
 
 ## LICENSE MIT
