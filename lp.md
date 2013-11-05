@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.7.2")
+# [literate-programming](# "version:0.7.3")
 
 "This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
 
@@ -16,6 +16,8 @@ Note that this is version 0.7 branch. It introduces a variety of changes, but it
 * [package.json](#npm-package "save: json  | jshint") The requisite package file for a npm project. 
 * [TODO.md](#todo "save: | clean raw") A list of growing and shrinking items todo.
 * [LICENSE](#license-mit "save: | clean raw") The MIT license as I think that is the standard in the node community. 
+* [.npmignore](#npmignore "save: ")
+* [.gitgnore](#gitignore "save: ")
 
 
 ## How to write a literate program
@@ -2910,7 +2912,7 @@ Added ability to pass in arguments to the literate program. It is in the array v
 
     program
         .version('DOCVERSION')
-        .usage('[options] <file> <arg1> ...')
+        .usage('[options] <file> <outdir> <arg1> ...')
         .option('-o --output <root>', 'Root directory for output')
         .option('-i --input <root>',  'Root directory for input')
         .option('-r --root <root>', 'Change root directory for both input and output')
@@ -2928,7 +2930,7 @@ Added ability to pass in arguments to the literate program. It is in the array v
     }
 
 
-    var dir = program.dir || program.root || process.cwd(); 
+    var dir = program.dir || program.root || program.args[1] || process.cwd(); 
     var indir = program.change || program.root || process.cwd();
     var originalroot = process.cwd();
     if (indir) {
@@ -2945,7 +2947,7 @@ Added ability to pass in arguments to the literate program. It is in the array v
         md = ""; 
     }
 
-    var inputs =  program.args.slice(1);
+    var inputs =  program.args.slice(2);
 
 #### On exit
 
@@ -3207,6 +3209,13 @@ The requisite npm package file.
         "literate-programming-standard" : ">=0.1.0",
         "commander" : "~1.1.1"
       },
+      "devDependencies" : {
+        "literate-programming" : "~0.7.2"
+      },
+      "scripts" : { 
+        "prepublish" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
+        "compile" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md"
+      },
       "keywords": ["literate programming"],
       "preferGlobal": "true",
       "bin": {
@@ -3215,6 +3224,18 @@ The requisite npm package file.
     }
 
 
+## gitignore
+
+    node_modules
+    temp
+
+## npmignore
+
+
+    test
+    examples
+    ghpages
+    *.md
 
 ## LICENSE MIT
 
@@ -3230,6 +3251,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ## Change Log
+
+v.0.7.3 Added ability to specify output directory as a second argument after file. 
 
 v.0.7.1 Added the ability to have a (single) plugin file called lprc.js. logs.md now uses it as an example. 
 
