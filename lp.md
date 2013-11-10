@@ -18,6 +18,7 @@ Note that this is version 0.7 branch. It introduces a variety of changes, but it
 * [LICENSE](#license-mit "save: | clean raw") The MIT license as I think that is the standard in the node community. 
 * [.npmignore](#npmignore "save: ")
 * [.gitgnore](#gitignore "save: ")
+* [travis.yml](#travis "save: ")
 
 
 ## How to write a literate program
@@ -3243,12 +3244,26 @@ The requisite npm package file.
 
     archive
     test
+    travis.yml
     examples
     ghpages
     fixed_examples
     temp
     node_modules
     *.md
+
+
+## Travis
+
+A travis.yml file for continuous test integration!
+
+    language: node_js
+    node_js:
+      - "0.10"
+      - "0.8"
+      - "0.6"
+
+
 
 ## LICENSE MIT
 

@@ -1,5 +1,6 @@
 archive
 test
+travis.yml
 examples
 ghpages
 fixed_examples
