@@ -3215,7 +3215,7 @@ The requisite npm package file.
         "node": ">0.6"
       },
       "dependencies":{
-        "literate-programming-standard" : ">=0.1.0",
+        "literate-programming-standard" : "~0.2.4",
         "commander" : "~1.1.1"
       },
       "devDependencies" : {
