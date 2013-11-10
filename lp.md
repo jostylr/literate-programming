@@ -3218,7 +3218,8 @@ The requisite npm package file.
         "commander" : "~1.1.1"
       },
       "devDependencies" : {
-        "literate-programming" : "~0.7.3"
+        "literate-programming" : "~0.7.5",
+        "diff" : "~1.0.7"
       },
       "scripts" : { 
         "prepublish" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",

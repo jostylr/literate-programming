@@ -1,0 +1,9 @@
+blackwhitehats.md
+cinnamon.md
+fizzbuzz.md
+logs.md
+primes.md
+sample.md
+simpletemp.md
+templating.md
+testpro.md
