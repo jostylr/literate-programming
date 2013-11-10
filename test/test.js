@@ -4,6 +4,8 @@ var fs = require('fs');
 var spawn = require('child_process').spawn;
 var diff = require('diff');
 
+process.chdir('./test/');
+
 var outlist = fs.readFileSync('outlist.txt', {"encoding":"utf8"}).split('\n');
 var inlist = fs.readFileSync('inlist.txt', {"encoding":"utf8"}).split('\n');
 

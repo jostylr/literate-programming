@@ -3223,10 +3223,10 @@ The requisite npm package file.
       },
       "scripts" : { 
         "prepublish" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
-        "compile" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md"
+        "compile" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
+        "test" : "node ./test/test.js"
       },
       "keywords": ["literate programming"],
-      "preferGlobal": "true",
       "bin": {
         "literate-programming" : "bin/literate-programming.js"
       }
