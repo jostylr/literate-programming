@@ -3212,7 +3212,7 @@ The requisite npm package file.
       ],
       "main": "lib/literate-programming.js",
       "engines": {
-        "node": ">0.6"
+        "node": ">0.10"
       },
       "dependencies":{
         "literate-programming-standard" : "~0.2.4",
@@ -3260,8 +3260,6 @@ A travis.yml file for continuous test integration!
     language: node_js
     node_js:
       - "0.10"
-      - "0.8"
-      - "0.6"
 
 
 
