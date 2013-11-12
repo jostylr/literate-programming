@@ -18,6 +18,7 @@ Note that this is version 0.7 branch. It introduces a variety of changes, but it
 * [LICENSE](#license-mit "save: | clean raw") The MIT license as I think that is the standard in the node community. 
 * [.npmignore](#npmignore "save: ")
 * [.gitgnore](#gitignore "save: ")
+* [.travis.yml](#travis "save: ")
 
 
 ## How to write a literate program
@@ -2992,7 +2993,7 @@ Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 ## README
 
 
-literate-programming
+literate-programming   [![Build Status](https://travis-ci.org/jostylr/literate-programming.png)](https://travis-ci.org/jostylr/literate-programming)
  ====================
 
 Write your code anywhere and in any order with as much explanation as you like. literate-programming will weave it all together to produce your project.
@@ -3211,21 +3212,22 @@ The requisite npm package file.
       ],
       "main": "lib/literate-programming.js",
       "engines": {
-        "node": ">0.6"
+        "node": ">0.10"
       },
       "dependencies":{
-        "literate-programming-standard" : ">=0.1.0",
+        "literate-programming-standard" : "~0.2.4",
         "commander" : "~1.1.1"
       },
       "devDependencies" : {
-        "literate-programming" : "~0.7.3"
+        "literate-programming" : "~0.7.5",
+        "diff" : "~1.0.7"
       },
       "scripts" : { 
         "prepublish" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
-        "compile" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md"
+        "compile" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
+        "test" : "node ./test/test.js"
       },
       "keywords": ["literate programming"],
-      "preferGlobal": "true",
       "bin": {
         "literate-programming" : "bin/literate-programming.js"
       }
@@ -3242,12 +3244,24 @@ The requisite npm package file.
 
     archive
     test
+    travis.yml
     examples
     ghpages
     fixed_examples
     temp
     node_modules
     *.md
+
+
+## Travis
+
+A travis.yml file for continuous test integration!
+
+    language: node_js
+    node_js:
+      - "0.10"
+
+
 
 ## LICENSE MIT
 
