@@ -1,4 +1,4 @@
-literate-programming   [![Build Status](https://travis-ci.org/jostylr/literate-programming.png)](https://travis-ci.org/jostylr/literate-programming)
+literate-programming   
 ====================
 
 Write your code anywhere and in any order with as much explanation as you like. literate-programming will weave it all together to produce your project.

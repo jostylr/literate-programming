@@ -2990,10 +2990,11 @@ I always have to look up the RegEx stuff. Here I created regexs and used their [
 
 Also of invaluable help with all of this is [RegExpr](http://www.regexper.com/)
 
+
 ## README
 
 
-literate-programming   [![Build Status](https://travis-ci.org/jostylr/literate-programming.png)](https://travis-ci.org/jostylr/literate-programming)
+literate-programming   
  ====================
 
 Write your code anywhere and in any order with as much explanation as you like. literate-programming will weave it all together to produce your project.
@@ -3136,7 +3137,7 @@ I also like to use it compile an entire project from a single file, but a litera
 
 ## TODO
 
-Need to document every single syntax bit. Eliminating macros in favor of javascript code that has access to a "global" namespace. So instead of GEOGEBRA, one could have _`geogebra` and somewhere we could have _`geogebra = "http://geogebra.org"` or [geogebra](# "define: http://geogebra.org")  which would take the name and associate with the value. The define directive could be done anywhere and would be seen before any code evaluation in the cblocks while the other one would need to have order taken care of it (tricky, possibly). In the define, allow  eval(...) to execute code to create the value. We could also have access to other docs globals using _docs.docname.varname 
+Need to document every single syntax bit. Eliminating macros in favor of javascript code that has access to a "global" namespace. So instead of GEOGEBRA, one could have _`geogebra` and somewhere we could have _`geogebra = "http://geogebra.org"` or `[geogebra](# "define: http://geogebra.org")`  which would take the name and associate with the value. The define directive could be done anywhere and would be seen before any code evaluation in the cblocks while the other one would need to have order taken care of it (tricky, possibly). In the define, allow  eval(...) to execute code to create the value. We could also have access to other docs globals using _docs.docname.varname 
 
 Use marked to parse the document. Write a custom parser for the substitutions/commands. 
 

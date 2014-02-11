@@ -42,6 +42,6 @@ There are a few things that I am throwing out of literate programming. Some of i
 * No parentheses around arguments in commands. This is because of a conflict with the link syntax of parentheses triggering behaviors. Basically `")` or `](` will cause issues. The best is to not use parentheses. So square brackets are used throughout for consistency. This will be an unpleasant conversion. Hence the parentheses syntax will be supported for legacy reasons only. Also, it works without issues in block substitutions. Just the link syntax is a dodgy use case though even that is fine if you stay away from all quotes.  
 * Using blocks as arguments is allowed! 
 * Macros are dropped. Instead the block eval can be used. 
-* Switch syntax is `[cname](#whatever "command[arg1, ...] | ...")` There is no name before the first command. 
+* Switch syntax is `[cname](#whatever "command[arg1, ...] | ...")` There is no name or extension before the first command. If you want an extension, use gfm's codefences. 
 * There is no multiple runs through a block `[](# "MD| 1 marked ")` and `__whatever`.  Now everything is run through just once in its initial compile phase. For other manipulations, use the commands. For example, `[](# "marked | sub[BOGUS, _"whatever"] ")` with BOGUS being something in the text. 
 
