@@ -24,21 +24,25 @@
   "engines": {
     "node": ">0.10"
   },
-  "dependencies":{
-    "literate-programming-standard" : "~0.2.4",
-    "commander" : "~1.1.1"
+  "dependencies": {
+    "literate-programming-standard": "~0.2.4",
+    "commander": "~1.1.1",
+    "marked": "~0.3.1",
+    "event-when": "~0.5.1"
   },
-  "devDependencies" : {
-    "literate-programming" : "~0.7.5",
-    "diff" : "~1.0.7"
+  "devDependencies": {
+    "literate-programming": "~0.7.5",
+    "diff": "~1.0.7"
   },
-  "scripts" : { 
-    "prepublish" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
-    "compile" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
-    "test" : "node ./test/test.js"
+  "scripts": {
+    "prepublish": "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
+    "compile": "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
+    "test": "node ./test/test.js"
   },
-  "keywords": ["literate programming"],
+  "keywords": [
+    "literate programming"
+  ],
   "bin": {
-    "literate-programming" : "bin/literate-programming.js"
+    "literate-programming": "bin/literate-programming.js"
   }
 }

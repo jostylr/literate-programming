@@ -3223,8 +3223,10 @@ The requisite npm package file.
         "node": ">0.10"
       },
       "dependencies":{
-        "literate-programming-standard" : "~0.2.4",
-        "commander" : "~1.1.1"
+        "literate-programming-standard": "~0.2.4",
+        "commander": "~1.1.1",
+        "marked": "~0.3.1",
+        "event-when": "~0.5.1"
       },
       "devDependencies" : {
         "literate-programming" : "~0.7.5",
