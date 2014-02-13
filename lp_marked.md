@@ -46,7 +46,7 @@ Our export is a doc "constructor". It is in quotes since it is not actually a co
 
 Its arguments are the text to compile, options in constructing the compilation functions, and a callback to ring back when all done. This is all asynchronous which implies that the return value is useless. The callback should expect the doc as the second argument; the first is, by node convention, any error object that is generated. 
 
-The options argument will be merged with a "prototyped" object that is attached to the doc object. It gets passed on in prototype form for any other documents that are being compiled. 
+The options argument is an object. Its `merge` key object will be merged with a "prototyped" object that is attached to the doc object. The options object will get passed on in prototype form for any other documents that are being compiled. It may have other features; see [options](#options).
 
 We also will require the following modules: marked, fs, event-when. The object gcd is the event dispatcher.
 
@@ -61,17 +61,19 @@ We also will require the following modules: marked, fs, event-when. The object g
 
 
     var litpro = function (md, options, callback) {
-        var doc = object.create(proto),
-            doc.gcd = new EventWhen();
+        var doc = Object.create(proto),
+            gcd = doc.gcd = new EventWhen();
 
         _":check types"
 
-        _":event setup"
+        _":done event setup"
 
         doc.init(md, options);
 
-        // just for testing. 
-        gcd.emit("doc parsed");
+        gcd.emit("initialized", doc);
+
+        // just for testing
+        gcd.emit("doc ready");
 
         return false;
     };
@@ -79,14 +81,14 @@ We also will require the following modules: marked, fs, event-when. The object g
 
     module.exports = litpro;
 
-[event setup]()
+[done event setup]()
 
 The callback could be a function (standard expectation) or it could be an event-when object. In that case, we will use the provided event object for all events and assume the event "doc finished" event has some action attached. 
 
 The doneTrack object is available to add to if/when more documents are to be parsed. When each one finishes, they can emit "doc parsed". 
 
     doc.gcd = gcd = new EventWhen(); 
-    doc.docTracker = gcd.when("doc parsed", function () {
+    doc.docTracker = gcd.when("doc ready", function () {
         callback(null, doc);
     });
     gcd.on("error", function (err) {
@@ -97,13 +99,16 @@ The doneTrack object is available to add to if/when more documents are to be par
 
 This is a courtesy. Since each argument type is distinct, we can rearrange at will. 
 
-    [md, options, callback].forEach(function (el) {
+    var arr = [md, options, callback];
+    md = options = callback = null;
+    arr.forEach(function (el) {
         switch (typeof el) {
             case "string" : 
                 md = el;
             break;
             case "function" :
                 callback = el;
+            break;
             default : 
                 if (el) {
                     options = callback;
@@ -128,14 +133,14 @@ We want to set the instance properties here. This includes merging in the option
 
     function (md, options) {
         var doc = this,
+            gcd = doc.gcd,
             key;
 
         doc.md = md;
         doc.options = options;
 
-        for (key in options) {
-            doc[key] = options[key];
-        }
+        _"options"
+
 
 The compile phase is about filling out hblocks[heading] with subhblocks and their cblocks. 
 
@@ -149,13 +154,52 @@ When a code block is found, then an hblock is created with the current heading a
         doc.current = {
             heading : "",
             subheading : ""
-        }
+        };
 
-    };
+        _"event setup"
+    }
 
 ### Prototype
 
 This is where we load up all the common methods that will be acting on doc and friends. 
+
+marked will be invoked with `(text, markedOptions)`.
+
+    marked : marked,
+    markedOptions : {}
+
+### Event setup
+
+We go through the events and add them to gcd. We have in options moreEvents and lessEvents as possibilities 
+
+### Options
+
+This is where the options behaviors are located
+
+    _":merge"
+
+[merge]()
+
+Any keys in the merge object of options will get directly merged into the doc object. The instance properties of hblocks, etc., will overwrite this, but the merge can overwrite all of the prototype properties, of course.
+
+    if (options.merge) {
+        for (key in options.merge) {
+            doc[key] = options[key];
+        }
+    }
+
+
+[events]()
+
+The events
+
+[f]()
+
+This is a function that takes in the doc and can do anything to it. Hopefully never needed.
+
+    if (typeof options.f === "function") {
+        f(doc, options);
+    }
 
 
 
@@ -168,7 +212,7 @@ There are a few things that I am throwing out of literate programming. Some of i
 * Macros are dropped. Instead the block eval can be used. 
 * Switch syntax is `[cname](#whatever "command[arg1, ...] | ...")` There is no name or extension before the first command. If you want an extension, use gfm's codefences. 
 * There is no multiple runs through a block `[](# "MD| 1 marked ")` and `__whatever`.  Now everything is run through just once in its initial compile phase. For other manipulations, use the commands. For example, `[](# "marked | sub[BOGUS, _"whatever"] ")` with BOGUS being something in the text. 
-* Multiple headings no longer create separate hblocks. They add on to what is there. 
+* Multiple headings no longer create separate hblocks. They add on to what is there. Also subheading switches can be switched back and forth. 
 * The total text is no longer tracked. Only code blocks produce output. Thus, no raw commands. This is a good thing as the raw stuff was a little awkward. But it did enable self-documentation of literate-programming. So instead we will use `<pre>` tags. Any pre tag block will be added to the code blocks array of an hblock but with no processing of the code. It will just be straight as it is. HTML within the pre tag may be processed as such on GitHub while being in the raw output of this. So I suggest avoing it. You can use code fences if you like to write whatever HTML. 
 
 New stuff: 
@@ -188,10 +232,22 @@ This is a start for tests.
     var litpro = require('./index.js');
 
     var log = function (err, doc) {
-        console.log("error", err);
-        console.log("doc", doc);
+        if (err) {
+            console.log("error", err);
+            return false;
+        }
+        var keys = Object.keys(doc);
+        keys = keys.filter(function (el) {
+            if (["gcd", "docTracker"].indexOf(el) !== -1) {
+                return false;
+            } else {
+                return true;
+            }
+        });
+        keys.forEach(function(key) {
+            console.log(key, ":", doc[key]);
+        });
     };
 
-    console.log(litpro);
 
     litpro("#hi", log);

@@ -2,17 +2,49 @@ var marked = require('marked');
 var fs = require('fs');
 var EventWhen = require('event-when');
 
-var litpro = function (md, options, callback) {
-    var doc = {},
-        gcd = new EventWhen();
+var proto = {
+    marked : marked,
+    markedOptions : {},
+    init : function (md, options) {
+            var doc = this,
+                gcd = doc.gcd,
+                key;
+        
+            doc.md = md;
+            doc.options = options;
+        
+            if (options.merge) {
+                for (key in options.merge) {
+                    doc[key] = options[key];
+                }
+            }
+        
+            doc.hblocks = {
+            };
+        
+            doc.current = {
+                heading : "",
+                subheading : ""
+            };
+        
+            _"event setup"
+        }
+};
 
-    [md, options, callback].forEach(function (el) {
+var litpro = function (md, options, callback) {
+    var doc = Object.create(proto),
+        gcd = doc.gcd = new EventWhen();
+
+    var arr = [md, options, callback];
+    md = options = callback = null;
+    arr.forEach(function (el) {
         switch (typeof el) {
             case "string" : 
                 md = el;
             break;
             case "function" :
                 callback = el;
+            break;
             default : 
                 if (el) {
                     options = callback;
@@ -28,17 +60,21 @@ var litpro = function (md, options, callback) {
     if (!md) {
         md = "";
     }    
+
     doc.gcd = gcd = new EventWhen(); 
-    doc.docTracker = gcd.when("doc parsed", function () {
+    doc.docTracker = gcd.when("doc ready", function () {
         callback(null, doc);
     });
     gcd.on("error", function (err) {
         callback(err, doc);
     });
 
-    doc.md = md;
+    doc.init(md, options);
 
-    gcd.emit("doc parsed");
+    gcd.emit("initialized", doc);
+
+    // just for testing
+    gcd.emit("doc ready");
 
     return false;
 };
