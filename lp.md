@@ -17,7 +17,7 @@ Note that this is version 0.7 branch. It introduces a variety of changes, but it
 * [TODO.md](#todo "save: | clean raw") A list of growing and shrinking items todo.
 * [LICENSE](#license-mit "save: | clean raw") The MIT license as I think that is the standard in the node community. 
 * [.npmignore](#npmignore "save: ")
-* [.gitgnore](#gitignore "save: ")
+* [.gitignore](#gitignore "save: ")
 * [.travis.yml](#travis "save: ")
 
 
