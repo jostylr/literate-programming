@@ -10,6 +10,14 @@ It has an extensible plugin system which allows you to add in functionality. Enj
 
 This document creates the core js file that yields the function that compiles. It takes in a document, options  and returns an object with all the blocks, compiled blocks, etc.  The function itself has constructors attached to it to make custom instances. You can also override many of its methods. 
 
+## New vision
+
+All headings and switch links create a block. This block has its level (7 for a switch link), a parent, the code. No more hblock vs. cblock. The blocks will have two potential ways to be accessed: directly from the global level (if no conflicting block names occur) and via parent-child relationships. 
+
+Maybe a single colon will be direct descendant while two colons indicate general descendant. 
+
+The switch link 
+
 ## Files 
 
 * [v8/index.js](#basic-structure "save: | jshint") This is the main file that does the compiling. 
@@ -23,7 +31,10 @@ This uses marked to compile the markdown with a default setting of [GitHub Flavo
 
 This covers the syntax which is about sewing together chunks of code. 
 
-* All headers create a new block, called an hblock. There is a default hblock called _default. Levels are irrelevant. Style is irrelevant. Links will have their text attribute used (possibly combined with the surrounding text). 
+* All headers create a new block, called an hblock. There is a default hblock called _default. Style is irrelevant. 
+* Lower levels (more hashes) will create a nested structure. One can then create parental hierarchies. If two headings have the same name, then the highest level becomes the global refrence. If two headings tie for that honor, then the first one becomes the global standard bearer. You shouldn't do that. You should only use repeat headers (such as doc) when it will be clear from the parent-child relation which one you want.
+* Links at the beginning of a line signal the start of a subblock. It is only visible by parent-child relation. It will use the title attribute for compiling instructions. This should be really only for short snippets. 
+* Parent-child relation is a series of colons. If the lead character is a colon, then it looks for a child of the parent for matching. There are also some wildcharacter matches, such as `*` matching all (yielding a list) or `?` which yields the first match. External documents are considered one big block and the given name when loading (or its own header) will give parent-child relation. 
 * Code blocks are the pieces that get sewn together. They are associated with a particular hblock (or subhblock). Code blocks within the same (sub)hblock level get sewn together in the order of appearance. 
 * A paragraph with a single link and nothing else triggers a new subhblock. This is like an hblock except it can only be accessed with hblock:subhblock (put their respective names there). That is, it is a form of namespacing.
 * All other blocks are ignored except for any inline texts that trigger something (links). 
@@ -212,7 +223,6 @@ There are a few things that I am throwing out of literate programming. Some of i
 * Macros are dropped. Instead the block eval can be used. 
 * Switch syntax is `[cname](#whatever "command[arg1, ...] | ...")` There is no name or extension before the first command. If you want an extension, use gfm's codefences. 
 * There is no multiple runs through a block `[](# "MD| 1 marked ")` and `__whatever`.  Now everything is run through just once in its initial compile phase. For other manipulations, use the commands. For example, `[](# "marked | sub[BOGUS, _"whatever"] ")` with BOGUS being something in the text. 
-* Multiple headings no longer create separate hblocks. They add on to what is there. Also subheading switches can be switched back and forth. 
 * The total text is no longer tracked. Only code blocks produce output. Thus, no raw commands. This is a good thing as the raw stuff was a little awkward. But it did enable self-documentation of literate-programming. So instead we will use `<pre>` tags. Any pre tag block will be added to the code blocks array of an hblock but with no processing of the code. It will just be straight as it is. HTML within the pre tag may be processed as such on GitHub while being in the raw output of this. So I suggest avoing it. You can use code fences if you like to write whatever HTML. 
 
 New stuff: 
@@ -221,6 +231,7 @@ New stuff:
 * `_"*:name"` is not new, but a late edition of the previous setup. This is used for boilerplate stuff, say in section boiler. Then if we use a block `_"h:*boiler"`, we plugin h in for `*` in the boiler block when compiling. Kind of. If there is a `"*:"` not matched, then it remains, which can be used for another boilerplate. 
 * `_"h:s[arr syntax]` would be for viewing the separate codeblocks in the (sub)hblock as a set of array elements. The syntax `+` will concatenate them with `..` being the full step. Examples:   `[2+5]` yields a single block consisting of the second and fifth, `[2..5+7]` yields a concatenation of 2, 3, 4, and 5. How is this useful? Maybe you have a function with some initialization code, some debugging code, and then the actual function. You could arrange it as actual, intialization, debugging and then in development you do `[2+3+1]` while in production you do `[2+1]`. If you want access to the array itself, this can be accessed in the commands under cblock.arr ??
 * Commands should have access to the hblock name and subhblock name as well as the array of codeblocks, the concatenated one, and the raw text. 
+* Maybe some command such as `scan[doc]` that can gather all sections of the document that have a subheading of doc. This could be in order with heading as well. Maybe it makes more sense to replace the boilerplate `*` with `?` indicating a single name. And then `*+:doc` could be to scan through the headings looking for those with doc sections. The `+` says to concatenate. Without the `+`, it would send on an array to the pipes, similar to the array syntax. 
 
 
 

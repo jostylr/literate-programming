@@ -5,4 +5,5 @@ echo "testing"
 node v8/test.js
 echo "done"
 
-# use with nodemon -e md --exec mon.sh
+# use with nodemon -e md --exec ./mon.sh
+# make sure mon.sh is executable: chmod +x mon.sh
