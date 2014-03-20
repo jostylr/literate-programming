@@ -1,55 +1,118 @@
 # Literate Programming
 
-Literate programming is the idea that we should write code to be read and understood by others. The idea is to take the reader on the thought process of the author. This can be hard, but it can also be very useful. 
+Literate programming is the idea that we should write code to be read and
+understood by others. The idea is to take the reader on the thought process of
+the author. This can be hard, but it can also be very useful. 
 
-This project uses markdown to write up the document. Code blocks are what gets compiled; code spans are not used. Headings demarcate blocks, but lone links can create subdivisions within that. Substitutions are done by `_"block name"` with arbitrary JavaScript being executed with `_&#96;code&#96;`.  Links can be used to to give directives, such as to save a file. And that's largely it. 
+This project uses markdown to write up the document. Code blocks are what gets
+compiled; code spans are not used. Headings demarcate blocks, but lone links
+can create subdivisions within that. Substitutions are done by `_"block name"`
+with arbitrary JavaScript being executed with `_&#96;code&#96;`.  Links can be
+used to to give directives, such as to save a file or create a compile
+command. And that's largely it. 
 
-With this structure, one can create arbitrary paths through the code. You can split a single compiled file over multiple literate program documents or place multiple compiled files into a single document. You can manage a whole project from a single literate program document. You can use it as a preprocessor, linter, validator, postprocessor, minifier, pusher, whatever you want. 
+With this structure, one can create arbitrary paths through the code. You can
+split a single compiled file over multiple literate program documents or
+compile one document into many different files of various types.  of files You
+can manage a whole project from a single literate program document. You can
+use it as a preprocessor, linter, validator, postprocessor, minifier, pusher,
+whatever you want. 
 
-It has an extensible plugin system which allows you to add in functionality. Enjoy!
+It has an extensible plugin system which allows you to add in functionality.
+Enjoy!
 
-This document creates the core js file that yields the function that compiles. It takes in a document, options  and returns an object with all the blocks, compiled blocks, etc.  The function itself has constructors attached to it to make custom instances. You can also override many of its methods. 
-
-## New vision
-
-All headings and switch links create a block. This block has its level (7 for a switch link), a parent, the code. No more hblock vs. cblock. The blocks will have two potential ways to be accessed: directly from the global level (if no conflicting block names occur) and via parent-child relationships. 
-
-Maybe a single colon will be direct descendant while two colons indicate general descendant. 
-
-The switch link 
+This document creates the core js file that yields the function that compiles.
+It takes in a document, options  and returns an object with all the blocks,
+compiled blocks, etc.  The function itself has constructors attached to it to
+make custom instances. You can also override many of its methods. 
 
 ## Files 
 
-* [v8/index.js](#basic-structure "save: | jshint") This is the main file that does the compiling. 
-* [v8/test.js](#tests "save: |jshint") This is a start of a test protocol for this version. 
+* [v8/index.js](#basic-structure "save: | jshint") This is the main file that
+  does the compiling. 
+* [v8/test.js](#tests "save: |jshint") This is a start of a test protocol for
+  this version. 
 
 ## Complete Syntax
 
-This uses marked to compile the markdown with a default setting of [GitHub Flavored Markdown](https://help.github.com/articles/github-flavored-markdown). So if it thinks something is, for example, a heading, then it is.
+This uses marked to compile the markdown with a default setting of [GitHub
+Flavored Markdown](https://help.github.com/articles/github-flavored-markdown).
+So if it thinks something is, for example, a heading, then it is.
+
+While this does not use a lot of markdown syntax (most of it is for formatting
+for reading the program), it is useful to have a clear markdown parser that
+should interpret everything the same way as GitHub where these documents are
+likely to be hosted.
 
 ### Stitching Syntax
 
 This covers the syntax which is about sewing together chunks of code. 
 
-* All headers create a new block, called an hblock. There is a default hblock called _default. Style is irrelevant. 
-* Lower levels (more hashes) will create a nested structure. One can then create parental hierarchies. If two headings have the same name, then the highest level becomes the global refrence. If two headings tie for that honor, then the first one becomes the global standard bearer. You shouldn't do that. You should only use repeat headers (such as doc) when it will be clear from the parent-child relation which one you want.
-* Links at the beginning of a line signal the start of a subblock. It is only visible by parent-child relation. It will use the title attribute for compiling instructions. This should be really only for short snippets. 
-* Parent-child relation is a series of colons. If the lead character is a colon, then it looks for a child of the parent for matching. There are also some wildcharacter matches, such as `*` matching all (yielding a list) or `?` which yields the first match. External documents are considered one big block and the given name when loading (or its own header) will give parent-child relation. 
-* Code blocks are the pieces that get sewn together. They are associated with a particular hblock (or subhblock). Code blocks within the same (sub)hblock level get sewn together in the order of appearance. 
-* A paragraph with a single link and nothing else triggers a new subhblock. This is like an hblock except it can only be accessed with hblock:subhblock (put their respective names there). That is, it is a form of namespacing.
-* All other blocks are ignored except for any inline texts that trigger something (links). 
-* The only inline text that triggers behavior is a link. These are the directives. 
+* All headers create a new block, called a block. There is a default block
+  called _default. Style is irrelevant. 
+* Lower levels (more hashes) will create a nested structure. One can then
+  create parental hierarchies. If two headings have the same name, then the
+  highest level becomes the global refrence. If two headings tie for that
+  honor, then the first one becomes the global standard bearer. You shouldn't
+  rely on that. You should only use repeat headers (such as doc) when it will
+  be clear from the parent-child relation which one you want.
+* Links at the beginning of a line also signal the start of a block. It is
+  only visible by parent-child relation. It can use the title attribute for
+  compiling instructions. This should be really only for short snippets. Its
+  level will be 1/2 level lower than its parent. 
+* Parent-child relation is a series of colons. If the lead character is a
+  colon, then it looks for a descendant of the parent for matching. If
+  multiple names match, the highest level matches (first one wins if multiple
+  of that).  There are also some wildcharacter matches, such as `*` matching
+  all (yielding a list) or `?` which yields the first match. External
+  documents are considered one big block and the given name when loading (or
+  its own header) will give parent-child relation. The file separator from
+  path, `/` or `\` will indicate a direct child rather than a general
+  descendant. A direct child is a descendant whose level is within one of the
+  parent. 
+* Code blocks are the pieces that get sewn together. They are associated with
+  a particular block. Code blocks within the same block level get sewn
+  together in the order of appearance. 
+* All other markdown syntax is ignored except for any inline texts that trigger
+  something (links). 
+* The only inline text that triggers behavior is a link. These are the
+  directives. 
 
-Inside a code block, you can substituet in a cblock by using the syntax `_"hblock"` or `_"hblock:subhblock"`. This will then replace the whole underscore quote stuff with the appropriate block. If the block does not exist at all, then it is left untouched. If the block exists but has no code, then the quoted region is replaced with the empty string. 
+Inside a code block, you can substitute `_"block"` or `_"block:subblock"`,
+etc. This will then replace the whole underscore quote stuff with the
+appropriate block. If the called for block does not exist at all, then it is left
+untouched. If the block exists but has no code, then the quoted region is
+replaced with the empty string.
+
+
 
 ### Conversion Syntax.
 
-As we sew together the code, we can run code on the code. This may be something simple like a transformation (marked to html), a linter (jshint), substitutions, eval'ing some code, etc.
+As we sew together the code, we can run code on the code. This may be
+something simple like a transformation (markdown to html), a linter (jshint),
+substitutions, eval'ing some code, etc.
 
-To work this awesome magic, we have commands and directives. When subbing a block, we can add in pipes followed `command[arg1, ...]`  The square brackets are optional
+To work this awesome magic, we have commands and directives. When subbing a
+block, we can add in pipes followed `command[arg1, ...]`  The square brackets
+are optional
 
-It has the format `[name](#link "directive: ...")`. Depending on the directive, the link or name may be used. Also after the colon, what is relevant depends on the directive, but it will be parsed as `:arg1,arg2,..|command(args) | command(args) | ...`  Commands should be javascript variable names while args will be either treated as text or they could be JavaScript 
+It has the format `[name](#link "directive: ...")`. Depending on the
+directive, the link or name may be used. Also after the colon, what is
+relevant depends on the directive, but it will be parsed as
+`:arg1,arg2,..|command(args) | command(args) | ...`  Commands should be
+javascript variable names while args will be either treated as text or they
+could be JavaScript 
 
+
+## New vision
+
+All headings and switch links create a block. This block has its level (an
+extra half level for
+a switch link), a parent, and the code. No more hblock vs. cblock. The blocks will
+have two potential ways to be accessed: directly from the global level (if no
+conflicting block names occur) and via parent-child relationships. 
+
+Maybe a single colon will be direct descendant while two colons indicate general descendant. 
 
 ## Basic structure
 
@@ -233,8 +296,14 @@ New stuff:
 * Commands should have access to the hblock name and subhblock name as well as the array of codeblocks, the concatenated one, and the raw text. 
 * Maybe some command such as `scan[doc]` that can gather all sections of the document that have a subheading of doc. This could be in order with heading as well. Maybe it makes more sense to replace the boilerplate `*` with `?` indicating a single name. And then `*+:doc` could be to scan through the headings looking for those with doc sections. The `+` says to concatenate. Without the `+`, it would send on an array to the pipes, similar to the array syntax. 
 
+## Directive Thoughts
 
+* Having version default to using the first block title. This allows using the directive without the link appearing. 
 
+## Random thoughts
+
+* Add ability to read from standard input. Should be real easy. This allows
+  one to execute buffer in vim. 
 
 ## Tests
 
