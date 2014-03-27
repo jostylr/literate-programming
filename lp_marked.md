@@ -26,6 +26,19 @@ It takes in a document, options  and returns an object with all the blocks,
 compiled blocks, etc.  The function itself has constructors attached to it to
 make custom instances. You can also override many of its methods. 
 
+## Goals
+
+1. Truly asynchronous processing. So it is easy to fetch from the web, use an
+   external program, etc.  In particular, loading from github should be made
+   very easy.
+2. Better markdown parsing to allow for code fences. Mainly for syntax and convenience. 
+3. Better parsing/executing of commands to allow for pulling in other blocks
+   into the commands as arguments. Also facilitating code in the commands as
+   well. 
+4. Easy plugin system. Other than the weaving and subsituting, most commands
+   should be in a plug-in, with the ones I think are very much needed being in
+   a standard-plug-in setup. 
+
 ## Files 
 
 * [v8/index.js](#basic-structure "save: | jshint") This is the main file that
