@@ -37,13 +37,13 @@ make custom instances. You can also override many of its methods.
    well. 
 4. Easy plugin system. Other than the weaving and subsituting, most commands
    should be in a plug-in, with the ones I think are very much needed being in
-   a standard-plug-in setup. 
+   a standard-plug-in setup.
 
 ## Files 
 
-* [v8/index.js](#basic-structure "save: | jshint") This is the main file that
+* [index.js](#basic-structure "save: | jshint") This is the main file that
   does the compiling. 
-* [v8/test.js](#tests "save: |jshint") This is a start of a test protocol for
+* [test/test.js](#tests "save: |jshint") This is a start of a test protocol for
   this version. 
 
 ## Complete Syntax
