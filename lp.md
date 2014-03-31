@@ -24,7 +24,9 @@ Enjoy!
 This document creates the core js file that yields the function that compiles.
 It takes in a document, options  and returns an object with all the blocks,
 compiled blocks, etc.  The function itself has constructors attached to it to
-make custom instances. You can also override many of its methods. 
+make custom instances. You can also override many of its methods.
+
+[literate-programming](# "version:0.8.0-pre")
 
 ## Goals
 
@@ -48,8 +50,15 @@ command parser,  stitch together, output compiled.
 
 * [index.js](#basic-structure "save: | jshint") This is the main file that
   does the compiling. 
-* [tes/test.js](#tests "save: |jshint") This is a start of a test protocol for
-  this version. 
+* [test/test.js](#tests "save: |jshint") This is a start of a test protocol
+  for this version. 
+* [package.json](#npm-package "save: json  | jshint") The requisite package
+  file for a npm project. 
+* [LICENSE](#license-mit "save: | clean raw") The MIT license as I think that
+  is the standard in the node community. 
+* [.npmignore](#npmignore "save: ")
+* [.gitignore](#gitignore "save: ")
+* [.travis.yml](#travis "save: ")
 
 ## Complete Syntax
 
@@ -349,3 +358,92 @@ This is a start for tests.
 
 
     litpro("#hi", log);
+
+
+## NPM package
+
+The requisite npm package file. 
+
+[](# "json") 
+
+    {
+      "name": "DOCNAME",
+      "description": "A literate programming compile script. Write your program in markdown.",
+      "version": "DOCVERSION",
+      "homepage": "https://github.com/jostylr/literate-programming",
+      "author": {
+        "name": "James Taylor",
+        "email": "jostylr@gmail.com"
+      },
+      "repository": {
+        "type": "git",
+        "url": "git://github.com/jostylr/literate-programming.git"
+      },
+      "bugs": {
+        "url": "https://github.com/jostylr/literate-programming/issues"
+      },
+      "licenses": [
+        {
+          "type": "MIT",
+          "url": "https://github.com/jostylr/literate-programming/blob/master/LICENSE-MIT"
+        }
+      ],
+      "main": "lib/literate-programming.js",
+      "engines": {
+        "node": ">0.10"
+      },
+      "dependencies":{
+          "marked": "^0.3.2",
+          "event-when": "^0.6.0"
+      },
+      "devDependencies" : {
+      },
+      "scripts" : { 
+        "test" : "node ./test/test.js"
+      },
+      "keywords": ["literate programming"],
+      "bin": {
+        "literate-programming" : "bin/literate-programming.js"
+      }
+    }
+
+## gitignore
+
+    node_modules
+    temp
+
+## npmignore
+
+
+    test
+    travis.yml
+    examples
+    ghpages
+    fixed_examples
+    node_modules
+    trouble
+    *.md
+
+
+## Travis
+
+A travis.yml file for continuous test integration!
+
+    language: node_js
+    node_js:
+      - "0.10"
+
+
+
+## LICENSE MIT
+
+
+The MIT License (MIT)
+Copyright (c) 2013 James Taylor
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
