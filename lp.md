@@ -13,7 +13,7 @@ command. And that's largely it.
 
 With this structure, one can create arbitrary paths through the code. You can
 split a single compiled file over multiple literate program documents or
-compile one document into many different files of various types.  of files You
+compile one document into many different files of various types.  You
 can manage a whole project from a single literate program document. You can
 use it as a preprocessor, linter, validator, postprocessor, minifier, pusher,
 whatever you want. 
@@ -28,12 +28,13 @@ make custom instances. You can also override many of its methods.
 
 [literate-programming](# "version:0.8.0-pre")
 
-## Goals
+## Goals for v0.8
 
 1. Truly asynchronous processing. So it is easy to fetch from the web, use an
    external program, etc.  In particular, loading from github should be made
    very easy.
-2. Better markdown parsing to allow for code fences. Mainly for syntax and convenience. 
+2. Better markdown parsing to allow for code fences. Mainly for syntax and
+   convenience. 
 3. Better parsing/executing of commands to allow for pulling in other blocks
    into the commands as arguments. Also facilitating code in the commands as
    well. 
