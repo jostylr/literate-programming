@@ -142,15 +142,99 @@ conflicting block names occur) and via parent-child relationships.
 
 Maybe a single colon will be direct descendant while two colons indicate general descendant. 
 
+## Another start in this
+
+So this is another attempt at flushing out the new way. So fundamentally, the
+return object should be able to compile more bits of text. 
+
+`.append` could add text to the current document and recompile
+`.add` could add a new structure to compile with some way of referencing the
+rest. 
+`.run` can run the compile structure. 
+`.compiled` could list the compiled blocks
+`.gcd` is the event-when object and one add listeners, etc., to it. 
+
+Events. 
+"text received" -> "parse text"
+
+as each block is parsed, attach once an emit function that emits
+"block parsed:path" with data of the block object
+The path is the path of the block in the document starting with the root: 
+root#/heading/subheading..../# where the last numbering only occurs if there
+are multiple paths that are the same --- avoid that.
+
+This should be exceuted on "document parsed:#"
+the root is the root of all the paths from this document. it is just the order
+number of the document being attached to the document. 
+
+Reacting to "block parsed" should be the "compile block" action. This will
+take in the block data and try to compile it. When done, it emits "block
+compiled:p path".  If it needs to wait for a block q, it creates a .when
+that will track "block compiled:q path" where the q path is expanded into an
+absolute reference based on the path syntax; it should be first checked if the
+q path is already compiled (if so, just use it). It does this for all blocks that
+it needs to wait for. The .when emits a "needed blocks
+compiled:path" which is then repsponded to by doing the subsitution. If there
+are commands, then we queue up the commands on another .when that will emit
+"commnds done:path" The commands are executed by emitting 
+"command:namecommand:path:p#" with the data of the block. Note that the number part is used
+to distinguish multiple paths. This is needed for the listener? .when would track
+faithfully anyway. Each successive command will listen for a "command done:name:path:p#"
+
+Note that the data in the .when should be all we need to make the
+substitutions at the end of the commands. Need to see how to link the
+replacement place with the vlaue. 
+
+Can do something similar with the eval stuff. Probably same .when as the
+commands. 
+
+Maybe simplify further and think of the compiling of the blocks as just a
+command. Want to support blocks in command arguments...
+
+As each block is parsed, "block compiled:path" is added to a .when that will
+fire "doc compiled:#". 
+
+doc.blocks is a function that will parse the path language to grab any desired
+blocks. 
+
+
+## Simple example
+
+This will be a simple use case example
+
+    var litpro = require("../index.js");
+
+    var doc = litpro();
+
+    doc.gcd.on("doc compiled", function (data, evObj) {
+        console.log(doc.blocks("another block"));
+    });
+
+    doc.add("# example \n some stuff \n\n    code\n\n"+
+        '## another block\n\n more stuff\n\n    _"example"');
+
+
+
+
 ## Basic structure
 
-Our export is a doc "constructor". It is in quotes since it is not actually a constructor in the sense of `new`, but what it does is to create a compiled document with all the blocks compiled and sewn together. 
+Our export is a doc "constructor". It is in quotes since it is not actually a
+constructor in the sense of `new`, but what it does is to create a compiled
+document with all the blocks compiled and sewn together. 
 
-Its arguments are the text to compile, options in constructing the compilation functions, and a callback to ring back when all done. This is all asynchronous which implies that the return value is useless. The callback should expect the doc as the second argument; the first is, by node convention, any error object that is generated. 
+Its arguments are the text to compile, options in constructing the compilation
+functions, and a callback to ring back when all done. This is all asynchronous
+which implies that the return value is useless. The callback should expect the
+doc as the second argument; the first is, by node convention, any error object
+that is generated. 
 
-The options argument is an object. Its `merge` key object will be merged with a "prototyped" object that is attached to the doc object. The options object will get passed on in prototype form for any other documents that are being compiled. It may have other features; see [options](#options).
+The options argument is an object. Its `merge` key object will be merged with
+a "prototyped" object that is attached to the doc object. The options object
+will get passed on in prototype form for any other documents that are being
+compiled. It may have other features; see [options](#options).
 
-We also will require the following modules: marked, fs, event-when. The object gcd is the event dispatcher.
+We also will require the following modules: marked, fs, event-when. The object
+gcd is the event dispatcher.
 
     var marked = require('marked');
     var fs = require('fs');
@@ -185,9 +269,12 @@ We also will require the following modules: marked, fs, event-when. The object g
 
 [done event setup]()
 
-The callback could be a function (standard expectation) or it could be an event-when object. In that case, we will use the provided event object for all events and assume the event "doc finished" event has some action attached. 
+The callback could be a function (standard expectation) or it could be an
+event-when object. In that case, we will use the provided event object for all
+events and assume the event "doc finished" event has some action attached. 
 
-The doneTrack object is available to add to if/when more documents are to be parsed. When each one finishes, they can emit "doc parsed". 
+The doneTrack object is available to add to if/when more documents are to be
+parsed. When each one finishes, they can emit "doc parsed". 
 
     doc.gcd = gcd = new EventWhen(); 
     doc.docTracker = gcd.when("doc ready", function () {
