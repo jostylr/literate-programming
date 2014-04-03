@@ -206,6 +206,8 @@ This will be a simple use case example
 
     var doc = litpro();
 
+    doc.gcd.makeLog();
+
     doc.gcd.on("doc compiled", function (data, evObj) {
         console.log(doc.blocks("another block"));
     });
@@ -213,14 +215,15 @@ This will be a simple use case example
     doc.add("# example \n some stuff \n\n    code\n\n"+
         '## another block\n\n more stuff\n\n    _"example"');
 
+    process.on("exit", function () {
+        doc.gcd.logs();
+    });
 
 
 
 ## Basic structure
 
-Our export is a doc "constructor". It is in quotes since it is not actually a
-constructor in the sense of `new`, but what it does is to create a compiled
-document with all the blocks compiled and sewn together. 
+Our export is a doc constructor. 
 
 Its arguments are the text to compile, options in constructing the compilation
 functions, and a callback to ring back when all done. This is all asynchronous
@@ -240,13 +243,11 @@ gcd is the event dispatcher.
     var fs = require('fs');
     var EventWhen = require('event-when');
 
-    var proto = {
-        _"prototype",
-        init : _"initialization"
-    };
 
-
-    var litpro = function (md, options, callback) {
+    var litpro = function me (md, options, callback) {
+        if (this instanceof me ) {
+            
+        }
         var doc = Object.create(proto),
             gcd = doc.gcd = new EventWhen();
 
@@ -264,6 +265,10 @@ gcd is the event dispatcher.
         return false;
     };
 
+    litpro.prototype = {
+        _"prototype",
+        init : _"initialization"
+    };
 
     module.exports = litpro;
 
