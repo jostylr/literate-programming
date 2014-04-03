@@ -169,17 +169,18 @@ number of the document being attached to the document.
 
 Reacting to "block parsed" should be the "compile block" action. This will
 take in the block data and try to compile it. When done, it emits "block
-compiled:p path".  If it needs to wait for a block q, it creates a .when
-that will track "block compiled:q path" where the q path is expanded into an
+compiled:p path".  If it needs to wait for a block q, it creates a .when that
+will track "block compiled:q path" where the q path is expanded into an
 absolute reference based on the path syntax; it should be first checked if the
-q path is already compiled (if so, just use it). It does this for all blocks that
-it needs to wait for. The .when emits a "needed blocks
-compiled:path" which is then repsponded to by doing the subsitution. If there
-are commands, then we queue up the commands on another .when that will emit
-"commnds done:path" The commands are executed by emitting 
-"command:namecommand:path:p#" with the data of the block. Note that the number part is used
-to distinguish multiple paths. This is needed for the listener? .when would track
-faithfully anyway. Each successive command will listen for a "command done:name:path:p#"
+q path is already compiled (if so, just use it). It does this for all blocks
+that it needs to wait for. The .when emits a "needed blocks compiled:path"
+which is then repsponded to by doing the subsitution. If there are commands,
+then we queue up the commands on another .when that will emit "commnds
+done:path" The commands are executed by emitting "command:namecommand:path:p#"
+with the data of the block and action would be "executing [commandname]". Note
+that the number part is used to distinguish multiple paths. This is needed for
+the listener? .when would track faithfully anyway. Each successive command
+will listen for a "command done:name:path:p#"
 
 Note that the data in the .when should be all we need to make the
 substitutions at the end of the commands. Need to see how to link the
@@ -197,28 +198,55 @@ fire "doc compiled:#".
 doc.blocks is a function that will parse the path language to grab any desired
 blocks. 
 
+Need to also be very clear about how to override retrieval methods for other
+documents. Probably actions named "retrieve file", "retrieve webpage", "run
+script" ... is
+there something else? Also the "evaluate code" should be an action that can be
+overwritten for security. And perhaps all of that should be by default and
+activated with an option, say running the function .trust() vs. .secure(). In
+the secure version, it would output as log all eval statements. retrieving
+files and webpages should be relatively safe as long as nothing is being
+executed. Those methods need to be overwritten due to different environments
+(browser vs node). 
+
+Each block consists of the raw code, the compiled block (if done),
+dependents(?), and the sublist of blocks. The sublist consists of the full
+relative path as well as the block name with repeats being sorted by level
+followed by first in being used. 
+
 
 ## Simple example
 
-This will be a simple use case example
+This will be a simple use case examplei
+
+[emit based]()
 
     var litpro = require("../index.js");
 
-    var doc = litpro();
+    var doc = litpro(),
+        gcd = doc.gcd;
 
-    doc.gcd.makeLog();
+    gcd.makeLog();
 
-    doc.gcd.on("doc compiled", function (data, evObj) {
+    gcd.on("doc compiled", function (data, evObj) {
         console.log(doc.blocks("another block"));
     });
 
-    doc.add("# example \n some stuff \n\n    code\n\n"+
+    gcd.emit("add doc", "# example \n some stuff \n\n    code\n\n"+
         '## another block\n\n more stuff\n\n    _"example"');
 
     process.on("exit", function () {
-        doc.gcd.logs();
+        gcd.logs();
     });
 
+[callback based]()
+
+    var litpro = require("../index.js");
+
+    var doc = litpro("# example \n some stuff \n\n    code\n\n"+
+        '## another block\n\n more stuff\n\n    _"example"', function () {
+            console.log(doc.blocks("another block"));
+        });
 
 
 ## Basic structure
@@ -245,22 +273,26 @@ gcd is the event dispatcher.
 
 
     var litpro = function me (md, options, callback) {
-        if (this instanceof me ) {
-            
+        if ( !(this instanceof me) ) {
+            return new me(md, options, callback);
         }
-        var doc = Object.create(proto),
+
+        var doc = this,
             gcd = doc.gcd = new EventWhen();
+
+        gcd.doc = doc;
 
         _":check types"
 
-        _":done event setup"
+        _"event setup"
 
-        doc.init(md, options);
+        if (options !== null) {
+            gcd.emit("options received", options);
+        }
 
-        gcd.emit("initialized", doc);
-
-        // just for testing
-        gcd.emit("doc ready");
+        if (md !== null) {
+            gcd.emit("add doc", [md, callback]);
+        }
 
         return false;
     };
@@ -272,22 +304,7 @@ gcd is the event dispatcher.
 
     module.exports = litpro;
 
-[done event setup]()
 
-The callback could be a function (standard expectation) or it could be an
-event-when object. In that case, we will use the provided event object for all
-events and assume the event "doc finished" event has some action attached. 
-
-The doneTrack object is available to add to if/when more documents are to be
-parsed. When each one finishes, they can emit "doc parsed". 
-
-    doc.gcd = gcd = new EventWhen(); 
-    doc.docTracker = gcd.when("doc ready", function () {
-        callback(null, doc);
-    });
-    gcd.on("error", function (err) {
-        callback(err, doc);
-    });
 
 [check types]()
 
@@ -303,21 +320,50 @@ This is a courtesy. Since each argument type is distinct, we can rearrange at wi
             case "function" :
                 callback = el;
             break;
+            case "undefined" :
+            break;
             default : 
-                if (el) {
-                    options = callback;
-                }   
+                options = el;
         }
     });
-    if (!callback) {
-        return "provide a callback function or event";
+
+### Event Setup
+
+Here we setup the event-action flow as well as scopes
+
+It starts with a new doc being added. We use the scope docs to store a new doc
+and its structures. Once added, then it needs to be parsed. We use the scope
+marked for marked options that might need to be passed into marked. Otherwise,
+we parse it using marked. 
+
+Marked parses purely sequentially, no eventing. It builds the basic blocks and
+path structure. Just quicker that way and saner. It loads up emit
+announcements for compile time, to be emitted by "compile doc" in response to
+doc parsed:# where # denotes the docs location.
+
+Each compile time event calls compile block. 
+
+    function () {
+        var events, event, scopes, scope;
+
+        events = {
+            "new:docs" : "add doc",
+            "doc text:marked" : "parse doc",
+            "doc parsed" : "compile doc",
+            "compile time" : "compile block",
+
+
+        };
+
+        for (event in events) {
+            gcd.on(event, events[event]);
+        }
+
+        scopes = {
+            "marked" : {},
+            "docs" : [],
+
     }
-    if (!options) {
-        options = {};
-    }
-    if (!md) {
-        md = "";
-    }    
 
 
 ### Initialization
@@ -360,7 +406,28 @@ This is where we load up all the common methods that will be acting on doc and f
 marked will be invoked with `(text, markedOptions)`.
 
     marked : marked,
-    markedOptions : {}
+    markedOptions : {},
+    commandParser : _"command parser"
+
+
+
+
+#### Done calls callback
+
+The callback could be a function (standard expectation) or it could be an
+event-when object. In that case, we will use the provided event object for all
+events and assume the event "doc finished" event has some action attached. 
+
+The doneTrack object is available to add to if/when more documents are to be
+parsed. When each one finishes, they can emit "doc parsed". 
+
+    doc.gcd = gcd = new EventWhen(); 
+    doc.docTracker = gcd.when("doc ready", function () {
+        callback(null, doc);
+    });
+    gcd.on("error", function (err) {
+        callback(err, doc);
+    });
 
 ### Event setup
 
@@ -374,7 +441,9 @@ This is where the options behaviors are located
 
 [merge]()
 
-Any keys in the merge object of options will get directly merged into the doc object. The instance properties of hblocks, etc., will overwrite this, but the merge can overwrite all of the prototype properties, of course.
+ Done calls callback of options will get directly merged into the doc object.
+ The instance properties of hblocks, etc., will overwrite this, but the merge
+ can overwrite all of the prototype properties, of course.
 
     if (options.merge) {
         for (key in options.merge) {
