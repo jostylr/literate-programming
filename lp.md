@@ -7,7 +7,7 @@ the author. This can be hard, but it can also be very useful.
 This project uses markdown to write up the document. Code blocks are what gets
 compiled; code spans are not used. Headings demarcate blocks, but lone links
 can create subdivisions within that. Substitutions are done by `_"block name"`
-with arbitrary JavaScript being executed with `_&#96;code&#96;`.  Links can be
+with arbitrary JavaScript being executed with `` _`code` ``.  Links can be
 used to to give directives, such as to save a file or create a compile
 command. And that's largely it. 
 
