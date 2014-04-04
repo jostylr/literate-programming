@@ -2,38 +2,16 @@ var marked = require('marked');
 var fs = require('fs');
 var EventWhen = require('event-when');
 
-var proto = {
-    marked : marked,
-    markedOptions : {},
-    init : function (md, options) {
-            var doc = this,
-                gcd = doc.gcd,
-                key;
-        
-            doc.md = md;
-            doc.options = options;
-        
-            if (options.merge) {
-                for (key in options.merge) {
-                    doc[key] = options[key];
-                }
-            }
-        
-            doc.hblocks = {
-            };
-        
-            doc.current = {
-                heading : "",
-                subheading : ""
-            };
-        
-            _"event setup"
-        }
-};
+var litpro = function me (md, options, callback) {
+    if ( !(this instanceof me) ) {
+        return new me(md, options, callback);
+    }
 
-var litpro = function (md, options, callback) {
-    var doc = Object.create(proto),
-        gcd = doc.gcd = new EventWhen();
+    var doc = this,
+        gcd = doc.gcd = new EventWhen(),
+        docs = doc.docs = [];
+
+    gcd.doc = doc;
 
     var arr = [md, options, callback];
     md = options = callback = null;
@@ -45,36 +23,58 @@ var litpro = function (md, options, callback) {
             case "function" :
                 callback = el;
             break;
+            case "undefined" :
+            break;
             default : 
-                if (el) {
-                    options = callback;
-                }   
+                options = el;
         }
     });
-    if (!callback) {
-        return "provide a callback function or event";
+
+    gcd.on("new doc", "add doc", docs);
+    
+    gcd.action("add doc", function (data, evObj) {
+            var gcd = evObj.emitter;
+            
+            var top = {};
+            if (typeof data === "string") {
+                top.raw = data;
+            } else if ( Array.isArray(data) ) {
+                if (typeof data[0] === "string") {
+                    top.raw = data[0];
+                    gcd.on("doc compile", data[1]);
+                 }
+            }
+            
+            var docs = this;
+            
+            docs.push(top);
+            var place = docs.length - 1;
+            
+            gcd.scope(place, top);
+            
+            gcd.emit("doc text:"+place);
+            
+            // just fake
+            var repeat = {
+                raw : 'me = _"example"',
+                compiled: "me = code"
+            };
+            
+            gcd.emit("doc compiled", {
+                "example" : {raw : "code", compiled: "code"},
+                "another block" : repeat,
+                "example/another block" : repeat
+            });
+        }
+    );
+
+    if (options !== null) {
+        gcd.emit("options received", options);
     }
-    if (!options) {
-        options = {};
+
+    if (md !== null) {
+        gcd.emit("new doc", [md, callback]);
     }
-    if (!md) {
-        md = "";
-    }    
-
-    doc.gcd = gcd = new EventWhen(); 
-    doc.docTracker = gcd.when("doc ready", function () {
-        callback(null, doc);
-    });
-    gcd.on("error", function (err) {
-        callback(err, doc);
-    });
-
-    doc.init(md, options);
-
-    gcd.emit("initialized", doc);
-
-    // just for testing
-    gcd.emit("doc ready");
 
     return false;
 };
