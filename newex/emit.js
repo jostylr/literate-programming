@@ -3,7 +3,11 @@ var litpro = require("../index.js");
 var doc = litpro(),
     gcd = doc.gcd;
 
-gcd.makeLog();
+if (process.argv[2]) {
+    gcd.makeLog(parseInt(process.argv[2]));
+} else {
+    gcd.makeLog();
+}
 
 gcd.on("doc compiled", function (data, evObj) {
     console.log(data["another block"]);
