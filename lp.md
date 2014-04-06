@@ -154,7 +154,9 @@ block and then emit the doc text event.
     
     gcd.scope(place, top);
 
-    gcd.emit("doc text:"+place);
+    top.compileTime = gcd.when("doc parsed:"+place, "compile time");
+
+    gcd.emit("doc text:"+place, top.raw);
 
     // just fake
     var repeat = {
@@ -168,6 +170,55 @@ block and then emit the doc text event.
         "example/another block" : repeat
     });
 
+## Doc text
+
+Here we get the raw text and run it through marked. The whole parsing is done
+synchronously. 
+
+The relevant doc placement is the second scope. The action context is the
+marked parser.
+
+The pieces should be of the form `[#, doc text]` where the number is the docs
+position of the doc under consideration.
+
+Marked will parse the text, making blocks, storing them in the top block. It
+will also queue the relevant event/when/action sequences. In particular, at
+the end of a block:
+
+* We set an action listener for compile time. When compile time is emitted,
+  the action compiles the block. 
+* For directives, we add "directive compiled:place:path:command" events on the
+  .when for compile time. That is, we want directives to be deal with before
+  the compile phase. 
+* For lone link headers with commands, we attach command listeners to the
+  compile block. The sequence is "stitching done" followed by "compiling
+  done", all scoped to block. The compiling done is queued with a .when that
+  initially just waits for stitching done, but any commands for it to execute
+  can be added to it as well.
+
+Also to note is that any two blocks that compile to the same global path are
+to be concatenated. This is a bit of a dodgy style, but it does allow some
+flexibility. Note that this also implies the children of concatenating blocks
+who have the same name will also be concatenated. Be warned. 
+
+    doc text --> parse doc : marked
+    
+    var marked = this;
+    var place = evObj.pieces[0];
+    var top = evObj.scopes[place];
+
+    var blocks, top.blocks = {};
+    marked(data, place, gcd);
+
+    
+    //parse text
+
+    gcd.emit("doc parsed:"+place);
+
+## 
+
+
+    doc parse
 
 
 ## On action 
