@@ -188,7 +188,7 @@ the end of a block:
 * We set an action listener for compile time. When compile time is emitted,
   the action compiles the block. 
 * For directives, we add "directive compiled:place:path:command" events on the
-  .when for compile time. That is, we want directives to be deal with before
+  .when for compile time. That is, we want directives to be dealt with before
   the compile phase. 
 * For lone link headers with commands, we attach command listeners to the
   compile block. The sequence is "stitching done" followed by "compiling
@@ -207,19 +207,153 @@ who have the same name will also be concatenated. Be warned.
     var place = evObj.pieces[0];
     var top = evObj.scopes[place];
 
-    var blocks, top.blocks = {};
-    marked(data, place, gcd);
+    var blocks = top.blocks = {};
+    marked(data, place, blocks, gcd);
 
     
     //parse text
 
     gcd.emit("doc parsed:"+place);
 
-## 
+## marked
+
+So we use marked to parse the markdown. It cares about headers, code blocks,
+and links. Everything else is ignored. The idea is that we will have three
+functions, one for each of those cases.  They will all have access to a global
+(in this parsing phase) function that is closed over it in creating the
+functions.
+
+We keep track of current state with the current property of global. It is an
+object that becomes a block. It contains a heading and it contains an array of
+code blocks under raw.  During compilation, raw gets stitched and then it gets
+compiled if there are any commands acting on it. 
 
 
-    doc parse
+    function self (text, place, blocks, gcd) {
+        var renderer = new self.marked.Renderer();
+        var global = {
+            place : place,
+            blocks : blocks, 
+            gcd : gcd,
+            path : ['/']
+        };
 
+        global.current = blocks['/'] = {
+            path:['/'], 
+            raw: []
+        };
+
+        //load renderer codes
+        ['heading', 'code', 'html', 'link', 'paragraph'].forEach(
+            function (el) {
+                rendered[el] = self[el](global);
+            });
+            
+        _"irrelevant types"
+
+    }
+
+### Headers
+
+This creates a block and attaches relevant emit stuff. 
+
+We are tracking the paths and the level will correspond to its placement in
+the path. Note that this expects levels not to jump. If it does 
+ 
+    renderer.heading = function (text, level, raw) {
+        var path = global.path, 
+            current = global.current;
+
+        while (level <= path.length-1) {
+            path.pop();
+        }
+
+        
+        console.log(text);
+        current = blocks[text] = [];
+        return "";
+    };
+
+
+### Code blocks
+
+There should be a current block. If it has a code block already, concatenate. 
+
+    function (code, current) {
+        if ( current.hasOwnProperty("code") ) {
+            current.code += code;
+        } else {
+            current.code = code;
+        }
+    }
+
+### Links
+
+A link has complex behavior. It could be a new heading
+
+#### Irrelevant types
+
+I am not sure why these are here, but it will give plain text responses to
+highlighter stuff. I suppose it is for headers?  
+
+    var plain = function (text) {
+        return text;
+    }; 
+
+    ["strong", "em", "codespan", "del"].forEach(function (el) {
+        renderer[el] = plain;
+    });
+
+
+
+
+    var marked = require('marked');
+    var renderer = new marked.Renderer();
+    var fs = require('fs');
+    var blocks = {};
+
+    var current = blocks._initial = [];
+
+    renderer.code = function (code, language) {
+        current.push(code);
+    };
+
+    renderer.html = function (text) {
+        var pos;
+        if (text.slice(0,5) === "<pre>") {
+            pos = text.indexOf("</pre>");
+            console.log("pre", text.slice(5, pos));
+            current.push(text.slice(5, pos));
+        }
+    };
+
+    var clink; 
+    renderer.link = function (href, title, text) {
+        if (title) {
+            title = title.replace(/&quot;/g, "\"");
+        } else {
+            title = "";
+        }
+        clink = [href, title, text];
+        return text;
+    };
+
+
+
+
+    renderer.paragraph = function (text) {
+        if (text === clink[2]) {
+            console.log("switch: ", clink);
+        }
+        clink = [];
+        return "";
+    };
+
+    var file = fs.readFileSync("links.md","utf8");
+
+    marked(file, {renderer:renderer});
+
+    console.log(blocks);
 
 ## On action 
 
