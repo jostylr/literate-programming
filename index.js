@@ -52,7 +52,9 @@ var litpro = function me (md, options, callback) {
             
             gcd.scope(place, top);
             
-            gcd.emit("doc text:"+place);
+            top.compileTime = gcd.when("doc parsed:"+place, "compile time");
+            
+            gcd.emit("doc text:"+place, top.raw);
             
             // just fake
             var repeat = {
@@ -78,5 +80,62 @@ var litpro = function me (md, options, callback) {
 
     return false;
 };
+
+var lp = litpro.prototype;
+
+lp.marked = function self (text, place, blocks, gcd) {
+        var renderer = new self.marked.Renderer();
+        var global = {
+            place : place,
+            blocks : blocks, 
+            gcd : gcd,
+            path : ['']
+        };
+    
+        global.current = blocks[''] = {
+            path : ['']
+        };
+    
+        //load renderer codes
+        ['heading', 'code', 'html', 'link', 'paragraph'].forEach(
+            function (el) {
+                rendered[el] = self[el](global);
+            });
+            
+        var plain = function (text) {
+            return text;
+        }; 
+        
+        ["strong", "em", "codespan", "del"].forEach(function (el) {
+            renderer[el] = plain;
+        });
+        
+        var marked = require('marked');
+        var renderer = new marked.Renderer();
+        var fs = require('fs');
+        var blocks = {};
+        
+        var current = blocks._initial = [];
+        
+        renderer.code = function (code, language) {
+            current.push(code);
+        };
+        
+        renderer.paragraph = function (text) {
+            if (text === clink[2]) {
+                console.log("switch: ", clink);
+            }
+            clink = [];
+            return "";
+        };
+        
+        var file = fs.readFileSync("links.md","utf8");
+        
+        marked(file, {renderer:renderer});
+        
+        console.log(blocks);
+    
+    };
+lp.marked.marked = marked;
 
 module.exports = litpro;

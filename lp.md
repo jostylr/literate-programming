@@ -100,10 +100,11 @@ gcd is the event dispatcher.
         return false;
     };
 
-litpro.prototype = {
-_"prototype",
-init : _"initialization"
-};
+    var lp = litpro.prototype;
+
+    lp.marked = _"marked";
+    lp.marked.marked = marked;
+
 
     module.exports = litpro;
 
@@ -130,7 +131,11 @@ This is a courtesy. Since each argument type is distinct, we can rearrange at wi
         }
     });
 
-## New Doc 
+## Events
+
+This is where we document the major events and any generic actions to take. 
+
+### New Doc 
 
 When a new piece of text is added to be parsed, we want to create the doc
 block and then emit the doc text event.
@@ -154,9 +159,12 @@ block and then emit the doc text event.
     
     gcd.scope(place, top);
 
-    top.compileTime = gcd.when("doc parsed:"+place, "compile time");
+    top.whens = {
+        "marked done" :  gcd.when("marked done:"+place, "ready to stitch")
+    };
 
     gcd.emit("doc text:"+place, top.raw);
+
 
     // just fake
     var repeat = {
@@ -170,7 +178,9 @@ block and then emit the doc text event.
         "example/another block" : repeat
     });
 
-## Doc text
+    
+
+### Doc text
 
 Here we get the raw text and run it through marked. The whole parsing is done
 synchronously. 
@@ -208,12 +218,71 @@ who have the same name will also be concatenated. Be warned.
     var top = evObj.scopes[place];
 
     var blocks = top.blocks = {};
-    marked(data, place, blocks, gcd);
+    var res = marked(data, place, blocks, gcd);
 
+    gcd.emit("marked done:"+place, res);
     
-    //parse text
 
-    gcd.emit("doc parsed:"+place);
+
+### Marked done
+
+The event `"marked done:"+doc placement` is used for a .when which will emit
+the "ready to stitch" event. 
+
+    whens["marked done"] = gcd.when("marked done:" + place,
+        "ready to stitch:" + place);
+
+!!! this should be linked up to something!
+
+### Ready to stitch
+
+This tells us that the document has been parsed and any directives have had
+their initial execution handled. Now we need to go through all the blocks and
+stitch them together. 
+
+They have all been queued with .whens to emit "sitching"+scope
+
+Nothing needs to be done here. See header:new block and link switch:new child
+block
+
+### Stitching 
+
+The stitching event signifies it is time to do the subsitutions. This is also
+when we process the commands. 
+
+We get the block, parse the commands (if any) for post stitching, and then
+parse the block. Both will generally involve setting up .whens.  
+
+    stitching --> parse code : docs
+
+    var docs = this;
+    var pieces = evObj.pieces; 
+
+    _":get code block"
+
+    _"parse commands"
+
+    _"parse block"
+
+
+
+[get code block]()
+
+We take the pieces of the event and use them to grab the code block. block
+will be the whole block, code will be the code block. That is an array which
+should be joined together first.
+
+Stitching should be called as stitching:doc place:heading block:child  where
+the last scope is optional and is used for link blocks. 
+
+    var block = docs[pieces[1]][pieces[2]];
+    if (pieces[3]) {
+        block = block.children[pieces[2]];
+    }
+    code = block.codecode.join("\n");
+
+### command
+
 
 ## marked
 
@@ -235,12 +304,11 @@ compiled if there are any commands acting on it.
             place : place,
             blocks : blocks, 
             gcd : gcd,
-            path : ['/']
+            path : ['']
         };
 
-        global.current = blocks['/'] = {
-            path:['/'], 
-            raw: []
+        global.current = blocks[''] = {
+            path : ['']
         };
 
         //load renderer codes
@@ -251,6 +319,9 @@ compiled if there are any commands acting on it.
             
         _"irrelevant types"
 
+        return renderer(text);
+
+
     }
 
 ### Headers
@@ -258,40 +329,255 @@ compiled if there are any commands acting on it.
 This creates a block and attaches relevant emit stuff. 
 
 We are tracking the paths and the level will correspond to its placement in
-the path. Note that this expects levels not to jump. If it does 
- 
-    renderer.heading = function (text, level, raw) {
-        var path = global.path, 
-            current = global.current;
+the path. If it jumps levels, we just add some blank paths which will get
+joined with "/". 
 
-        while (level <= path.length-1) {
-            path.pop();
-        }
+Due to switch links, we need to check whether the current has a parent or
+not. If so, then we 
 
+    function (global) {
+        return function (text, level, raw) {
+            var gcd = global.gcd;
+            var current;
+            var path = global.path;
+            var place = global.place;
+
+            while ( level <= path.length ) {
+                path.pop();
+            }
+
+            while ( level > path.length + 1) {
+                path.push('');
+            }
+             
+            pathstr = path.join('/');
+    
+            blocks = global.blocks;
+            if ( blocks.hasOwnProperty(pathstr) ) {
+                global.curent = blocks[pathstr];
+            } else {
         
-        console.log(text);
-        current = blocks[text] = [];
-        return "";
-    };
+                current = global.current = {
+                    path : path.slice(),
+                    scope : pathstr;
+                };
+                global.blocks[pathstr] = global.current;
+
+                ":new block"
+          
+            } 
+            
+            return "";
+        };
+    }
+
+[new block]() 
+
+This contains all the event stuff needed when creating a new block. 
+
+So what do we need to do with a block? When compile time is ready, we first
+stitch the block together. Then we compile it, if there are any commands
+acting on it (mainly switch links, but directives might add commands too). 
+
+When the block is compiled, it should say so as we may have listeners
+waiting for it.  
+
+    var scope = ":" + place + ":" + 
+        pathstr;
+ 
+    gcd.when("ready to stitch:" + place, 
+        "stitching" + scope
+    );
+
+    global.docs[place].whens.done.add("compiled" + scope); 
+
+
+
+when stitched, emit "stitched:"+path, then a generic action of "compile" is
+executed resulting in executing any commands on it. The commands should be
+linked to each other. The order can be known and as one finishes, the next
+one fires (once). Most blocks probably have no commands and will simply emit
+"compiled:"+path when done. 
+
+The "compiled:"+path  event can be listened for .when's of sections that
+want to use the compiled version.  
+
 
 
 ### Code blocks
 
 There should be a current block. If it has a code block already, concatenate. 
 
-    function (code, current) {
-        if ( current.hasOwnProperty("code") ) {
-            current.code += code;
-        } else {
-            current.code = code;
-        }
+    function (global) {
+        return function (code) {
+            var current = global.current;
+
+            if ( current.hasOwnProperty("raw") ) {
+                current.raw.push(code);
+            } else {
+                current.raw = [code];
+            }
+
+            return "";
+
+        };
     }
 
 ### Links
 
-A link has complex behavior. It could be a new heading
+A link has complex behavior. It could be a new heading, a directive, or
+nothing at all. 
 
-#### Irrelevant types
+A link is first asked if it is a directive. If it is, then we do an emit
+saying so and return from the function. If not, then we store the link and
+check it later at the end of a paragraph to see if is a header link. 
+
+
+    function (global) {
+        return function (href, title, text) {
+            if (title) {
+                title = title.replace(/&quot;/g, "\"").trim();
+            } else {
+                title = "";
+            }
+            _":is directive"
+            global.clink = [href, title, text];
+            return text;
+        };
+    }
+
+[is directive]()
+
+A directive is a title that starts with `name:` where name is a recognized
+directive. Directives need to be known before marked parsing begins. 
+
+We store them in doc.directives which is prototyped on a standard set of
+directives. The execute directive command will load it. It might be possible
+to make this a bit more direct. 
+
+    var com = title.match(/^(\w)+\s*\:\s*(.*)$/);
+    if (com && global.gcd.docs.directives.hasOwnProperty(com[1]) {
+        gcd.emit("directive found:"+com[1]+":"+current.scope, com[2]);
+        return text;
+    }
+
+
+
+### HTML
+
+This is to deal with pre. The pre tag is for code content that should not be
+compiled. We will stick in a pre array on the current block. 
+
+    function(global) {
+
+        return function (text) { 
+            var current = global.current;
+            var pos;
+            if (text.slice(0,5) === "<pre>") {
+                pos = text.indexOf("</pre>");
+                if (current.pre) {
+                    current.pre.push(text.slice(5, pos));
+                } else {
+                    current.pre = [text.slice(5, pos)];
+                }
+            }
+        };
+
+    }
+
+### Paragraph
+
+The paragraph is just to find out whether a link was the whole paragraph or
+not. It is otherwise ignored.
+
+    function (global) {
+
+        return function (text) {
+            var parent;
+            var clink = global.clink;
+            if (text === clink[2]) {
+                _":switch link"
+            }
+            clink.splice(0,3);
+            return "";
+        };
+    
+    }
+
+[switch link]()
+
+What about just having children blocks for these? So we just 
+
+This switches the link. What this means is it creates a new block with a
+parent entry. The path is the same as the parent with `:link text` appended.
+That is, it is not another level. 
+
+clink is of the form `[href, title, text]`. For switching, the text is what
+the new path is. Title can be parsded for commands. href has no rule. 
+
+    
+    if ( global.current.hasOwnProperty("parent") ) {
+        parent = global.current.parent;
+    } else {
+        parent = global.current;
+    }
+    
+    if ( ! parent.hasOwnProperty("children") ) {
+       parent.children = {}; 
+    }
+
+    var text = clink[2];
+    if (children.hasOwnProperty(text) ) {
+        global.current = children[text];
+        if ( clink[1]) {
+            if ( global.current.hasOwnProperty("commands") ) { 
+                global.current.commands += "|" + clink[1];
+            } else {
+                global.current.commands = clink[1];
+            }
+    } else {
+
+        global.current = children[text] = {
+            parent : parent, 
+            name : clink[2]
+        }
+        if (clink[1]) {
+            global.current.commands = clink[1];
+        }
+
+        _":new child block"
+    
+    }
+
+[new child block]()
+
+This will be similar, but different than, the new block. Specifically, this
+assumes the parent block is stored in its scope and it uses the child scope
+to get itself from that parent scope. It also has commands that might need to
+be parsed and executed. 
+
+When the block is compiled, it should say so as we may have listeners
+waiting for it.  
+
+So the stitching 
+    
+    place = global.place;
+    var scope = ":" + place + ":" + 
+        pathstr + ":" + text;
+ 
+    gcd.when("ready to stitch:" + place, 
+        "stitch" + scope
+    );
+
+    global.docs[place].whens.done.add("compiled" + scope); 
+
+
+During stitching, the commands can be parsed as well. So when the command
+parsing is done and the stitching is done, then we execute the "ready to
+compile" event. After compiliing, the block emits "compiled" + scope 
+
+
+### Irrelevant types
 
 I am not sure why these are here, but it will give plain text responses to
 highlighter stuff. I suppose it is for headers?  
@@ -305,55 +591,69 @@ highlighter stuff. I suppose it is for headers?
     });
 
 
+## parse block
 
+We use str.indexOf("_", last)  where last was the end of the last stitch
+block to get to the next possible one. Once we get to the "_", then we start
+parsing by character. As we move along, we create an array of 
+[plain text, ,
+plain text, ,
+...
+]
+We have a series of commands to parse the code through and then we insert the
+result into the position of the array. When all done, we join them into a
+single code block. 
 
-    var marked = require('marked');
-    var renderer = new marked.Renderer();
-    var fs = require('fs');
-    var blocks = {};
-
-    var current = blocks._initial = [];
-
-    renderer.code = function (code, language) {
-        current.push(code);
-    };
-
-    renderer.html = function (text) {
-        var pos;
-        if (text.slice(0,5) === "<pre>") {
-            pos = text.indexOf("</pre>");
-            console.log("pre", text.slice(5, pos));
-            current.push(text.slice(5, pos));
-        }
-    };
-
-    var clink; 
-    renderer.link = function (href, title, text) {
-        if (title) {
-            title = title.replace(/&quot;/g, "\"");
-        } else {
-            title = "";
-        }
-        clink = [href, title, text];
-        return text;
-    };
+indenting is a default command and it uses the \n spaces to figure out indent
+of the plain text. 
 
 
 
+## parse commands
 
-    renderer.paragraph = function (text) {
-        if (text === clink[2]) {
-            console.log("switch: ", clink);
-        }
-        clink = [];
-        return "";
-    };
+This should process until each pipe. A sequence of events would be:
+"sitching done:scope"
+"ready for command:scope:c1:command"
+"command finished:scope:c1:command"
+"ready for command:scope:c2:command"
+...
+So each command has a .when of (command finishing:scope:cN:command, 
+ready for command:scope:c2.command)
 
-    var file = fs.readFileSync("links.md","utf8");
+They also all add the finished to the .when for "done".
 
-    marked(file, {renderer:renderer});
+This is a quick hack version. We 
 
-    console.log(blocks);
+    function (comstring, scope) {
+        
+        var coms = split("|");
+
+        coms.forEach(function (el, index) {
+            if 
+        });
+
+    }
+
+
+## todo 
+
+command argument syntax. process it character by character, emitting as
+something interesting happens. 
+
+to get the string in a stitching context, process it looking for end
+charcter(s) or backslashes. 
+
+Use : for link headings, use something else for the block hierarchy. I think
+that should be separate. 
+
+## path syntax
+
+name  look at highest matching level of that name
+./name  look at highest matching level of name within current as parent
+(path)/name  use path as starting point for search.
+(path):name  will look for a subsection of name within the specified path. 
+../name  will look for name within the ancestors, closest match works. 
+ab/cd  will first find ab and then look for cd as descendant.
 
 ## On action 
 
@@ -361,6 +661,11 @@ To smoothly integrate event-action workflows, we want to take a block, using
 the first line for an on and action pairing. 
 
 Then the rest of it will be in the function block of the action. 
+
+The syntax is  `event --> action : context` on the first line and the rest
+are to be used as the function body of the handler associated with the
+action. The handler has signature data, evObj. 
+
 
     function (code) {
         var lines = code.split("\n");
