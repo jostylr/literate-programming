@@ -13,7 +13,7 @@ This compiles markdown text into programs and other stuff.
 
 ## Simple example
 
-This will be a simple use case examplei
+This will be a simple use case example
 
 [emit based]()
 
@@ -48,6 +48,8 @@ This will be a simple use case examplei
         function (data) {
             console.log(data["another block"]);
         });
+
+
 
 
 ## Basic structure
@@ -130,6 +132,30 @@ This is a courtesy. Since each argument type is distinct, we can rearrange at wi
                 options = el;
         }
     });
+
+### Prototypes
+
+The idea is that the events should largely be setup to flow as is. But what
+responds to the events can vary. In particular, all the parsers should be
+setup to be prototyped on the litpro constructor, and then again on the docs,
+and then again for each doc. So that if one wants. This should also be true
+of directives and commands. So the entire behavior can change. 
+
+In particular, in developing, having very simple parsers that just get the
+most basic job done can be how we start. 
+
+* marked  This takes in a string, ..., and creates the various blocks and
+  events for further processing
+* stitch parser This takes in a code string and creates an array of code,
+  undefined. The undefined parts are to be replaced and then joined up into
+  the final bit of code. It also sets up the events to respond to the other
+  bits that are compiled. It calls the command parser. 
+* command parser. This takes in a string and parses it to extract the
+   command part. It might need to discover the end of the command so one can
+   pass in the terminal character (quote) if need be. 
+* eval part also needs to figure out where to end it. Since backticks in
+  javascript are rare, we could just go along until it encounters it. This
+  also deals with double backticks which are for async. 
 
 ## Events
 
@@ -281,7 +307,17 @@ the last scope is optional and is used for link blocks.
     }
     code = block.codecode.join("\n");
 
-### command
+### command execution
+
+This is where we deal with command execution. The data should be an object
+with the properties: original, current, and commands. The original is the
+original code block before the commands started executing. The 
+
+    ready for command --> command executing : commands
+
+    var commands = this;
+
+
 
 
 ## marked
