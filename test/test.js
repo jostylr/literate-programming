@@ -9,12 +9,13 @@ process.chdir('./test/');
 var outlist = fs.readFileSync('outlist.txt', {"encoding":"utf8"}).split('\n');
 var inlist = fs.readFileSync('inlist.txt', {"encoding":"utf8"}).split('\n');
 
-console.log(outlist.join("\n"));
+//console.log(outlist.join("\n"));
 
 var check = function () {
     process.chdir('..');
 
     outlist.forEach(function (el) {
+        if (! el) { return ;}
         var ex, fix;
         ex = fs.readFileSync('./examples/'+el, {"encoding":"utf8"});
         fix = fs.readFileSync('./fixed_examples/'+el, {"encoding":"utf8"});
@@ -22,7 +23,7 @@ var check = function () {
             console.log(diff.diffLines(ex, fix));
             throw el+" does not have equal contents";
         } else {
-            console.log(el);
+            console.log("ok", el);
         }
     });
 };
@@ -60,7 +61,7 @@ inlist.forEach(function (file) {
             throw err;
         }
 
-        console.log("FILE:\n-----\n", file, out);
+        //console.log("FILE:\n-----\n", file, out);
         count -=1;
         if (count < 1) {
             check();

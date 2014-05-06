@@ -7,3 +7,4 @@ sample.md
 simpletemp.md
 templating.md
 testpro.md
+fence.md

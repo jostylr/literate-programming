@@ -1,12 +1,17 @@
-# [literate-programming](# "version:0.7.5")
+# [literate-programming](# "version:0.8.0-pre")
 
-"This is like writing spaghetti code then shredding the code into little pieces, throwing those pieces into a blender, and finally painting the paste onto an essay. Tasty!"
+"This is like writing spaghetti code then shredding the code into little
+pieces, throwing those pieces into a blender, and finally painting the paste
+onto an essay. Tasty!"
 
-This file creates the literate program parser using the literate program parser (requires v 0.7+ to compile).  
+This file creates the literate program parser using the literate program
+parser (requires v 0.7+ to compile).  
 
-A literate program is a series of chunks of explanatory text and code blocks that get woven together. The compilation of a literate program can grunt, after a fashion, as it weaves. 
+A literate program is a series of chunks of explanatory text and code blocks
+that get woven together. The compilation of a literate program can grunt,
+after a fashion, as it weaves. 
 
-Note that this is version 0.7 branch. It introduces a variety of changes, but it also marks the deprecation of CAPS directives/switch types. A future version will remove them but allow them to be used as a plugin.
+Version 0.8 introduced code fences. 
 
 ## Directory structure
 
@@ -23,20 +28,32 @@ Note that this is version 0.7 branch. It introduces a variety of changes, but it
 
 ## How to write a literate program
 
-Use markdown. Each heading is a new heading block (hblock) and can be referenced by using `_"title"`. This substitution has more features, documented below. 
+Use markdown. Each heading is a new heading block (hblock) and can be
+referenced by using `_"title"`. This substitution has more features,
+documented below. 
 
-Within each hBlock, one can write free form markdown explanatory text, directives, code lines, or initiate a new code block (cblock). 
+Within each hBlock, one can write free form markdown explanatory text,
+directives, code lines, or initiate a new code block (cblock). 
 
-* hblock is initiated by number signs at the beginning of a line. seText style works too. See [markdown syntax](#http://daringfireball.net/projects/markdown/syntax).
-* Directive is initiated by a markdown link syntax with "dir:..." as part of the title. 
-* A new cblock is initiated with a non-directive link at the beginning of a line.
+* hblock is initiated by number signs at the beginning of a line. seText style
+  works too. See 
+  [markdown syntax](#http://daringfireball.net/projects/markdown/syntax).
+* Directive is initiated by a markdown link syntax with "dir:..." as part of
+  the title. 
+* A new cblock is initiated with a non-directive link at the beginning of a
+  line.
 * cblock lines are recognized by 4 spaces (not tabs). 
 
-To reference a cblock, the full precise name, a cblock name, is  "litprodoc :: hblock : cblock.ext"  where all but hblock is optional. Also hblock.ext grabs the unnamed extension relevant to it. 
+To reference a cblock, the full precise name, a cblock name, is  "litprodoc ::
+hblock : cblock.ext"  where all but hblock is optional. Also hblock.ext grabs
+the unnamed extension relevant to it. 
 
-To use a cblock, use the substitution command  _"cblock name | commands ..."  where commands can do stuff on the code text and each pipes into the next. 
+To use a cblock, use the substitution command  _"cblock name | commands ..."
+where commands can do stuff on the code text and each pipes into the next. 
 
-Examples:  _"Great:jack|marked",  _"Great:.md" or "Great.md",  _"Great|marked", _"Great:jack.md",  ":jack"  will load the internal block named jack
+Examples:  _"Great:jack|marked",  _"Great:.md" or "Great.md",
+_"Great|marked", _"Great:jack.md",  ":jack"  will load the internal block
+named jack
 
 The save directive is used to save a file:
 
@@ -46,31 +63,52 @@ If the heading name is missing, it uses the current cblock.
 
 ### Advice
 
-1. Setup an hblock as a body of code, such as a function. Use the subcblocks to break that body into manageable chunks. Use new hblocks for new functions or for very important behavior. 
-2. Write function blocks without ending (semicolon, comma) punctuation so that they can be inserted in multiple ways. Put the punctuation after the substitution quote. 
-3. Use this for getting a good overview of flow control. Strip out the complicated, but easily identifiable chunks and focus on how the code flows. 
+1. Setup an hblock as a body of code, such as a function. Use the subcblocks
+   to break that body into manageable chunks. Use new hblocks for new
+   functions or for very important behavior. 
+2. Write function blocks without ending (semicolon, comma) punctuation so that
+   they can be inserted in multiple ways. Put the punctuation after the
+   substitution quote. 
+3. Use this for getting a good overview of flow control. Strip out the
+   complicated, but easily identifiable chunks and focus on how the code
+   flows. 
 
 ### Runnable Code
 
-You can run JavaScript code while compiling in at least two ways. One is by  _&#96;some code&#96; on a single line. The other way is to have a cblock and reference it with a pipe command that evals it, such as the `eval` command
+You can run JavaScript code while compiling in at least two ways. One is by
+_&#96;some code&#96; on a single line. The other way is to have a cblock and
+reference it with a pipe command that evals it, such as the `eval` command
 
-The eval output (last evaluated value) is what is placed in the code to replace the backtick call.
+The eval output (last evaluated value) is what is placed in the code to
+replace the backtick call.
 
 
 ### Multi-level substitutions
 
-There may be need to run substitutions after a first pass or more. For example, markdown segments could have snippets that need to be inserted after the markdown parser has run. See [logs.md](#https://github.com/jostylr/literate-programming/blob/master/examples/logs.md) for an example. 
+There may be need to run substitutions after a first pass or more. For
+example, markdown segments could have snippets that need to be inserted after
+the markdown parser has run. See
+[logs.md](#https://github.com/jostylr/literate-programming/blob/master/examples/logs.md)
+for an example. 
 
 
 ## The lp module
 
-This module takes in a literate program as a string of markdown and an options object. 
+This module takes in a literate program as a string of markdown and an options
+object. 
 
-It takes the string and makes a document that has the markdown parsed out into various compiled blocks. 
+It takes the string and makes a document that has the markdown parsed out into
+various compiled blocks. 
 
-1. The parsing is down line-by-line. lineparser parses each line, adding the lines to each relevant block or creating new blocks or even retrieving/compiling other literate programs. 
-2. After all literate programs have been loaded and parsed, then the compile phase starts. This is asynchronous and all the cblocks are compiled into the cblock property compiled. If a block is compiled, it has isCompiled set to true. 
-3. postCompile will send those compiled blocks into files as directed by the directives. 
+1. The parsing is down line-by-line. lineparser parses each line, adding the
+   lines to each relevant block or creating new blocks or even
+   retrieving/compiling other literate programs. 
+2. After all literate programs have been loaded and parsed, then the compile
+   phase starts. This is asynchronous and all the cblocks are compiled into
+   the cblock property compiled. If a block is compiled, it has isCompiled set
+   to true. 
+3. postCompile will send those compiled blocks into files as directed by the
+   directives. 
 
 
 [](# "js")
@@ -96,34 +134,52 @@ It takes the string and makes a document that has the markdown parsed out into v
     module.exports.Doc = Doc;
 
 
-The repo value is a repository for files that are loaded up, both literate programs and plugins. The same repo will be seen in all instances of Doc; this prevents multiple uploading and parsing of the same file. I see no reason for not having it globally accessible. 
+The repo value is a repository for files that are loaded up, both literate
+programs and plugins. The same repo will be seen in all instances of Doc; this
+prevents multiple uploading and parsing of the same file. I see no reason for
+not having it globally accessible. 
 
 
 
 ## Document parsing
 
-Each literate program gets its own document container. It starts off life with lineparser. 
+Each literate program gets its own document container. It starts off life with
+lineparser. 
 
 Each line is of one of the following basic types:
 
-1. Code line. This is a line indented with (possibly tabs followed by) 4 spaces. Stored in current cblock.
-1. Header. This signifies the start of a new hblock and a new cblock. If it has a link in it, it will also see the directive link parser.
-1. DEPRECATED Directive/Type switch. If a line starts with all caps or a ., then it has the potential to be a directive (such as FILE command)  or to create/switch the code block to a new type or name. What happens is very dependent on what is found there. The directive/switch can also be in a line syntax. It should be at the start of a line.  
+1. Code line. This is a line indented with (possibly tabs followed by) 4
+   spaces. Stored in current cblock.
+1. Header. This signifies the start of a new hblock and a new cblock. If it
+   has a link in it, it will also see the directive link parser.
+1. DEPRECATED Directive/Type switch. If a line starts with all caps or a .,
+   then it has the potential to be a directive (such as FILE command)  or to
+   create/switch the code block to a new type or name. What happens is very
+   dependent on what is found there. The directive/switch can also be in a
+   line syntax. It should be at the start of a line.  
 1. Directive link syntax. 
 1. Switch type link syntax.
-1. Plain text. This just is for reading and gets put into a plain text block without it being useful, presumably.
+1. Plain text. This just is for reading and gets put into a plain text block
+   without it being useful, presumably.
 
-All lines in a block do get put into storage. This allows for an hblock to be used in a raw output form.
+All lines in a block do get put into storage. This allows for an hblock to be
+used in a raw output form.
 
 ### Parse lines
 
-This is the function that takes in a literate program, splits it into lines, and parses them, returning a structure for compilation. 
+This is the function that takes in a literate program, splits it into lines,
+and parses them, returning a structure for compilation. 
 
-The Document consists mostly of blocks constructed by the Hblock constructor. The doc.processors is where the magic happens. 
+The Document consists mostly of blocks constructed by the Hblock constructor.
+The doc.processors is where the magic happens. 
 
-This is largely synchronous. The directives can create hooks that prevent the compiling stage from beginning. The main cause of this is the load directive. Those files will be loaded asynchronously and will register themselves as loading and prevent compilation until they are loaded. 
+This is largely synchronous. The directives can create hooks that prevent the
+compiling stage from beginning. The main cause of this is the load directive.
+Those files will be loaded asynchronously and will register themselves as
+loading and prevent compilation until they are loaded. 
 
-Because the require directive adds in functionality that might be used in the parsing phase, it is synchronous and will block until it is fully loaded. 
+Because the require directive adds in functionality that might be used in the
+parsing phase, it is synchronous and will block until it is fully loaded. 
 
 
 [](# "js")
@@ -142,6 +198,7 @@ Because the require directive adds in functionality that might be used in the pa
                     break;
                 }
             }
+            _":next processor"
             doc.hcur.full.push(original);
         }
 
@@ -152,11 +209,26 @@ Because the require directive adds in functionality that might be used in the pa
         return doc;
     }
 
-Each processor, corresponding to the types mentioned above, will check to see if the line matches its type. If so, they do their default action, return true, the line is stored in the full block for posterity, and the other processors are skipped. The exception dre directive links that modify the line and allow further processing.
+Each processor, corresponding to the types mentioned above, will check to see
+if the line matches its type. If so, they do their default action, return
+true, the line is stored in the full block for posterity, and the other
+processors are skipped. The exception dre directive links that modify the line
+and allow further processing.
+
+[next processor]()
+
+This is to allow the processors to finish processing through (mainly for plain
+text adding).
+
+    if (doc.nextProcessors) {
+        doc.processors = doc.nextProcessors;
+        doc.nextProcessors = null;
+    }
 
 [Check for compile time](# "js")
 
-Is it ready to be compiled yet? Mainly this will be waiting for load directives to finish.
+Is it ready to be compiled yet? Mainly this will be waiting for load
+directives to finish.
 
     if (Object.keys( doc.loading ).length === 0) {
        doc.compile();
@@ -164,15 +236,19 @@ Is it ready to be compiled yet? Mainly this will be waiting for load directives 
 
 ### Default processors
 
-The processors array, a property of the Document, is a sequence of parsers. They should return true if processing is done for the line. The argument is always the current line and the doc structure. 
+The processors array, a property of the Document, is a sequence of parsers.
+They should return true if processing is done for the line. The argument is
+always the current line and the doc structure. 
 
-You can mutate the processors array to have different behavior (presumably a directive). You can use document.defaultProcessors to get the original array. 
+You can mutate the processors array to have different behavior (presumably a
+directive). You can use document.defaultProcessors to get the original array. 
 
 `Directives parser caps` will be removed in the future.
 
 [](# "js")
 
     [ 
+    _"Code fencing parser",
     _"Code parser",
     _"Directives parser link", 
     _"Head parser", 
@@ -215,7 +291,10 @@ This also means that if one wants a code block that is not to be compiled, you c
     }
 
 
-Added the following clause to add empty lines to the code. Stuff before and after the code block is probably trimmed, but in between extra lines could be added. This was to enable blank lines being there which is important for markdown and other markup languages. 
+Added the following clause to add empty lines to the code. Stuff before and
+after the code block is probably trimmed, but in between extra lines could be
+added. This was to enable blank lines being there which is important for
+markdown and other markup languages. 
 
 [Add empty line](# "js")  
 
@@ -224,18 +303,84 @@ Added the following clause to add empty lines to the code. Stuff before and afte
         hcur.cblocks[hcur.cname].lines.push(line);
     }
 
+### Code fencing parser
+
+If we encounter code fencing, then we switch the processor to simply chuck all
+lines into the code block until another code fencing is encountered. 
+ 
+We return true to avoid matching anything else. We run the plain parser
+directly.
+ 
+[](# "js")
+
+    function (line, doc) {
+     var hcur = doc.hcur;
+     var fp = doc.fenceProcessors;
+
+      var reg = /^(\s*)```/;
+      var match = reg.exec(line);
+      if (match) {
+          doc.nextProcessors = fp;
+          fp.ws = match[1].length;
+          fp.codeblock = hcur.cblocks[hcur.cname].lines;
+          doc.lastLineType = "code fence";
+          fp[1](line, doc); // feed plain processor
+          return true;
+      } else {
+        return false;
+      }
+    }
+
+[fence processors]()
+
+This processes in code fence mode. It either adds the line to the current code
+block or switches out of the mode. 
+
+We define it so that the code fence slices off the lines below it. That is, if
+the code fence is indented two spaces, then each code line below it is sliced
+after that fence.
+
+    [ function (line, doc) {
+        var me = doc.fenceProcessors;
+        var reg = /^(\s*)```/; 
+        var match = reg.exec(line);
+        if (match) {
+            doc.nextProcessors = [].concat(doc.defaultProcessors);
+            doc.lastLineType = "code fence end";
+        } else {
+            me.codeblock.push(line.slice(me.ws));
+            doc.lastLineType = "code";
+        }
+        return false; 
+     }, 
+     _"plain parser"
+    ]
+
+
+
 
 ### Directives parser link
 
-A directive can appear anywhere. This is a markdown link text that matches `[name](link "dire: options")`
+A directive can appear anywhere. This is a markdown link text that matches
+`[name](link "dire: options")`
 
-where dire should be replaced with a valid directive. If you have a link title text with a colon, but the presumed directive does not match, then it is ignored except for a warning. The warning will be emitted if verbose is set. 
+where dire should be replaced with a valid directive. If you have a link title
+text with a colon, but the presumed directive does not match, then it is
+ignored except for a warning. The warning will be emitted if verbose is set. 
 
-Double quotes need to be used for the title directive text. Single quotes can be used freely as far as lit pro is concerned. 
+Double quotes need to be used for the title directive text. Single quotes can
+be used freely as far as lit pro is concerned. 
 
-The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
+The function takes in a line and the doc structure. It either returns true if
+a successful directive match/execution occurs or it returns false. The
+directives object is an object of functions whose keys are the directive names
+and whose arguments are the rest of the line (if anything) and the doc object
+that contains the processors and current block structure. 
 
-Directives may appear multiple times on a line (not recommended) and it may be on lines that have different roles. If a directive is matched, then the name is substituted in for the link. A leading backtick in front of the link syntax will prevent a match from occurring. 
+Directives may appear multiple times on a line (not recommended) and it may be
+on lines that have different roles. If a directive is matched, then the name
+is substituted in for the link. A leading backtick in front of the link syntax
+will prevent a match from occurring. 
 
 This function always returns false so that further processing can occur. 
 
@@ -249,7 +394,8 @@ This function always returns false so that further processing can occur.
 
 [match function](# "js")
 
-First check whether a backtick is present. After prepping, check to see if there is a matching directive. 
+First check whether a backtick is present. After prepping, check to see if
+there is a matching directive. 
 
         function (match, name, link, dir, options, offset, str) {
             if (str[offset-1] === "`") {
@@ -272,11 +418,14 @@ First check whether a backtick is present. After prepping, check to see if there
 
 ### Head parser
 
-We recognize a heading by the start of a line having '#'. We ignore any '#' found at the end of the line (this is the replace at the end of heading). 
+We recognize a heading by the start of a line having '#'. We ignore any '#'
+found at the end of the line (this is the replace at the end of heading). 
 
-We will also recognize a seText underline heading by the combination of a line consisting of only '=' or '-' that is preceded by a line of type plain text.
+We will also recognize a seText underline heading by the combination of a line
+consisting of only '=' or '-' that is preceded by a line of type plain text.
 
-For new global blocks, we use the heading string as the block name. We lower case the whole name to avoid capitalization issues (it was really annoying!)
+For new global blocks, we use the heading string as the block name. We lower
+case the whole name to avoid capitalization issues (it was really annoying!)
 
 [](# "js")
 
@@ -315,7 +464,9 @@ For new global blocks, we use the heading string as the block name. We lower cas
 
 [Repeated heading block](# "js") 
 
-If a heading block is repeated, then we increment it to make it different; this is the style used by github for markdown documents. One should not have repeated blocks, but if one wants to, then...
+If a heading block is repeated, then we increment it to make it different;
+this is the style used by github for markdown documents. One should not have
+repeated blocks, but if one wants to, then...
 
 
     var count;
@@ -331,7 +482,8 @@ If a heading block is repeated, then we increment it to make it different; this 
 
 [Deal with old hblock](# "js") 
 
-We need to run any waiting functions on the hblock and cblock. Then we remove empty code blocks. 
+We need to run any waiting functions on the hblock and cblock. Then we remove
+empty code blocks. 
 
     var cname;
     var waiting, f;
@@ -347,7 +499,10 @@ We need to run any waiting functions on the hblock and cblock. Then we remove em
 
 [remove empty cblocks](# "js")
 
-This suffered from having empty lines put into the code block. This may be rather inefficient, but empty lines seemed to creep in. So we join them all and if it is just whitespace, then we delete the codeblock. Sorry to all the [whitespace](http://compsoc.dur.ac.uk/whitespace/) languages!
+This suffered from having empty lines put into the code block. This may be
+rather inefficient, but empty lines seemed to creep in. So we join them all
+and if it is just whitespace, then we delete the codeblock. Sorry to all the
+[whitespace](http://compsoc.dur.ac.uk/whitespace/) languages!
 
     for (cname in oldh.cblocks) {
         if (oldh.cblocks[cname].lines.join("").match(/^\s*$/) ){
@@ -358,7 +513,9 @@ This suffered from having empty lines put into the code block. This may be rathe
 
 [run hblock waiting](# "js") 
 
-It is possible via the define directive (and maybe others in the future) to run stuff when the hblock is switched. We look for a waiting array and then call the given functions in the context of the doc. 
+It is possible via the define directive (and maybe others in the future) to
+run stuff when the hblock is switched. We look for a waiting array and then
+call the given functions in the context of the doc. 
 
     if (oldh.waiting) {
         waiting = oldh.waiting;
@@ -377,13 +534,21 @@ It is possible via the define directive (and maybe others in the future) to run 
 
 DEPRECATED.  This will be moved into an option to activate. 
 
-A directive will be recognized as, at the start of a line, as all caps and a matching word. This may conflict with some uses, but it seems unlikely since if there is no matching directive, then the original is left untouched. 
+A directive will be recognized as, at the start of a line, as all caps and a
+matching word. This may conflict with some uses, but it seems unlikely since
+if there is no matching directive, then the original is left untouched. 
 
-A space in front would defeat the regex as well. Periods are also allowed. At least two capital letters are required.
+A space in front would defeat the regex as well. Periods are also allowed. At
+least two capital letters are required.
 
-A directive could also be a code block create/switch command. This is either a recognized type or it should start with a period. 
+A directive could also be a code block create/switch command. This is either a
+recognized type or it should start with a period. 
 
-The function takes in a line and the doc structure. It either returns true if a successful directive match/execution occurs or it returns false. The directives object is an object of functions whose keys are the directive names and whose arguments are the rest of the line (if anything) and the doc object that contains the processors and current block structure. 
+The function takes in a line and the doc structure. It either returns true if
+a successful directive match/execution occurs or it returns false. The
+directives object is an object of functions whose keys are the directive names
+and whose arguments are the rest of the line (if anything) and the doc object
+that contains the processors and current block structure. 
 
 
 [](# "js")
@@ -415,7 +580,8 @@ The function takes in a line and the doc structure. It either returns true if a 
       }
     }
 
-The starting period for a type change trigger may or may not be followed by capitals. Any . starting a line will be interpreted as a type switch. 
+The starting period for a type change trigger may or may not be followed by
+capitals. Any . starting a line will be interpreted as a type switch. 
 
 
 [period triggers match](# "js") 
@@ -432,11 +598,18 @@ The starting period for a type change trigger may or may not be followed by capi
 ### Switch parser link
 
 
-A switch to a new code block will be recognized as, at the start of a line, a markdown link syntax: `[cname](whatever "ext | ..."). In the extremely unlikely event that you need to avoid matching, put a space or something at the start of the line if your link must be at the beginning of a line.  As long as a link is at the beginning of the line with nothing else other than spaces, it will cause a switch of the cblock. 
+A switch to a new code block will be recognized as, at the start of a line, a
+markdown link syntax: `[cname](whatever "ext | ..."). In the extremely
+unlikely event that you need to avoid matching, put a space or something at
+the start of the line if your link must be at the beginning of a line.  As
+long as a link is at the beginning of the line with nothing else other than
+spaces, it will cause a switch of the cblock. 
 
-Double quotes need to be used for the title directive text. Single quotes can be used freely within the double quotes as far as lit pro is concerned. 
+Double quotes need to be used for the title directive text. Single quotes can
+be used freely within the double quotes as far as lit pro is concerned. 
 
-The function takes in a line and the doc structure. It either returns true if a successful switch  match/execution occurs or it returns false. 
+The function takes in a line and the doc structure. It either returns true if
+a successful switch  match/execution occurs or it returns false. 
 
 [](# "js")
 
@@ -464,11 +637,18 @@ The function takes in a line and the doc structure. It either returns true if a 
 
 ### Switch type 
 
-Here is the function for switching the type of code block one is parsing. The syntax is the type (alread parsed and passed in) and then name of the block followed by pipes for the different functions to act on it. Even without a code name, the commands are initiated with a pipe. Examples:  `[for running](# "js  | jshint") ` or  `[](# "JS | jshint")` or  `[](# "| jshint")` or even just `[](#)`
+Here is the function for switching the type of code block one is parsing. The
+syntax is the type (alread parsed and passed in) and then name of the block
+followed by pipes for the different functions to act on it. Even without a
+code name, the commands are initiated with a pipe. Examples:  `[for running](#
+"js  | jshint") ` or  `[](# "JS | jshint")` or  `[](# "| jshint")` or even
+just `[](#)`
 
-Because of the change to link syntax and how it was coded before, this function has two separate use cases, distinguished by number of arguments.
+Because of the change to link syntax and how it was coded before, this
+function has two separate use cases, distinguished by number of arguments.
 
-If a cblock with that name already exists, it will switch to it and then add the lines of code. If not, it creates a new one with that name. 
+If a cblock with that name already exists, it will switch to it and then add
+the lines of code. If not, it creates a new one with that name. 
 
 [main](# "js") 
 
@@ -520,7 +700,11 @@ If a cblock with that name already exists, it will switch to it and then add the
 
 [Parse options](# "js") 
 
-And now we work on getting the options to parse. The syntax is an optional number to indicate when to process (0 for pre, 1+ for during, nothing for post), followed by whatever until parentheses, followed by optional arguments separated by commas. Examples: `0 marked (great, file)` and `marked` and `marked awesome(great)`
+And now we work on getting the options to parse. The syntax is an optional
+number to indicate when to process (0 for pre, 1+ for during, nothing for
+post), followed by whatever until parentheses, followed by optional arguments
+separated by commas. Examples: `0 marked (great, file)` and `marked` and
+`marked awesome(great)`
 
         
         var funname, ind, funargs, match, funreg = /^(\d*)\s*([^(]+)(?:\(([^)]*)\))?$/;
@@ -546,7 +730,11 @@ And now we work on getting the options to parse. The syntax is an optional numbe
 
 [Add command](# "js") 
 
-The setup is that the code array has a property named commands which is an associative array of arrays. Each array contains a function and an arguments array that will be used to work on the code (see Full Substition). The doc.commands object has the list of active functions that can be named and used. 
+The setup is that the code array has a property named commands which is an
+associative array of arrays. Each array contains a function and an arguments
+array that will be used to work on the code (see Full Substition). The
+doc.commands object has the list of active functions that can be named and
+used. 
 
             if (match[1]) {
                 ind = parseInt(match[1], 10);
@@ -566,9 +754,11 @@ The setup is that the code array has a property named commands which is an assoc
 
 [run cblock waiting](# "js") 
 
-We need to see if there are any functions hanging around to execute when the cblock switches. 
+We need to see if there are any functions hanging around to execute when the
+cblock switches. 
 
-We use the swtichWaiting identifier instead of waiting as the waiting array is for the functions waiting for compilation -- very important. 
+We use the swtichWaiting identifier instead of waiting as the waiting array is
+for the functions waiting for compilation -- very important. 
 
     
     if (cblock && cblock.hasOwnProperty("switchWaiting")) {
@@ -670,6 +860,7 @@ We attach a lot of functionality to a doc via the prototype.
     Doc.prototype.fullSub = _"The full substitution";
 
     Doc.prototype.defaultProcessors = _"Default processors";
+    Doc.prototype.fenceProcessors = _"code fencing parser:fence processors";
 
     Doc.prototype.switchType = _"Switch type:main";
 
@@ -3224,17 +3415,12 @@ The requisite npm package file.
       },
       "dependencies":{
         "literate-programming-standard": "~0.2.4",
-        "commander": "~1.1.1",
-        "marked": "~0.3.1",
-        "event-when": "~0.5.1"
+        "commander": "~1.1.1"
       },
       "devDependencies" : {
-        "literate-programming" : "~0.7.5",
         "diff" : "~1.0.7"
       },
       "scripts" : { 
-        "prepublish" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
-        "compile" : "node ./node_modules/literate-programming/bin/literate-programming.js lp.md",
         "test" : "node ./test/test.js"
       },
       "keywords": ["literate programming"],
@@ -3287,6 +3473,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 
 ## Change Log
+
+v.0.7.6 Added code fencing by doing a simple switch on the parsing. 
 
 v.0.7.5 fixing what was done in 0.7.4 to actually work. A little too hasty.
 

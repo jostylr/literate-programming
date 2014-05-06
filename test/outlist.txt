@@ -3,6 +3,7 @@ cinnamon.html
 cinnamon.js
 cinnamon_emb.js
 count.js
+fence.txt
 first.html
 fizzbuzz.js
 hats.js
