@@ -99,7 +99,7 @@ gcd is the event dispatcher.
             gcd.emit("new doc", [md, callback]);
         }
 
-        return false;
+        return this;
     };
 
     var lp = litpro.prototype;
@@ -138,7 +138,8 @@ This is a courtesy. Since each argument type is distinct, we can rearrange at wi
 The idea is that the events should largely be setup to flow as is. But what
 responds to the events can vary. In particular, all the parsers should be
 setup to be prototyped on the litpro constructor, and then again on the docs,
-and then again for each doc. So that if one wants. This should also be true
+and then again for each doc. So that if one wants to change them, then one
+can. This should also be true
 of directives and commands. So the entire behavior can change. 
 
 In particular, in developing, having very simple parsers that just get the
@@ -149,7 +150,9 @@ most basic job done can be how we start.
 * stitch parser This takes in a code string and creates an array of code,
   undefined. The undefined parts are to be replaced and then joined up into
   the final bit of code. It also sets up the events to respond to the other
-  bits that are compiled. It calls the command parser. 
+  bits that are compiled. It calls the command parser.
+* path parser. This takes the path part of a substitution string and creates
+  an absolute path. 
 * command parser. This takes in a string and parses it to extract the
    command part. It might need to discover the end of the command so one can
    pass in the terminal character (quote) if need be. 
