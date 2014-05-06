@@ -7,3 +7,4 @@ fixed_examples
 temp
 node_modules
 *.md
+mon.sh
