@@ -3300,7 +3300,11 @@ syntaxes:
 2. ``_`javascript code` ``  One can execute arbitrary javascript code within
    the backticks, but the parser limits what can be in there to one line. 
 3. `MACROS` all caps are for constants or macro functions that insert their
-   output in place of the caps. 
+   output in place of the caps. Note that if you have `MACRO(_"something")`
+   then the current version does not parse `_"something"` as a code block.
+   This will hopefully get fixed along with being able to use code blocks in
+   commands. This applies even if `MACRO` does not match so it is a bug, not a
+   feature :(  To fix this, put a space between `MACRO` and the parenthesis. 
 
 For both 1 and 3, if there is no match, then the text is unchanged. One can
 have more than one underscore for 1 and 2; this delays the substitution until

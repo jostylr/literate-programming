@@ -19,11 +19,11 @@ This is for setting up the rss feeds. So we create two need feeds, one for new i
     });
 
 
-    var rssUpdate = new RSS({
+    var rssUpdate = new RSS ({
+        _"common"
         title: "Mord Update",
         description : "I am Mord. I serve my lord Kord with my greatsword. Misspeak I do.",
-        feed_url : "http://mord.jostylr.com/rssupdate.xml",
-        _"common"
+        feed_url : "http://mord.jostylr.com/rssupdate.xml", 
     });
 
     var news, udates;

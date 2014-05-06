@@ -14,11 +14,19 @@ var feedNew = new RSS({
     
 });
 
-var rssUpdate = new RSS({
+var rssUpdate = new RSS ({
+    site_url : "http://mord.jostylr.com",
+    author : "Mord Drom of Drok",
+    managingEditor : "Janord Drom",
+    webMaster : "James Taylor",
+    language : "en",
+    categories : ["fantasy"],
+    pubDate : now.toString(),
+    ttl: '1440',
+    copyright : now.getFullYear() + " James Taylor"
     title: "Mord Update",
     description : "I am Mord. I serve my lord Kord with my greatsword. Misspeak I do.",
-    feed_url : "http://mord.jostylr.com/rssupdate.xml",
-    _"common"
+    feed_url : "http://mord.jostylr.com/rssupdate.xml", 
 });
 
 var news, udates;
