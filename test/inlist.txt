@@ -8,3 +8,4 @@ simpletemp.md
 templating.md
 testpro.md
 fence.md
+jstidy.md

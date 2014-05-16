@@ -11,3 +11,4 @@ logs.htm
 logs.html
 out.txt
 testpro.js
+jstidytest.js

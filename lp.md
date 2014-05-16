@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.8.0")
+# [literate-programming](# "version:0.8.1")
 
 "This is like writing spaghetti code then shredding the code into little
 pieces, throwing those pieces into a blender, and finally painting the paste
@@ -3512,7 +3512,7 @@ The requisite npm package file.
         "node": ">0.10"
       },
       "dependencies":{
-        "literate-programming-standard": "~0.2.4",
+        "literate-programming-standard": "^0.2.5",
         "commander": "~1.1.1"
       },
       "devDependencies" : {
