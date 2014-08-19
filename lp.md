@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.8.1")
+# [literate-programming](# "version:0.8.2")
 
 "This is like writing spaghetti code then shredding the code into little
 pieces, throwing those pieces into a blender, and finally painting the paste

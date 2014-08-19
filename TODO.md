@@ -1,3 +1,24 @@
+Eliminate both macros and eval code by doing `_"|command..."`. So this has no
+code block feeding in (empty string into that bit of command part), but
+otherwise works like all the other filter stuff. Just a single execute
+context. For evaling, include an eval command. 
+
+The quote-code block takes care of including code that does not get compiled.
+Want to include tabs for having code blocks. Also want to allow lists to be
+fine. Also, probably haven't implemented hanging indented paragraphs. 
+
+So need modes for the parser: If first line of block is not indented code or
+code fence,
+then no code block parsed until next \n\n block. But we do need to scan for
+directives. We also want to keep track of list mode. Be aware of different
+item markers. If in list mode, code should be indented 8 spaces. And we can
+have sublists (just keeping adding levels).
+
+Need a way for commands to pause the execution of that pathway. Then async
+should be doable. 
+
+---
+
 Need to document every single syntax bit. Eliminating macros in favor of
 javascript code that has access to a "global" namespace. So instead of
 "http://geogebra.org"` or `[geogebra](# "define: http://geogebra.org")`  which

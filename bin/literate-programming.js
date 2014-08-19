@@ -8,7 +8,7 @@ var Doc = require('../lib/literate-programming').Doc;
 var path = require('path');
 
 program
-    .version('0.8.1')
+    .version('0.8.2')
     .usage('[options] <file> <outdir> <arg1> ...')
     .option('-o --output <root>', 'Root directory for output')
     .option('-i --input <root>',  'Root directory for input')
