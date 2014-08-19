@@ -3530,7 +3530,7 @@ The requisite npm package file.
       ],
       "main": "lib/literate-programming.js",
       "engines": {
-        "node": ">0.10"
+        "node": ">=0.10"
       },
       "dependencies":{
         "literate-programming-standard": "^0.2.5",
