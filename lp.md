@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.8.2")
+# [literate-programming](# "version:0.8.3")
 
 "This is like writing spaghetti code then shredding the code into little
 pieces, throwing those pieces into a blender, and finally painting the paste
@@ -255,7 +255,7 @@ directive). You can use document.defaultProcessors to get the original array.
     _"Code parser",
     _"Directives parser link", 
     _"Head parser", 
-    _"Directives parser caps", 
+_"Directives parser caps", 
     _"Switch parser link",
     _"Plain parser" 
     ]
