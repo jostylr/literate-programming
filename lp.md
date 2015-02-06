@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.8.3")
+# [literate-programming](# "version:0.8.4")
 
 "This is like writing spaghetti code then shredding the code into little
 pieces, throwing those pieces into a blender, and finally painting the paste
@@ -127,6 +127,9 @@ various compiled blocks.
 
 
     var HBlock, Doc, repo = {plugins : {}, litpro :{} }; 
+    var load = {};
+    var loaded = {};
+    var toCompile = [];
 
 
 
@@ -209,6 +212,7 @@ parsing phase, it is synchronous and will block until it is fully loaded.
 
         _":Check for compile time"
 
+
         return doc;
     }
 
@@ -233,8 +237,14 @@ text adding).
 Is it ready to be compiled yet? Mainly this will be waiting for load
 directives to finish.
 
+The loading are all the same object so this is a global pause until all files
+are loaded. Then the global toCompile runs through and does its thing. 
+
     if (Object.keys( doc.loading ).length === 0) {
-       doc.compile();
+       n = doc.toCompile.length;
+       for (i = 0; i < n; i += 1) {
+            doc.toCompile[i].compile();
+       }
     }
 
 ### Default processors
@@ -1028,9 +1038,13 @@ We need some storage structures for the async aspect of LOADing and compiling.
 
 The loading object will keep track of which files are loading and we will delete them when the file is loaded. When all are deleted, then the doc is ready to be compiled. 
 
-        this.loading = {}; // for the LOAD and compile
-        this.loaded = {}; // can reference this for external litpro by names. 
+Going to see what happens if loading and loaded are global to the module. 
+
+        this.loading =  load; // for the LOAD and compile
+        this.loaded =  loaded; // can reference this for external litpro by names. 
         this.waiting = {}; // place to put blocks waiting for compiling
+        this.toCompile = toCompile;
+        toCompile.unshift(this);
 
 
 #### Doc commander
@@ -1787,6 +1801,7 @@ Since question mark template cannot be detected in gotcblock.
 
     _":parse fullname"
 
+
     _":get relevant hblock"
 
     gotcblock = doc.getcblock(reqhblock, names.cname); 
@@ -2358,7 +2373,6 @@ Need to figure this out. typeof http is to just shut up jshint about not using h
                 tempdoc.loaded[tempname] = newdoc;
                 _"Parse lines: check for compile time"
             }
-            
         }
     }
 
@@ -3605,6 +3619,9 @@ SOFTWARE.
 
 
 ## Change Log
+
+v0.8.4 Made it so that all loaded files wait until all files are loaded before
+compiling. 
 
 v.0.8.0 Added code fencing by doing a simple switch on the parsing. 
 
