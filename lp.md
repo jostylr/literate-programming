@@ -1,26 +1,29 @@
-# [literate-programming](# "version:0.8.4")
+# [literate-programming](# "version:0.9.0")
 
 "This is like writing spaghetti code then shredding the code into little
 pieces, throwing those pieces into a blender, and finally painting the paste
 onto an essay. Tasty!"
 
 This file creates the literate program parser using the literate program
-parser (requires v 0.7+ to compile).  
+parser. Currently it uses the old version to compile. 
 
 A literate program is a series of chunks of explanatory text and code blocks
 that get woven together. The compilation of a literate program can grunt,
 after a fashion, as it weaves. 
 
-Version 0.8 introduced code fences. This was not the major rewrite that I
-intended to do for the version. That has been put on hold. I incremented to
-v0.8 as the parsing semantics has changed, namely, code fenced code now
-counts as a code block. 
+This version is the precursor to version 1, which I intend to be the stable
+version going forward. 
+
+
 
 ## Directory structure
 
-* [lib/literate-programming.js](#the-lp-module "save:   | jshint | jstidy") The bulk of the work is in the node module. That has all the core weaving. It also hasthe ability to load other literate programs / directives which ties it currently to the file system. 
-* [bin/literate-programming.js](#cli "save: | jshint") The literate program compiler is activated by a command line program.
+* [index.js](#index "save: |jshint") This is the file that runs this. It is a
+  thin layer on top of the command line module and putting in various litpro
+  plugins. 
 * [README.md](#readme "save:| clean raw") The standard README.
+* [lprc.js](#lprc "save:| jshint") This contains the options of how to compile
+  this using the new version. Not currently used. 
 * [package.json](#npm-package "save: json  | jshint") The requisite package file for a npm project. 
 * [TODO.md](#todo "save: | clean raw") A list of growing and shrinking items todo.
 * [LICENSE](#license-mit "save: | clean raw") The MIT license as I think that is the standard in the node community. 
@@ -28,6 +31,59 @@ counts as a code block.
 * [.gitignore](#gitignore "save: ")
 * [.travis.yml](#travis "save: ")
 
+# Index 
+
+We need to require the command line plugin and some litpro plugins. 
+
+    #!/usr/bin/env node
+
+    /*global process, require, console*/
+    /*jslint evil:true*/
+
+    var mod = require('literate-programming-lib');
+
+    var Folder = mod.Folder;
+
+    var opts = mod.opts;
+
+    _"litpro plugins"
+
+    var args = mod.opts.parse();
+
+    mod.Folder.lprc(args.lprc);
+
+    var folder = new mod.Folder();
+
+    folder.process(args);
+
+    process.on('exit', function () {
+        folder.exit();
+    });
+
+
+## litpro plugins
+
+
+    require('litpro-js')(Folder, opts);
+
+## lprc
+
+This creates the lprc file for this project. Basically, it just says to run
+lp.md as the file of choice and to build it in the directory 
+
+    module.exports = function(Folder, args) {
+
+        args.files = ["lp.md"];
+        args.build = ".";
+        args.src = ".";
+
+    }
+
+    
+
+
+
+## OLD
 
 ## How to write a literate program
 
@@ -3547,6 +3603,7 @@ The requisite npm package file.
         "node": ">=0.10"
       },
       "dependencies":{
+        "literate-programming-cli" : "^0.6.0",      
         "literate-programming-standard": "^0.2.5",
         "commander": "~1.1.1"
       },
@@ -3619,6 +3676,7 @@ SOFTWARE.
 
 
 ## Change Log
+v0.9.0 Switched to using the new library. 
 
 v0.8.4 Made it so that all loaded files wait until all files are loaded before
 compiling. 
