@@ -144,7 +144,8 @@ We got tests
     var tests = require('literate-programming-cli-test')("node ../../index.js");
 
     tests(
-        ["fizzbuzz", "fizzbuzz.md"]
+        ["fizzbuzz", "fizzbuzz.md"],
+        ["fence", "-b . fence.md"]
     );
 
 
