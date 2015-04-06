@@ -1,3 +1,4 @@
+
 Eliminate both macros and eval code by doing `_"|command..."`. So this has no
 code block feeding in (empty string into that bit of command part), but
 otherwise works like all the other filter stuff. Just a single execute
@@ -21,6 +22,7 @@ should be doable.
 
 Need to document every single syntax bit. Eliminating macros in favor of
 javascript code that has access to a "global" namespace. So instead of
+GEOGEBRA, one could have _`geogebra` and somewhere we could have _`geogebra =
 "http://geogebra.org"` or `[geogebra](# "define: http://geogebra.org")`  which
 would take the name and associate with the value. The define directive could
 be done anywhere and would be seen before any code evaluation in the cblocks
@@ -77,7 +79,7 @@ Then use _"Substitute parsing:vars" to list out the variables.
 
     var [insert string of comma separated variables]; // name of block 
 
-## IDE
+ ## IDE
 
 An in-browser version is planned. The intent is to have it be an IDE for the
 literate program. 
@@ -93,3 +95,4 @@ Note that code mirror will be the editor. A bit on the new multi-view of
 documents:  http://marijnhaverbeke.nl/blog/codemirror-shared-documents.html
 
 explore using node to run stuff between browser/lit pro/python:r:tex:sage...
+

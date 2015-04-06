@@ -1,5 +1,5 @@
-literate-programming   
-====================
+
+# literate-programming   
 
 Write your code anywhere and in any order with as much explanation as you
 like. literate-programming will weave it all together to produce your project.
@@ -18,14 +18,12 @@ flavored code fences can also be used to demarcate code blocks.
 
 It can handle any programming language, but has some standard commands useful
 for creating HTML, CSS, and JavaScript. 
-
 ## Installation
 
 This requires [node.js](http://nodejs.org) and [npm](https://npmjs.org/) to be
 installed. Then issue the command:
 
     npm install -g literate-programming
-
 ## Using
 
 From the command line:
@@ -41,7 +39,6 @@ the root output directory.
 It can also be used as an executable program; see
 [primes.md](https://github.com/jostylr/literate-programming/blob/master/examples/primes.md)
 for an example program of this kind.   
-
 ## Example
 
 Let's give a quick example. Here is the text of sample.md
@@ -91,7 +88,6 @@ but for a non-trivial example, see the
 [literate program](https://github.com/jostylr/literate-programming/blob/master/lp.md)
 that compiles to literate-programming.
 
-
 ## Document syntax
 
 A literate program is a markdown document with some special conventions. 
@@ -99,7 +95,6 @@ A literate program is a markdown document with some special conventions.
 The basic idea is that each header line (regardless of level, either atx # or
 seText underline ) demarcates a full block. Code blocks within a full block
 are the bits that are woven together. 
-
 ### Code Block
 
 Each code block can contain whatever kind of code, but there are three special
@@ -122,7 +117,6 @@ another loop. It allows for the mixing of various markup languages and
 different processing points in the life cycle of compilation. See
 [logs.md](https://github.com/jostylr/literate-programming/blob/master/examples/logs.md)
 for an example. 
-
 ### Directive
 
 A directive is a command that interacts with external input/output. Just about
@@ -145,7 +139,6 @@ For other directives, what the various parts mean depends, but it is always
     [some](#stuff "dir: whatever")  
 
 where the `dir` should be replaced with a directive name. 
-
 ### Pipes
 
 One can also use pipes to pipe the compiled text through a command to do
@@ -154,7 +147,6 @@ in block `some JS code` and pipe it into jshint to check for errors; it will
 report the errors to the console. We can also use pipe commands in a save
 directive:  `FILE "Some JS code" code.js | jstidy` will tidy up the code
 before storing it in the file `code.js`.
-
 ### Named Code Block
 
 Finally, you can use distinct code blocks within a full block. 
@@ -167,7 +159,6 @@ minimum is  `[](#)`  to make a new (unnamed) code block.
 Example: Let's say in heading block Loopy we have `[outer loop](# "js")` at the
 start of a line. Then it will create a code block that can be referenced by
 _"Loopy:outer loop".
-
 ## Nifty parts of writing literate programming
 
 * You can have your code in any order you wish. 
@@ -203,7 +194,7 @@ pre-defined ways. For example, if designing a web interface, you can organize
 the files by widgets, mixing in HTML, CSS, and JS in a single file whose
 purpose is clear. Then the central file can pull it all in to a single web
 page (or many).
-
 ## LICENSE
 
 [MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)
+
