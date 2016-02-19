@@ -1,6 +1,18 @@
 literate-programming   
 ====================
 
+## DEPRECATED
+
+This version of literate-programming is no longer being maintained. The current version is now at [litpro](https://github.com/jostylr/litpro) which is a minimalist command line client. It is based on [literate-programming-lib](https://github.com/jostylr/literate-programming-lib) which contains the subtstantial part of the documentation currently. 
+
+Litpro is far more capable than this version with a full asynchronous event model running underneath it. In particular, it is trivial to call out to separate processes if one needs to. it also allows for much more introspection and interesting solutions. But the core syntax is the same, namely using `_"section name"`  to refer to a block with `section name` as well as having minor blocks using colon syntax. The CAPS syntax was dropped in favor of having directives and commands that can store values under a new section name with reference being the same as any other section name.
+
+The future plan for this repository is to make it into a litpro+batteries, mainly helpers for web development such as jade, markdown, postcss, cheerio, jshint, etc., being baked into it to make it easy to get started on web development projects. But it is fairly easy to add those independently. The main holdup is other projects and converting the examples in this version to the new version with a covnersion guide (most likely involving syntax rarely used). 
+
+
+
+## Old
+
 Write your code anywhere and in any order with as much explanation as you
 like. literate-programming will weave it all together to produce your project.
 
