@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.9.0; A literate programming compile script. Write your program in markdown. ")
+# [literate-programming](# "version:0.12.0; A literate programming compile script. Write your program in markdown. ")
 
 "This is like writing spaghetti code then shredding the code into little
 pieces, throwing those pieces into a blender, and finally painting the paste
@@ -31,6 +31,7 @@ version going forward.
 * [.gitignore](#gitignore "save: ")
 * [.travis.yml](#travis "save: ")
 * [test.js](#tests "save: | jshint")
+* [upgrade.md](#upgrade "save: |raw ## Upgrade, !---")
 
 # Index 
 
@@ -145,7 +146,8 @@ We got tests
 
     tests(
         ["fizzbuzz", "fizzbuzz.md"],
-        ["fence", "-b . fence.md"]
+        ["fence", "-b . fence.md"],
+        ["logs", "-b . logs.md"]
     );
 
 
@@ -368,15 +370,47 @@ the files by widgets, mixing in HTML, CSS, and JS in a single file whose
 purpose is clear. Then the central file can pull it all in to a single web
 page (or many).
 
+ ## Conversion
+
+This is a new version with some significant changes. This is a guide to what
+may need to be changed. 
+
+
+
+
  ## LICENSE
 
 [MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)
 
 !---
 
+## Upgrade
+
+This page details upgrading from pre0.9.0 to 0.9.0 and above. 
+
+The core syntax and idea has not changed. That is, `_"block name"` is the same
+and when encountered in a code block will trigger the insertion of the code
+from section `block name` at that point. 
+
+What is a code block now completely conforms to the commonmark spec. It is
+being parsed by the reference implementation of that spec. This means that if
+you have list items and have indented after that, it will be seen as a
+paragraph, not a code block. You can always use code fences in that instance. 
+
+Directive syntax is largely unaffected as well. The placement of switch
+directives is now irrelevant. A switch block is now triggered when a link of
+the form `[section name]()` is found or when `[section name](whatever ":|...") is
+found. If it is of the form `[](start ":|...")` or `[|des](start ":|...") then
+it is a transform which will act on the text in `start` and do something with
+pipes to it; one will need to store it somewhere. Maybe we could have the link
+text store it? If start is `#` then the current block is used.  
 
 
-[on](# "block:")
+
+!---
+
+
+
 
 ## TODO
 
@@ -403,8 +437,8 @@ should be doable.
 
 Need to document every single syntax bit. Eliminating macros in favor of
 javascript code that has access to a "global" namespace. So instead of
-GEOGEBRA, one could have _`geogebra` and somewhere we could have _`geogebra =
-"http://geogebra.org"` or `[geogebra](# "define: http://geogebra.org")`  which
+GEOGEBRA, one could have `_'geogebra'` and somewhere we could have `_'geogebra =
+"http://geogebra.org"'` or `[geogebra](# "define: http://geogebra.org")`  which
 would take the name and associate with the value. The define directive could
 be done anywhere and would be seen before any code evaluation in the cblocks
 while the other one would need to have order taken care of it (tricky,
@@ -479,6 +513,8 @@ explore using node to run stuff between browser/lit pro/python:r:tex:sage...
 
 !---
 
+[on](# "block:")
+
 ## NPM package
 
 The requisite npm package file. 
@@ -500,12 +536,7 @@ The requisite npm package file.
       "bugs": {
         "url": "https://github.com/_`g::gituser`/_`g::docname`/issues"
       },
-      "licenses": [
-        {
-          "type": "MIT",
-          "url": "https://github.com/_`g::gituser`/_`g::docname`/blob/master/LICENSE-MIT"
-        }
-      ],
+      "license": "MIT",
       "main": "index.js",
       "engines": {
         "node": ">=0.10"
@@ -581,71 +612,10 @@ A travis.yml file for continuous test integration!
 ## Change Log
 v0.9.0 Switched to using the new library. 
 
-v0.8.4 Made it so that all loaded files wait until all files are loaded before
-compiling. 
-
-v.0.8.0 Added code fencing by doing a simple switch on the parsing. 
-
-v.0.7.5 fixing what was done in 0.7.4 to actually work. A little too hasty.
-
-v.0.7.4  Added extension restriction for use with live reload plugin
-
-v.0.7.3 Added ability to specify output directory as a second argument after file. 
-
-v.0.7.1 Added the ability to have a (single) plugin file called lprc.js.
-logs.md now uses it as an example. 
-
-v.0.7.0 
-
-Implemented link syntax for directives and type switching.
-
-Implemented templates using asterisk notation. 
-
-Added a postCompile function to have postCompile actions even if no file is
-being saved. 
-
-Implemented being able to use a literate program directly as a command line
-program. See primes.md
-
-Updated docs to reflex new syntax.
-
-v.0.6.1
-
-Implemented using underlines for headings per markdown spec.
-
-v.0.6.0
-
-_"Load directive"  Set it up so that LOAD works asynchronously. Multiple LOADs
-are handled. The property doc.loading holds which documents are being loaded. 
-
-_"Cli"  Set it up so that saving, file loading,... is a function passed into
-the doc. This allows for a much more flexible setup
-
-_"Doc constructor" Make it so that constructing the document parses it and
-compiles it and saves it. The passed in options can overwrite the behavior.
-There can be a callback issued once everything is done. 
-
-_"Compile time" Make it async. Each call to a block either pulls in the
-compiled bit or queues up the current block. Need to store state. 
-
-_"Process files" is a part of the document constructor. Everything about a
-"file" will be created and stored in compiledFiles. Now deprecated. 
-
-_"Process actions" replaced files. This gives a stronger plugin feel. See the
-section for what should be in an action. These wait for the compiled code
-block to be compiled and then execute. 
-
-_"Save Files", _"Preview Files", _"Diff Files"  all do their job acting on
-compiledFiles. 
-
-_"Doc commander", _"Pipe Processor" have been converted to supporting
-asynchronous callbacks. 
-
-
 
 [James Taylor](https://github.com/jostylr "npminfo: jostylr@gmail.com ; 
-    deps: literate-programming-cli 0.8.4, litpro-jshint 0.1.0,
+    deps: literate-programming-cli 0.12.0, litpro-jshint 0.1.0,
     litpro-commonmark 0.2.1; 
-    dev: literate-programming-cli-test 0.3.0 ")
+    dev: literate-programming-cli-test 0.4.0 ")
 
 

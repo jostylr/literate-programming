@@ -1,0 +1,8 @@
+/Users/jostylr/repos/literateprogramming/full/node_modules/literate-programming-cli/index.js:350
+            folder.displayScopes();
+                   ^
+
+TypeError: folder.displayScopes is not a function
+    at process.<anonymous> (/Users/jostylr/repos/literateprogramming/full/node_modules/literate-programming-cli/index.js:350:20)
+    at emitOne (events.js:77:13)
+    at process.emit (events.js:169:7)

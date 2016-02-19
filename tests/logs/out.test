@@ -1,0 +1,28 @@
+error:bad terminating character in commandlogs.md:calculator⫶html⫶120 INFO: 126,133, 
+error:bad terminating character in commandlogs.md:calculator⫶html⫶120 INFO: 133,146, 
+!! JSHint:logs.md:code block for factorial⫶editable code⫶sp⫶0
+Implied Gobal 11: $  $("#result").text(nf);
+!! JSHint:for transform:logs.md:testing the factorial⫶| jshint | eval⫶sp⫶0
+Implied Gobal 18,23,25: console  console.log(n + " does not work");
+JSHint CLEAN: logs.md:calculator⫶html⫶120⫶126
+UNCHANGED ./logs.htm
+STILL WAITING: ./
+---
+NOT SAVED: logs.html AS REQUESTED BY: logs.md NEED: stand alone page
+PROBLEM WITH: _":js|jshint| html-escape| html-wrap div, hide, run" IN: calculator FILE: logs.md
+PROBLEM WITH: _"Common factorial|indent(4,4)" IN: table of factorials FILE: logs.md
+PROBLEM WITH: _"|html-jquery 1.9.0" IN: stand alone page FILE: logs.md
+PROBLEM WITH: _"|html-mathjax" IN: stand alone page FILE: logs.md
+PROBLEM WITH: _"Scripted Writing:css" IN: stand alone page FILE: logs.md
+PROBLEM WITH: _"Scripted Writing:js" IN: stand alone page FILE: logs.md
+PROBLEM WITH: _"|html-bootswatch simplex" IN: stand alone page FILE: logs.md
+COMMAND REQUESTED: html-jquery BUT NOT DEFINED. REQUIRED IN: stand alone page FILE: logs.md
+COMMAND REQUESTED: html-mathjax BUT NOT DEFINED. REQUIRED IN: stand alone page FILE: logs.md
+COMMAND REQUESTED: html-bootswatch BUT NOT DEFINED. REQUIRED IN: stand alone page FILE: logs.md
+COMMAND REQUESTED: indent(4,4) BUT NOT DEFINED. REQUIRED IN: table of factorials FILE: logs.md
+COMMAND REQUESTED: html-wrap BUT NOT DEFINED. REQUIRED IN: scripted writing FILE: logs.md
+COMMAND REQUESTED: html-wrap BUT NOT DEFINED. REQUIRED IN: scripted writing FILE: logs.md
+COMMAND REQUESTED: html-wrap BUT NOT DEFINED. REQUIRED IN: code block for factorial FILE: logs.md
+COMMAND REQUESTED: html-escape BUT NOT DEFINED. REQUIRED IN: calculator FILE: logs.md
+
+

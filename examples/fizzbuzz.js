@@ -13,6 +13,7 @@ for (i = 0; i < 100; i += 1) {
 }
 
 overwrite(numarr, 3, "Fizz");
+debugger;
 overwrite(numarr, 5, "Buzz");
 overwrite(numarr, 15, "FizzBuzz");
 

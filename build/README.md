@@ -194,13 +194,6 @@ pre-defined ways. For example, if designing a web interface, you can organize
 the files by widgets, mixing in HTML, CSS, and JS in a single file whose
 purpose is clear. Then the central file can pull it all in to a single web
 page (or many).
-## Conversion
-
-This is a new version with some significant changes. This is a guide to what
-may need to be changed. 
-
-
-
 ## LICENSE
 
 [MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)

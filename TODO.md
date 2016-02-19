@@ -22,8 +22,8 @@ should be doable.
 
 Need to document every single syntax bit. Eliminating macros in favor of
 javascript code that has access to a "global" namespace. So instead of
-GEOGEBRA, one could have _`geogebra` and somewhere we could have _`geogebra =
-"http://geogebra.org"` or `[geogebra](# "define: http://geogebra.org")`  which
+GEOGEBRA, one could have `_'geogebra'` and somewhere we could have `_'geogebra =
+"http://geogebra.org"'` or `[geogebra](# "define: http://geogebra.org")`  which
 would take the name and associate with the value. The define directive could
 be done anywhere and would be seen before any code evaluation in the cblocks
 while the other one would need to have order taken care of it (tricky,

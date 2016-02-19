@@ -8,7 +8,7 @@ We create just one file. To run it, run node on [fizzbuzz.js](#structure "save:"
 
 For your viewing pleasure, we also eval it right away. 
 
-[](#structure ": | eval eval(text)")
+[](#structure ": | eval e('eval(text)')")
 
 ## Structure
 
