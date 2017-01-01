@@ -730,7 +730,8 @@ setup.
 ## README
 
 
- # literate-programming 
+ # literate-programming  [![Build Status](https://travis-ci.org/jostylr/literate-programming.png)](https://travis-ci.org/jostylr/literate-programming)
+ 
 
 This is the fat command-line client for
 [literate-programming-lib](https://github.com/jostylr/literate-programming-lib).
