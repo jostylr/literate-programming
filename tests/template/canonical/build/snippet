@@ -1,0 +1,12 @@
+<div class="row-fluid">
+    <div class="span8">
+        <div id="Scratch" class="cool">
+            yadda yadda 
+        </div>
+    </div>
+    <div class="span4">
+        <div id="ScratchNav" >
+            more yadda yadda but with sliders
+        </div>
+    </div>
+</div>

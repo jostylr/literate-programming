@@ -1,10 +1,7 @@
-archive
-test
+build
+.checksum
+cache
+tests
+test.js
 travis.yml
-examples
-ghpages
-fixed_examples
-temp
-node_modules
 *.md
-mon.sh

@@ -1,62 +1,29 @@
-literate-programming   
-====================
+# litpro 
 
-## DEPRECATED
+This is the fat command-line client for
+[literate-programming-lib](https://github.com/jostylr/literate-programming-lib).
+It contains the full functionality for literate programming, including useful
+commands such as jshint included in it. For a thin client,
+check out
+[litpro](https://github.com/jostylr/litpro)
 
-This version of literate-programming is no longer being maintained. The current version is now at [litpro](https://github.com/jostylr/litpro) which is a minimalist command line client. It is based on [literate-programming-lib](https://github.com/jostylr/literate-programming-lib) which contains the subtstantial part of the documentation currently. 
+This is not done being fully baked, hence the 0.9.0. But this does represent a
+significant break from 0.8.4.  You can take a look at convert.md for some
+observations of mine as I converted from the old version to the new. 
 
-Litpro is far more capable than this version with a full asynchronous event model running underneath it. In particular, it is trivial to call out to separate processes if one needs to. it also allows for much more introspection and interesting solutions. But the core syntax is the same, namely using `_"section name"`  to refer to a block with `section name` as well as having minor blocks using colon syntax. The CAPS syntax was dropped in favor of having directives and commands that can store values under a new section name with reference being the same as any other section name.
+Install using `npm install literate-programming`
 
-The future plan for this repository is to make it into a litpro+batteries, mainly helpers for web development such as jade, markdown, postcss, cheerio, jshint, etc., being baked into it to make it easy to get started on web development projects. But it is fairly easy to add those independently. The main holdup is other projects and converting the examples in this version to the new version with a covnersion guide (most likely involving syntax rarely used). 
+Usage is `./node_modules/bin/litpro file` and it has some command flags. 
 
+If you want a global install so that you just need to write
+`literateprogramming` then use `npm install -g literate-programming`.
 
+The library has a full listing of the syntax, commands, and directives. Here
+we list the flags and new commands and directives. 
 
-## Old
+## Example usage
 
-Write your code anywhere and in any order with as much explanation as you
-like. literate-programming will weave it all together to produce your project.
-
-This is a modificaiton of and an implementation of 
-[Knuth's Literate Programming](http://www-cs-faculty.stanford.edu/~uno/lp.html)
-technique. It is
-perhaps most in line with [noweb](http://tex.loria.fr/litte/ieee.pdf). 
-
-It uses markdown as the basic document format with the code to be weaved
-together being delimited by each line having 4 spaces as is typical for
-markdown. Note that it requires spaces but not tabs. This allows one to use
-tabs for non lit pro code blocks as well as paragraphs within lists. GitHub
-flavored code fences can also be used to demarcate code blocks. 
-    
-
-It can handle any programming language, but has some standard commands useful
-for creating HTML, CSS, and JavaScript. 
-
-## Installation
-
-This requires [node.js](http://nodejs.org) and [npm](https://npmjs.org/) to be
-installed. Then issue the command:
-
-    npm install -g literate-programming
-
-## Using
-
-From the command line:
-
-    literate-programming <file.md>
-
-This will process the literate program in `file.md` and produce whatever
-output files are specified in the literate program. 
-
-Use `literate-programming -h`  for command flag usage, including specifying
-the root output directory.
-
-It can also be used as an executable program; see
-[primes.md](https://github.com/jostylr/literate-programming/blob/master/examples/primes.md)
-for an example program of this kind.   
-
-## Example
-
-Let's give a quick example. Here is the text of sample.md
+ Save the following code to file `project.md` and run `litpro project.md`.
 
     # Welcome
 
@@ -65,7 +32,7 @@ Let's give a quick example. Here is the text of sample.md
 
     Let's save it in file count.js
 
-    [count.js](#Structure "save:")
+    [count.js](#Structure "save: | jshint")
 
     ## Structure 
 
@@ -95,127 +62,140 @@ Let's give a quick example. Here is the text of sample.md
         }
 
 
-And it can be run from the command line using `node count.js`
-
-There are more
-[examples](https://github.com/jostylr/literate-programming/tree/master/examples),
-but for a non-trivial example, see the 
-[literate program](https://github.com/jostylr/literate-programming/blob/master/lp.md)
-that compiles to literate-programming.
+For more on the document format, see 
+[literate-programming-lib](https://github.com/jostylr/literate-programming-lib).
 
 
-## Document syntax
+## Flags
 
-A literate program is a markdown document with some special conventions. 
+The various command-line flags are
 
-The basic idea is that each header line (regardless of level, either atx # or
-seText underline ) demarcates a full block. Code blocks within a full block
-are the bits that are woven together. 
+* -e, --encoding Specify the default encoding. It defaults to utf8, but any
+  encoding supported by iconv-lite works. To override that behavior per loaded
+  file from a document, one can put the encoding between the colon and pipe in
+  the directive title. This applies to both reading and writing. 
+* --file A specified file to process. It is possible to have multiple
+  files, each proceeded by an option. Also any unclaimed arguments will be
+  assumed to be a file that gets added to the list. 
+* -l, --lprc This specifies the lprc.js file to use. None need not be
+  provided. The lprc file should export a function that takes in as arguments
+  the Folder constructor and an args object (what is processed from the
+  command line). This allows for quite a bit of sculpting. See more in lprc. 
+* -b, --build  The build directory. Defaults to build. Will create it if it
+  does not exist. Specifying . will use the current directory. 
+* -s, --src  The source directory to look for files from load directives. The
+  files specified on the command line are used as is while those loaded from
+  those files are prefixed. Shell tab completion is a reason for this
+  difference. 
+* -c, --cache The cache is a place for assets downloaded from the web.
+* --cachefile This gives an alternate name for the cache file that registers
+  what is downloaded. Default is `.cache`
+* --checksum This gives an alternate name for the file that lists the hash
+  for the generate files. If the compiled text matches, then it is not
+  written. Default is `.checksum` stored in the build directory.
+* -d, --diff This computes the difference between each files from their
+  existing versions. There is no saving of files. 
+* -o, --out This directs all saved files to standard out; no saving of
+  compiled texts will happen. Other saving of files could happen; this just
+  prevents those files being saved by the save directive from being saved. 
+* -f, --flag This passes in flags that can be used for conditional branching
+  within the literate programming. For example, one could have a production
+  flag that minimizes the code before saving. 
 
-### Code Block
+## New Directives
 
-Each code block can contain whatever kind of code, but there are three special
-syntaxes: 
+* `[name](# "exec:command line command")` Executes command line as a
+  directive. Not sure on usefulness.
+* `[var name](url "readfile:encoding|commands")` Reads a file, pipes it in,
+  stores it in var name.  
+* Save. Not new, but works to actually save the file on disk. 
 
-1. `_"Block name"` This tells the compiler to compile the block with "Block
-   name" and then replace the _"Block name" with that code.
-2. ``_`javascript code` ``  One can execute arbitrary javascript code within
-   the backticks, but the parser limits what can be in there to one line. 
-3. `MACROS` all caps are for constants or macro functions that insert their
-   output in place of the caps. Note that if you have `MACRO(_"something")`
-   then the current version does not parse `_"something"` as a code block.
-   This will hopefully get fixed along with being able to use code blocks in
-   commands. This applies even if `MACRO` does not match so it is a bug, not a
-   feature :(  To fix this, put a space between `MACRO` and the parenthesis. 
+## New Commands
 
-For both 1 and 3, if there is no match, then the text is unchanged. One can
-have more than one underscore for 1 and 2; this delays the substitution until
-another loop. It allows for the mixing of various markup languages and
-different processing points in the life cycle of compilation. See
-[logs.md](https://github.com/jostylr/literate-programming/blob/master/examples/logs.md)
-for an example. 
+* `exec cmd1, cmd2, ...` This executes the commands on the commandline. The
+  standard input is the incoming input and the standard output is what is
+  passed along. 
+* `execfresh` Same as exec but no caching
+* `readfile name` Reads in file with filename. Starts at source directory.
+  This terminates old input and replaces with file contents.
+* `readdir name` Generates a list of files in named directory. This generates
+  an augmented array. 
+* `savefile name, encoding` Saves the input into the named file using the
+  encoding if specified. 
+* **jshint** This takes the input and runs it through JSHint. The command
+  is of the form 
+  `js stuff | jshint options, globals, shortname, print clean`. 
+  
+  * The options is an object that corresponds to the [options that JShint
+  accepts](http://jshint.com/docs/options/); you can use a subcommand to
+  create the options object if you like.  Default is unused:true, else is
+  their defaults. 
+  * Globals is an array of global
+  names; if they can be written over, pass in `name:true` instead of
+  `name`. 
+  * Shortname is the shortname to present in understanding what is being
+    jshinted. Otherwise, it does its best to give you a cryptic but
+    informative name. 
+  * If the fourth argument is a boolean, `t()` or `f()` will do it,  then
+    that toggles whether to print the message that it all went smoothly or
+    not, respectively. The default is to not print it.
+  * You can override the defaults repeatedly by modifying the
+    `Folder.plugins.jshint` object with the names: `options`, `globals`, and
+    `clean`.  
+* **md** This takes the input as markdown and puts out html. The first
+  argument is an optional string naming the renderer to use. The other
+  arguments should be booleans, namely, `f()`, if one does not want
+  preprocessing/post to occur. The default preprocessors, in order, are
+  literate programming subs and math subs rendering to katex. 
+  
+  To create a renderer, you can use Folder.plugins.md.req as the markdoan
+  object and then render it per the instructions (an options object
+  `req(options).use(...)`. This is all best done in the lprc.js file.
+  Store the rendered under the preferred name in plugins.md.
+ 
+  See the logs test directory and its lprc.js. 
+* **cheerio** This gives access to the cheerio module, a lightweight node
+  version of jQuery-esque without the overhead of jsdom. It can't do
+  everything, but it does most things: 
+  [cheeriojs](https://github.com/cheeriojs/cheerio). To use, the incoming
+  text is the html doc to modify, the first argument is the selector, the
+  second the method, and then the arguments to the method, e.g., 
+  `somehtml | cheerio h2.title, .text, Hello there!`
+* **ch-replace** This is a convenience method for cheerio. This will use
+  the first argument as a selector and the second argument as a
+  html replacement. 
+* **postcss** This takes incoming text and runs it through postcss. To do
+  something useful, you need to have the arguments be the commands to use.
+  At the moment, the only one shipping with this is autoprefixer, but
+  others are likely to be added (minimizers and fixers, in particular).
+  You can add them yourself by, in lprcs.js, saying (installing cssnano as
+  example)
+  `Folder.plugins.postcss[cssnano] = require('cssnano');` and ensuring
+  that the cssnano module is installed in npm. 
+* **tidy** This uses [js-beautify](https://www.npmjs.com/package/js-beautify)
+The first argument is the type:  js, css, or html. The second argument are
+options that get merged with the defaults. The js has a default of
+`indent_size` of 4 and `jslint_happy` true. An unrecognized first argument
+(or none) will default to js. 
+* **minify** The first argument says the type of minifier: js, css, and
+  html. js is the default if the first argument is not realized. The
+  second argument is an object of options that get passed in. This uses
+  uglify-js, clean-css, and 
+  [html-minifier](https://www.npmjs.com/package/html-minifier), 
+  respectively. For css, the
+  second argument can be a boolean indicating whether to pass on the
+  results object (if true, `t()` ) or just the css output text (default). 
 
-### Directive
 
-A directive is a command that interacts with external input/output. Just about
-every literate program has at least one save directive that will save some
-compiled block to a file. 
+## Use and Security
 
-The syntax for the save directive is 
-
-    [file.ext](#name-the-heading "save: named code block | pipe commands")  
-
-where file.ext is the name of the file to save to,  name-the-heading is the
-heading of the block whose compiled version is being saved (spaces in the
-heading get converted to dashes for id linking purposes), `save:` is the
-directive to save a file, `named code block` is the (generally not needed)
-name of the code block within the heading block, and the pipe commands are
-optional as well for further processing of the text before saving. 
-
-For other directives, what the various parts mean depends, but it is always 
-
-    [some](#stuff "dir: whatever")  
-
-where the `dir` should be replaced with a directive name. 
-
-### Pipes
-
-One can also use pipes to pipe the compiled text through a command to do
-something to it. For example, `_"Some JS code | jshint"`  will take the code
-in block `some JS code` and pipe it into jshint to check for errors; it will
-report the errors to the console. We can also use pipe commands in a save
-directive:  `FILE "Some JS code" code.js | jstidy` will tidy up the code
-before storing it in the file `code.js`.
-
-### Named Code Block
-
-Finally, you can use distinct code blocks within a full block. 
-
-Start a line with link syntax that does not match a directive. Then it will
-create a new code block with the following data `[code name](#link "type |
-pipes")`. All parts are optional. The link is not used and can be anything. The
-minimum is  `[](#)`  to make a new (unnamed) code block. 
-
-Example: Let's say in heading block Loopy we have `[outer loop](# "js")` at the
-start of a line. Then it will create a code block that can be referenced by
-_"Loopy:outer loop".
-
-## Nifty parts of writing literate programming
-
-* You can have your code in any order you wish. 
-* You can separate out flow control from the processing. For example,
-
-        if (condition) {
-            _"Truth"
-        } else {
-            _"Beauty"
-        }
-    
-    The above lets you write the if/else statement with its logic and put the
-    code in the code blocks `truth` and `beauty`. This can help keep one's
-    code to within a single screenful per notion. 
-* You can write code in the currently live document that has no effect, put in
-  ideas in the future, etc. Only those on a compile path will be seen. 
-* You can "paste" multiple blocks of code using the same block name. This is
-  like DRY, but the code does get repeated for the computer. You can also
-  substitute in various values  in the substitution process so that code
-  blocks that are almost the same but with different names can come from the
-  same root structure. 
-* You can put distracting data checks/sanitation/transformations into another
-  block and focus on the algorithm without the use of functions (which can be
-  distracting). 
-* You can use JavaScript to script out the compilation of documents, a hybrid
-  of static and dynamic. 
-
-I also like to use it to compile an entire project from a single file, pulling
-in other literate program files as needed. That is, one can have a
-command-and-control literate program file and a bunch of separate files for
-separate concerns. But note that you need not split the project into any
-pre-defined ways. For example, if designing a web interface, you can organize
-the files by widgets, mixing in HTML, CSS, and JS in a single file whose
-purpose is clear. Then the central file can pull it all in to a single web
-page (or many).
+It is inherently unsecure to compile literate
+program documents. No effort has been made to make it secure. Compiling a
+literate program using this program is equivalent to running arbitrary code on
+your computer. Only compile from trusted sources, i.e., use the same
+precautions as running a node module. 
+ 
 
 ## LICENSE
 
-[MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE)
+[MIT-LICENSE](https://github.com/jostylr/literate-programming/blob/master/LICENSE-MIT)

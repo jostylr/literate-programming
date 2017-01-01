@@ -2,3 +2,5 @@ node_modules
 /build
 /cache
 /.checksum
+/err.test
+/out.test
