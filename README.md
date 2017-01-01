@@ -1,4 +1,4 @@
-# litpro 
+# literate-programming 
 
 This is the fat command-line client for
 [literate-programming-lib](https://github.com/jostylr/literate-programming-lib).
