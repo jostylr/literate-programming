@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.9.0; Fat command line for literate-programming")
+# [literate-programming](# "version:0.9.1; Fat command line for literate-programming")
 
 This is the command line portion of literate-programming. It depends on
 literate-programming-lib. 
@@ -81,7 +81,7 @@ The requisite npm package file.
       },
       "keywords": ["literate programming"],
       "bin": {
-        "literateprogramming" : "./index.js"
+        "literate-programming" : "./index.js"
       }
     }
  
