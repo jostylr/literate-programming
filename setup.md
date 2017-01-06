@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.9.2; Fat command line for literate-programming")
+# [literate-programming](# "version:0.9.3; Fat command line for literate-programming")
 
 This is the command line portion of literate-programming. It depends on
 literate-programming-lib. 

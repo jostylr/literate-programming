@@ -69,6 +69,8 @@ files.
     //console.warn("!!", args);
 
     var Folder = mod.Folder;
+    
+    Folder.inputs = args;
 
     var merge = Folder.merge;
     _"plugin to Folder"

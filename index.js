@@ -29,6 +29,8 @@ args.other.forEach(function (arg) {
 
 var Folder = mod.Folder;
 
+Folder.inputs = args;
+
 var merge = Folder.merge;
 var jshint = require('jshint').JSHINT;
 Folder.plugins.jshint = {

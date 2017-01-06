@@ -1,7 +1,7 @@
 {
   "name": "literate-programming",
   "description": "Fat command line for literate-programming",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "homepage": "https://github.com/jostylr/literate-programming",
   "author": {
     "name": "James Taylor",
