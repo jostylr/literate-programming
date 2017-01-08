@@ -18,7 +18,7 @@ This is a command line literate program. We evaluate the basic outline and outpu
 
     /*global console, inputs*/
     _"Basic Outline"
-    var inputs = doc.parent.stdin.primes
+    var inputs = _"|z primes";
     console.log("The first "+inputs +" primes are: " + firstPrimes(inputs));
 
 [cmdline]()

@@ -5,6 +5,8 @@ module.exports = function(Folder, args) {
         args.file = ["project.md"];
     }
 
+    args.src = ".";
+
     require('litpro-jshint')(Folder, args);
 
 };

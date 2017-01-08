@@ -14,6 +14,7 @@ args.build = args.build.map(function (el) {
     }
 });
 
+var z = {};
 args.other.forEach(function (arg) {
     var pair = arg.split(":");
     if (pair.length === 1) {
@@ -21,8 +22,9 @@ args.other.forEach(function (arg) {
     } else if (pair.length === 2) {
         args[pair[0]] = pair[1]; 
     } else {
-        args[pair[0]] = pair.slice(0);
+        args[pair[0]] = pair.slice(1);
     }
+    z[pair[0]] = args[pair[0]];
 });
 
 //console.warn("!!", args);
@@ -30,8 +32,10 @@ args.other.forEach(function (arg) {
 var Folder = mod.Folder;
 
 Folder.inputs = args;
+Folder.z = z;
 
 var merge = Folder.merge;
+
 var jshint = require('jshint').JSHINT;
 Folder.plugins.jshint = {
     options: {unused: true},
@@ -344,7 +348,6 @@ Folder.prototype.displayScopes = (args.scopes ? function () {
                 str+= v + ": '" + scope[v] + "'\n* * *\n";
             });
         str += "\n------\n";
-    
     });
     str = str.replace(/\n\n/g, "\n");
     console.log(str);
@@ -353,8 +356,6 @@ Folder.prototype.displayScopes = (args.scopes ? function () {
 
 
 Folder.lprc(args.lprc, args);
-
-Folder.prototype.stdin = args;
 
 Folder.process(args);
 

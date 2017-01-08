@@ -16,6 +16,11 @@ Most of this is adding in the plugins and running full tests.
 
 ### Load
 
+Reading file into cli
+
+* [cli](node_modules/literate-programming-cli/litpro.js "readfile:| 
+    sub ./index.js, literate-programming-cli | 
+    sub //plugin-to-folder, _'plugin to folder ' ")
 
 ### Save
 
@@ -25,6 +30,7 @@ Most of this is adding in the plugins and running full tests.
     | sub COMDOC, _'comdoc | .join \n'  ") The standard README.
 * [convert.md](# "save: | raw ## Converting, --! | sub \n\ #, # |trim")
 * [test.js](#test "save: |jshint ") The testing file. 
+* [documentation.md](#comdoc "save: | .join \n ")
 * [](# "cd: save")
 
 
@@ -33,94 +39,6 @@ Most of this is adding in the plugins and running full tests.
 The h5 headings can be used in a special way. Here we initialize
 
 * [comdoc](#cdoc "h5: ")
-
-
-## Cli 
-
-This is the command line client for literate programming. This contains all
-the options for command line processing and it comes with the standard
-library of plugins. 
-
-It has different modes. The default is to take in one or more literate program
-files and compile them, doing whatever they say to do, typically saving them.
-There are options to specify the build and source directories. The defaults
-are `./build` and `./src`, respectively, if they are present. If not present,
-then the default is the directory where it is called for src? but for build,
-it is created. A root direcory can also
-be specified that will change the current working directory first before doing
-anything else. 
-
-The other modes are preview and diff, both of which will not save over any
-files.  
-
-
-    #!/usr/bin/env node
-
-    /*global process, require */
-
-    var mod = require('literate-programming-cli');
-
-    var args = mod.opts.parse();
-
-    _":build stripping"
-
-    _":arg z"
-
-    //console.warn("!!", args);
-
-    var Folder = mod.Folder;
-    
-    Folder.inputs = args;
-
-    var merge = Folder.merge;
-    _"plugin to Folder"
-
-    Folder.prototype.encoding = args.encoding;
-    Folder.prototype.displayScopes = (args.scopes ? _"display scopes" :
-        function () {} );
-    
-
-    Folder.lprc(args.lprc, args);
-
-    Folder.prototype.stdin = args;
-
-    Folder.process(args);
-
-    process.on('exit', Folder.exit());
-
-[build stripping]()
-
-The goal is to remove a trailing slash from the file names. 
-
-    args.build = args.build.map(function (el) {
-        if (el.slice(-1) === "/") {
-            return el.slice(0, -1);
-        } else {
-            return el;
-        }
-    });
-
-
-[arg z]()
-
-This is the other option parsing. So we will reiterate over it. We split on
-the colon. If there is no second colon, then we treat it as a boolean flag.
-To pass in multiple values, use more colons. 
-
-Example  `-z papers:dude:great:whatever` will translate into creating
-`args.papers = ['dude', 'great', 'whatever']`
-
-    args.other.forEach(function (arg) {
-        var pair = arg.split(":");
-        if (pair.length === 1) {
-            args[pair[0]] = true;
-        } else if (pair.length === 2) {
-            args[pair[0]] = pair[1]; 
-        } else {
-            args[pair[0]] = pair.slice(0);
-        }
-    });
-
 
     
 ### Display scopes
@@ -147,6 +65,8 @@ This is a function that displays the scopes.
 ## Plugin to Folder
 
 This is where the fat comes in. 
+
+    var merge = Folder.merge;
 
     _"jshint"
 
@@ -716,16 +636,29 @@ This combines three different minimizers into a single command.
       second argument can be a boolean indicating whether to pass on the
       results object (if true, `t()` ) or just the css output text (default). 
 
+## js-bench
 
-## More ideas
+This is to benchmark javscript code. It should be a directive.
 
-directive: js-bench, arguments are different code blocks to test, the incoming text is
-the test setup, split on say, \n===\n between args and maybe \n---\n between
-name, pre, post. The bit between js-bench: ... |  could be a toggle of off,
-log, or a filename to save the results. use jsperf or something
+There is the code of the block which could be transformed in a variety of
+ways. The linkname could be the benchmark name `bench:case`  with the colon
+being the case name; the directive would then compare the different cases with
+the bench name. 
 
-directive: js-test, use tape, and setup environment, results, with \n---\n
-setup. 
+`[bench:case](#start "js-bench: off/log/varname | pipes for preprocessing")`
+
+    function (input, args) {
+
+    }
+
+
+## js-test
+
+Not sure what to really do. This could be similar to the benchmark directive
+in form, but not sure if it to use tape, or role my own (with grabbing the
+deep-equal algorithm).  
+
+
 
 [off](# "block:")
 
@@ -799,9 +732,11 @@ we list the flags and new commands and directives.
             numarr.push(i);
         }
 
-## Documentation
+ ## Documentation
 
-For more information, see the [documentation book](https://leanpub.com/literate-programming-md) which is free to read online or available for purchase as a PDF. 
+For more information, see the 
+[documentation book](https://leanpub.com/literate-programming-md) 
+which is free to read online or available for purchase as a PDF. 
 
 Some particularly useful syntax sections are: 
 
@@ -861,8 +796,9 @@ help for those adapting to the new version.
         ["matrix", "matrix.md -s ."],
         ["logs", "logs.md -s ."],
         ["cheerio", "cheers.md -s ."],
-        ["integrated", "integrated.md -s ."]];
-    tests.apply(null,  files.slice());
+        ["integrated", "integrated.md -s ."]
+       ].slice();
+    tests.apply(null,  files);
 
 ### test gitignore
 

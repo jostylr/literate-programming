@@ -67,7 +67,9 @@ we list the flags and new commands and directives.
 
 ## Documentation
 
-For more information, see the [documentation book](https://leanpub.com/literate-programming-md) which is free to read online or available for purchase as a PDF. 
+For more information, see the 
+[documentation book](https://leanpub.com/literate-programming-md) 
+which is free to read online or available for purchase as a PDF. 
 
 Some particularly useful syntax sections are: 
 
