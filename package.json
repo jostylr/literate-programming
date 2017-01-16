@@ -33,7 +33,8 @@
     "uglify-js" : "^2.7.5",
     "csv" : "^1.1.0",
     "date-fns" : "^1.24.0",
-    "lodash" : "^4.17.4"
+    "lodash" : "^4.17.4",
+    "he" : "^1.1.0"
   },
   "devDependencies" : {
     "litpro-jshint" : "^0.3.1",
