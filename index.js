@@ -34,7 +34,11 @@ var Folder = mod.Folder;
 Folder.inputs = args;
 Folder.z = z;
 
-var merge = Folder.merge;
+var merge = Folder.requires.merge;
+if (! Folder.requires) {
+    Folder.requires = {};
+}
+var typeit = Folder.requires.typeit;
 
 var jshint = require('jshint').JSHINT;
 Folder.plugins.jshint = {
@@ -335,6 +339,74 @@ Folder.sync("minify", function (code, args) {
 
     return code;
 } );
+
+var datefns = require('date-fns');
+Folder.dash.date = [datefns, 0];
+Folder.sync('date', function (date, args) {
+    var fn = args[0];
+    if (date) {
+        if (typeit(date) !== 'date') {
+            date = datefns.parse(date);
+        }
+    } else {
+        if (datefns.hasOwnProperty(fn) ) {
+            // has method and no incoming so make date
+            date = new Date();
+        } else if (! fn)  {
+            return new Date();
+        } else {
+            // assuming date string in first argument
+            date = datefns.parse(args.shift());
+            fn = args[0];
+        }
+    }
+        if (! (datefns.hasOwnProperty(fn) ) ) {
+            // no method just get a date object
+            return date;
+        } else {
+            args[0] = date;
+        }
+    return datefns[fn].apply(datefns, args);
+});
+
+var csv = Folder.requires.csv = require("csv");
+Folder.plugins.csv = {
+    parse : {},
+    stringify : {},
+    transform : {}
+};
+Folder.async("csv-parse", function (input, args, cb) {
+    var options = merge(args[0], this.plugins.csv.parse);
+    csv.parse(input, options,  cb);
+});
+Folder.async("csv-transform", function (input, args, cb) {
+    var options = merge(args[1], this.plugins.csv.transform);
+    var f = (typeit(args[0] === "function" ) ) ?
+        args[0] : function (el) {return el;};
+    csv.transform( input, f, options, cb);
+});
+Folder.async("csv-stringify", function (input, args, cb) {
+    var options = merge(args[0], this.plugins.csv.stringify);
+    csv.stringify(input, options,  cb);
+});
+
+var lodash = Folder.requires.lodash = require("lodash");
+Folder.dash.lodash = [lodash, 1];
+Folder.sync("lodash", function (input, args) {
+    if (args.length) {
+        var method = args[0];
+        if (lodash.hasOwnProperty(method)) {
+            args[0] = input;
+            return lodash[method].apply(lodash, args);
+        } else {
+            // this is an error. need to come up with a warning.
+            doc.log("lodash error", method);
+            return input; 
+        }
+    } else {
+        return input;
+    }
+});
 
 Folder.prototype.encoding = args.encoding;
 Folder.prototype.displayScopes = (args.scopes ? function () {

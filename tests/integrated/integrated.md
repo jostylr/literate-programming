@@ -34,8 +34,8 @@ All the source code will be here. We will keep it short.
       ch-replace #scripts, _'|s scripts, all', 
         #css, _'|s css, main' | 
     cheerio #quote, html, _'witticism|md' |
-    minify html, kv(removeComments, t(), 
-        collapseWhitespace, t())")  
+    minify html, kv(removeComments, true(), 
+        collapseWhitespace, true())")  
 * [all.js](#core-js "rave: | join \n, _'side js' ")
 * [main.css](#css "rave:")
 * [](# "cd: save")

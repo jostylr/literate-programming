@@ -61,3 +61,36 @@ options that get merged with the defaults. The js has a default of
   respectively. For css, the
   second argument can be a boolean indicating whether to pass on the
   results object (if true, `t()` ) or just the css output text (default). 
+* **date** `... |date method||date, arg1, arg2, ..`. This uses the
+  [date-fns](https://date-fns.org/) library. Any valid function in that
+  should work fine. There are a few scenarios for getting a date going:
+  
+  * ` date object | date method, arg1, ...` will apply the method of
+    `datefns` to the date as the leading argument and use the rest of the
+    arguments to fill it in. Alias: `date object | -method arg1, ..`
+  * `date string | date method, arg1, ...`  will apply the method to the
+    date parsed by `datefns.parse` Alias: `date string | -method arg1, ..`
+  * `| date method, arg1, ...`  will apply the method to today's date.
+    Alias `| -method arg1, ...`
+  * `| date` Just returns today's date. No alias
+  * `| date string date, method, args1, ...`  will parse the string date
+    and apply the method. No alias.
+  * Note that there is also a subcommand `date` that will generate today's
+    date or a date object based on the input. 
+
+  Recommended form: `| date string | -method arg1, ...| ...`
+* **csv-parse/transform/stringify** 
+    This is an interface into the node-csv library. It does the three
+    named methods. 
+    The first argument can be an object of options except for transform in
+    which the options are second and the first argument is a function to
+    execute on each row. 
+     See [node-csv](http://csv.adaltas.com/) for more details. 
+
+  If you need to use the streaming power, you should access the full power
+  of it using `Folder.requres.csv` and take a look at, for example, [so](http://stackoverflow.com/questions/23080413/nodejs-reading-csv-file) 
+* **lodash** The incoming data is the first
+  argument into the function while the first argument is the method name.
+  The other arguments are what they are. 
+
+  Example: ` abc | - pad 8, 0` 

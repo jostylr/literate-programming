@@ -1,7 +1,7 @@
 /*global module, require */
 module.exports = function(Folder, args) {
 
-    Folder.merge(Folder.plugins.snippets, {
+    Folder.requires.merge(Folder.plugins.snippets, {
         jquery : '<script type="text/javascript"' + 
             'src="https://ajax.googleapis.com/ajax/libs/jquery/' + 
             'ARG0||1.9.0|/jquery.min.js"></script>', 

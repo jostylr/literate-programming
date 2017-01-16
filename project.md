@@ -66,8 +66,12 @@ This is a function that displays the scopes.
 
 This is where the fat comes in. 
 
-    var merge = Folder.merge;
-
+    var merge = Folder.requires.merge;
+    if (! Folder.requires) {
+        Folder.requires = {};
+    }
+    var typeit = Folder.requires.typeit;
+    
     _"jshint"
 
     _"pug"
@@ -81,6 +85,13 @@ This is where the fat comes in.
     _"tidy"
     
     _"minify"
+
+    _"date"
+    
+    _"csv"
+
+    _"lodash"
+
 
  
 
@@ -659,6 +670,184 @@ in form, but not sure if it to use tape, or role my own (with grabbing the
 deep-equal algorithm).  
 
 
+## date
+
+This exposes a nice api for getting dates done nicely. It uses [date-fns](https://date-fns.org/)
+
+So the incoming input is the date (or whatever) and the arguments are the
+function name and other arguments. We get the function name and then we will
+apply the args, putting in the date as the first one. If there are no
+arguments, a new Date() is returned. If the first argument is not a known
+method, then we assume it was a date to be parsed. 
+
+    var datefns = require('date-fns');
+    Folder.dash.date = [datefns, 0];
+    Folder.sync('date', _":fun");
+    
+
+[fun]()
+
+    function (date, args) {
+        var fn = args[0];
+        _":get date"
+        _":check for method"
+        return datefns[fn].apply(datefns, args);
+    }
+
+[get date]()
+
+The issue is that we might have dates coming in different ways. We could have
+an incoming date string, an incoming date object, no incoming, but rather have
+it as a first argument or we could have no date in either place and thus
+create a new date. Here we deal with that logic. 
+
+    if (date) {
+        if (typeit(date) !== 'date') {
+            date = datefns.parse(date);
+        }
+    } else {
+        if (datefns.hasOwnProperty(fn) ) {
+            // has method and no incoming so make date
+            date = new Date();
+        } else if (! fn)  {
+            return new Date();
+        } else {
+            // assuming date string in first argument
+            date = datefns.parse(args.shift());
+            fn = args[0];
+        }
+    }
+
+Could probably move check for method out of the whole thing. 
+
+[check for method]()
+
+This checks for the method and returns date if not found. 
+
+        if (! (datefns.hasOwnProperty(fn) ) ) {
+            // no method just get a date object
+            return date;
+        } else {
+            args[0] = date;
+        }
+
+##### cdoc
+
+    * **date** `... |date method||date, arg1, arg2, ..`. This uses the
+      [date-fns](https://date-fns.org/) library. Any valid function in that
+      should work fine. There are a few scenarios for getting a date going:
+      
+      * ` date object | date method, arg1, ...` will apply the method of
+        `datefns` to the date as the leading argument and use the rest of the
+        arguments to fill it in. Alias: `date object | -method arg1, ..`
+      * `date string | date method, arg1, ...`  will apply the method to the
+        date parsed by `datefns.parse` Alias: `date string | -method arg1, ..`
+      * `| date method, arg1, ...`  will apply the method to today's date.
+        Alias `| -method arg1, ...`
+      * `| date` Just returns today's date. No alias
+      * `| date string date, method, args1, ...`  will parse the string date
+        and apply the method. No alias.
+      * Note that there is also a subcommand `date` that will generate today's
+        date or a date object based on the input. 
+
+      Recommended form: `| date string | -method arg1, ...| ...`
+
+
+## csv
+
+This exposes a csv parsing and stringifying library, [node-csv](https://github.com/wdavidw/node-csv) 
+
+We provide a command that takes the incoming as the data, the first argument
+as the method, and the rest as options or function, depending. In calling the
+csv method, it uses callbacks that we push onto the args array. 
+
+    var csv = Folder.requires.csv = require("csv");
+    Folder.plugins.csv = {
+        parse : {},
+        stringify : {},
+        transform : {}
+    };
+    Folder.async("csv-parse", _":parse");
+    Folder.async("csv-transform", _":transform");
+    Folder.async("csv-stringify", _":parse | sub parse, stringify");
+
+
+
+[parse]()
+
+    function (input, args, cb) {
+        var options = merge(args[0], this.plugins.csv.parse);
+        csv.parse(input, options,  cb);
+    }
+
+
+[transform]()
+
+The first argument is needed and should be a function. 
+
+    function (input, args, cb) {
+        var options = merge(args[1], this.plugins.csv.transform);
+        var f = (typeit(args[0] === "function" ) ) ?
+            args[0] : function (el) {return el;};
+        csv.transform( input, f, options, cb);
+    }
+
+
+##### cdoc
+
+    * **csv-parse/transform/stringify** 
+        This is an interface into the node-csv library. It does the three
+        named methods. 
+        The first argument can be an object of options except for transform in
+        which the options are second and the first argument is a function to
+        execute on each row. 
+         See [node-csv](http://csv.adaltas.com/) for more details. 
+
+      If you need to use the streaming power, you should access the full power
+      of it using `Folder.requres.csv` and take a look at, for example, [so](http://stackoverflow.com/questions/23080413/nodejs-reading-csv-file) 
+
+
+## lodash
+
+This adds in the utility belt of lodash for very quick and easy manipulations
+of various objects. 
+
+Since underscore is special in this syntax (though it probably could work), we
+use the command `dash`. 
+
+    var lodash = Folder.requires.lodash = require("lodash");
+    Folder.dash.lodash = [lodash, 1];
+    Folder.sync("lodash", _":fun");
+
+[fun]()
+
+This takes the incoming as the first argument, making it appear as a method on
+the incoming thing. 
+
+    function (input, args) {
+        if (args.length) {
+            var method = args[0];
+            if (lodash.hasOwnProperty(method)) {
+                args[0] = input;
+                return lodash[method].apply(lodash, args);
+            } else {
+                // this is an error. need to come up with a warning.
+                doc.log("lodash error", method);
+                return input; 
+            }
+        } else {
+            return input;
+        }
+    }
+
+##### cdoc
+
+    * **lodash** The incoming data is the first
+      argument into the function while the first argument is the method name.
+      The other arguments are what they are. 
+
+      Example: ` abc | - pad 8, 0` 
+
 
 [off](# "block:")
 
@@ -796,7 +985,10 @@ help for those adapting to the new version.
         ["matrix", "matrix.md -s ."],
         ["logs", "logs.md -s ."],
         ["cheerio", "cheers.md -s ."],
-        ["integrated", "integrated.md -s ."]
+        ["integrated", "integrated.md -s ."],
+        ["date"],
+        ["csv"],
+        ["lodash"]
        ].slice();
     tests.apply(null,  files);
 
@@ -829,6 +1021,9 @@ destinations.
 * [logs/.gitignore](# "save:")
 * [cheerio/.gitignore](# "save:")
 * [integrated/.gitignore](# "save:")
+* [date/.gitignore](# "save:")
+* [csv/.gitignore](# "save:")
+* [lodash/.gitignore](# "save:")
 * [](# "cd: save"
 
 

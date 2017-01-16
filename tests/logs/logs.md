@@ -224,7 +224,7 @@ We'll do a crescendo of 1, 5, 10, 50, 100, 500, ....
     ## A few factorials
     To see the growth of the factorial, let's compute a few of them. 
 
-    \_":Factorial Table|  evil | html-table a(n, n!, 
+    \_":Factorial Table|  evil | html-table arr(n, n!, 
         \_'|echo `\log_{10} n!`$ | md ')  "
 
 [Factorial Table](# ":|jshint")

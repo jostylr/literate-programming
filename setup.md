@@ -149,10 +149,11 @@ A travis.yml file for continuous test integration!
 
 
 by [James Taylor](https://github.com/jostylr "npminfo: jostylr@gmail.com ; 
-    deps: literate-programming-cli 1.0.3, jshint 2.9.4,
+    deps: literate-programming-cli 1.1.1, jshint 2.9.4,
        postcss 5.2.8, autoprefixer 6.6.0, pug 2.0.0-beta6,
        markdown-it 8.2.2, cheerio 0.22.0, js-beautify 1.6.7,
-       html-minifier 3.2.3, clean-css 3.4.23, uglify-js 2.7.5, ;
+       html-minifier 3.2.3, clean-css 3.4.23, uglify-js 2.7.5,
+       csv 1.1.0, date-fns 1.24.0, lodash 4.17.4   ;
     dev: litpro-jshint 0.3.1, 
         literate-programming-cli-test 0.5.1, 
         markdown-it-anchor 2.6.0")

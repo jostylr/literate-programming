@@ -19,7 +19,7 @@ The main task is to load up any extras and the snippets.
 
 We merge these snippets with the plugin snippets
 
-    Folder.plugins.snippets = Folder.merge(Folder.plugins.snippets, 
+    Folder.plugins.snippets = Folder.requires.merge(Folder.plugins.snippets, 
         {
             scripts : _":scripts", 
             css : _":css"

@@ -20,7 +20,7 @@
     "node": ">=4.0"
   },
   "dependencies":{
-    "literate-programming-cli" : "^1.0.3",
+    "literate-programming-cli" : "^1.1.1",
     "jshint" : "^2.9.4",
     "postcss" : "^5.2.8",
     "autoprefixer" : "^6.6.0",
@@ -30,7 +30,10 @@
     "js-beautify" : "^1.6.7",
     "html-minifier" : "^3.2.3",
     "clean-css" : "^3.4.23",
-    "uglify-js" : "^2.7.5"
+    "uglify-js" : "^2.7.5",
+    "csv" : "^1.1.0",
+    "date-fns" : "^1.24.0",
+    "lodash" : "^4.17.4"
   },
   "devDependencies" : {
     "litpro-jshint" : "^0.3.1",

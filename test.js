@@ -14,6 +14,9 @@ var files = [["first",  "first.md second.md -s ."],
     ["matrix", "matrix.md -s ."],
     ["logs", "logs.md -s ."],
     ["cheerio", "cheers.md -s ."],
-    ["integrated", "integrated.md -s ."]
+    ["integrated", "integrated.md -s ."],
+    ["date"],
+    ["csv"],
+    ["lodash"]
    ].slice();
 tests.apply(null,  files);

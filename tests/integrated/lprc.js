@@ -1,7 +1,7 @@
 /*global module, require */
 module.exports = function(Folder, args) {
 
-    Folder.plugins.snippets = Folder.merge(Folder.plugins.snippets, 
+    Folder.plugins.snippets = Folder.requires.merge(Folder.plugins.snippets, 
         {
             scripts : function () {
                var i, n = arguments.length;
