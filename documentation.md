@@ -94,3 +94,7 @@ options that get merged with the defaults. The js has a default of
   The other arguments are what they are. 
 
   Example: ` abc | - pad 8, 0` 
+* **html-encode/decode/qescape** This is an interface to the
+  [he](https://github.com/mathiasbynens/he) library. It encodes and
+  decodes all named html entities. There is also a simple escape function,
+  that includes quotes which the lit-native html-escape does not. 

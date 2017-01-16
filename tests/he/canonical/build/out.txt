@@ -1,0 +1,13 @@
+foo &#xA9; bar &#x2260; baz &#x3B1; qux 
+
+foo © bar ≠ baz 𝌆 qux
+
+&lt;p dude=&quot;right&quot;&gt;Hey &amp;ne; there.&lt;/p&gt;
+
+<p dude=&quot;right&quot;>Hey &ne; there.</p>
+
+<p dude="right">Hey &ne; there.</p>
+
+&lt;p dude="right"&gt;Hey &amp;ne; there.&lt;/p&gt;
+
+<p dude="right">Hey &ne; there.</p>

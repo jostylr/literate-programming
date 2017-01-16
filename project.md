@@ -92,6 +92,8 @@ This is where the fat comes in.
 
     _"lodash"
 
+    _"html encodings"
+
 
  
 
@@ -848,6 +850,41 @@ the incoming thing.
 
       Example: ` abc | - pad 8, 0` 
 
+## html encodings
+
+This loads in the `he` npm module. 
+
+    var he = require('he');
+    Folder.requires.he = he;
+    Folder.plugins.he = {
+        encode : {},
+        decode : {},
+    };
+    Folder.sync("html-encode", _":encode");
+    Folder.sync("html-decode", _":encode| sub encode, decode");
+    Folder.sync("html-qescape", _":escape");
+
+[encode]()
+
+    function (input, args) {
+        var options = merge(this.plugins.he.encode, args[0]);        
+        return he.encode(input, options);
+    }
+
+[escape]()
+
+    function (input) {
+        return he.escape(input);
+    }
+        
+##### cdoc
+
+    * **html-encode/decode/qescape** This is an interface to the
+      [he](https://github.com/mathiasbynens/he) library. It encodes and
+      decodes all named html entities. There is also a simple escape function,
+      that includes quotes which the lit-native html-escape does not. 
+
+
 
 [off](# "block:")
 
@@ -988,7 +1025,8 @@ help for those adapting to the new version.
         ["integrated", "integrated.md -s ."],
         ["date"],
         ["csv"],
-        ["lodash"]
+        ["lodash"],
+        ["he"]
        ].slice();
     tests.apply(null,  files);
 
@@ -1024,6 +1062,7 @@ destinations.
 * [date/.gitignore](# "save:")
 * [csv/.gitignore](# "save:")
 * [lodash/.gitignore](# "save:")
+* [he/.gitignore](# "save:")
 * [](# "cd: save"
 
 

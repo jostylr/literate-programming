@@ -408,6 +408,24 @@ Folder.sync("lodash", function (input, args) {
     }
 });
 
+var he = require('he');
+Folder.requires.he = he;
+Folder.plugins.he = {
+    encode : {},
+    decode : {},
+};
+Folder.sync("html-encode", function (input, args) {
+    var options = merge(this.plugins.he.encode, args[0]);        
+    return he.encode(input, options);
+});
+Folder.sync("html-decode", function (input, args) {
+    var options = merge(this.plugins.he.decode, args[0]);        
+    return he.decode(input, options);
+});
+Folder.sync("html-qescape", function (input) {
+    return he.escape(input);
+});
+
 Folder.prototype.encoding = args.encoding;
 Folder.prototype.displayScopes = (args.scopes ? function () {
     var folder = this;
