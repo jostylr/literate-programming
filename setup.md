@@ -1,4 +1,4 @@
-# [literate-programming](# "version:0.10.2; Fat command line for literate-programming")
+# [literate-programming](# "version:1.0.0; Fat command line for literate-programming")
 
 This is the command line portion of literate-programming. It depends on
 literate-programming-lib. 
@@ -40,7 +40,7 @@ current one and the default file to process is this one.
 
         args.src = ".";
 
-        require('litpro-jshint')(Folder, args);
+        //require('litpro-jshint')(Folder, args);
 
     };
 
@@ -149,7 +149,7 @@ A travis.yml file for continuous test integration!
 
 
 by [James Taylor](https://github.com/jostylr "npminfo: jostylr@gmail.com ; 
-    deps: literate-programming-cli 1.1.2, jshint 2.9.4,
+    deps: literate-programming-cli 2.0.0, jshint 2.9.4,
        postcss 5.2.8, autoprefixer 6.6.0, pug 2.0.0-beta6,
        markdown-it 8.2.2, cheerio 0.22.0, js-beautify 1.6.7,
        html-minifier 3.2.3, clean-css 3.4.23, uglify-js 2.7.5,

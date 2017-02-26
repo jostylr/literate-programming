@@ -51,8 +51,8 @@ Folder.sync("jshint", function (input, args, name) {
     var doc = this;
     var options, globals;
 
-    var log = [], err, i, lines, line,
-        globhash, file, ind, shortname;
+    var log = [], err, i, lines, line, logcopy,
+        globhash, ind, shortname;
 
     var plug = doc.plugins.jshint;
 
@@ -61,12 +61,9 @@ Folder.sync("jshint", function (input, args, name) {
     globals = plug.globals.concat(args[1] || []);
     
     if (args[2]) {
-       file = '';
        shortname = args[2];
     } else {
-        ind = name.indexOf(":");
-        file = name.slice(0, ind);
-        shortname = name.slice(ind +1, 
+        shortname = name.slice(name.lastIndexOf(":")+1, 
             name.indexOf(doc.colon.v, ind) );
     }
     
@@ -115,10 +112,12 @@ Folder.sync("jshint", function (input, args, name) {
     }
 
     if (log.length > 0 ) {
-        doc.log ("!! JSHint:" + shortname+"\n"+log.join("\n"));
+        logcopy = log.slice();
+        logcopy.unshift(shortname, "jshint Report");
+        doc.log.apply(doc, logcopy); 
     } else {
         if (args[3] || plug.clean) {
-            doc.log("JSHint CLEAN: " + shortname);
+            doc.log(shortname, "jshint clean");
         }
     }
 
@@ -341,6 +340,7 @@ Folder.sync("minify", function (code, args) {
 } );
 
 var datefns = require('date-fns');
+Folder.requires.datefns = datefns;
 Folder.dash.date = [datefns, 0];
 Folder.sync('date', function (date, args) {
     var fn = args[0];
@@ -395,12 +395,12 @@ Folder.dash.lodash = [lodash, 1];
 Folder.sync("lodash", function (input, args) {
     if (args.length) {
         var method = args[0];
-        if (lodash.hasOwnProperty(method)) {
+        if ( typeit(lodash[method], 'function') ) {
             args[0] = input;
             return lodash[method].apply(lodash, args);
         } else {
             // this is an error. need to come up with a warning.
-            doc.log("lodash error", method);
+            this.warn("lodash", "unrecognized method", method);
             return input; 
         }
     } else {

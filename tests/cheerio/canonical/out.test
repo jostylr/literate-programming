@@ -1,3 +1,8 @@
-Problem with cheerio: .great,replace,<p>hi</p>
-SAVED: ./build/out.html
-DONE: ./build
+# DOC: cheers.md
+## 0
+* Problem with cheerio: .great,replace,<p>hi</p>
+# FOLDER LOGS
+## SAVED
+./build/out.html
+## DONE
+./build

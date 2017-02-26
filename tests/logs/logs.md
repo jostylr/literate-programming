@@ -241,7 +241,7 @@ We'll do a crescendo of 1, 5, 10, 50, 100, 500, ....
         i *= 2;                 
         mat.push(fact(i));
     }
-    ret = doc.augment(mat, "mat");
+    ret = new doc.Folder.Matrix(mat);
 
 
 ## Testing the factorial

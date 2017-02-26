@@ -94,8 +94,36 @@ This is where the fat comes in.
 
     _"html encodings"
 
+`_"formatters"`
 
+
+### Formatters    
+
+This is some custom formatters for the command line client
+
+    var oneArgOnly = _":one arg";
+    ["jshint", "jshint clean"].
+        forEach(function (el) {
+            Folder.prototype.formatters[el] = oneArgOnly;
+        });
+    
+
+[one arg]()
+
+This just lists the files that were saved. 
+
+    function (list) {
+        var ret = '';
+        ret += list.map(
+            function (args) {
+                return args.shift();
+            }).
+            join("\n");
+        return ret;
+    } 
  
+
+
 
 # JShint
 
@@ -147,8 +175,8 @@ hints it. The first argument, if present, is a JSON object of options. The
         var doc = this;
         var options, globals;
 
-        var log = [], err, i, lines, line,
-            globhash, file, ind, shortname;
+        var log = [], err, i, lines, line, logcopy,
+            globhash, ind, shortname;
 
         var plug = doc.plugins.jshint;
 
@@ -170,12 +198,14 @@ hints it. The first argument, if present, is a JSON object of options. The
 
 
 [report logs]()
-
+     
     if (log.length > 0 ) {
-        doc.log ("!! JSHint:" + shortname+"\n"+log.join("\n"));
+        logcopy = log.slice();
+        logcopy.unshift(shortname, "jshint Report");
+        doc.log.apply(doc, logcopy); 
     } else {
         if (args[3] || plug.clean) {
-            doc.log("JSHint CLEAN: " + shortname);
+            doc.log(shortname, "jshint clean");
         }
     }
 
@@ -194,12 +224,9 @@ I am not sure where that gets put so ignoring it.
     globals = plug.globals.concat(args[1] || []);
 
     if (args[2]) {
-       file = '';
        shortname = args[2];
     } else {
-        ind = name.indexOf(":");
-        file = name.slice(0, ind);
-        shortname = name.slice(ind +1, 
+        shortname = name.slice(name.lastIndexOf(":")+1, 
             name.indexOf(doc.colon.v, ind) );
     }
 
@@ -683,6 +710,7 @@ arguments, a new Date() is returned. If the first argument is not a known
 method, then we assume it was a date to be parsed. 
 
     var datefns = require('date-fns');
+    Folder.requires.datefns = datefns;
     Folder.dash.date = [datefns, 0];
     Folder.sync('date', _":fun");
     
@@ -829,12 +857,12 @@ the incoming thing.
     function (input, args) {
         if (args.length) {
             var method = args[0];
-            if (lodash.hasOwnProperty(method)) {
+            if ( typeit(lodash[method], 'function') ) {
                 args[0] = input;
                 return lodash[method].apply(lodash, args);
             } else {
                 // this is an error. need to come up with a warning.
-                doc.log("lodash error", method);
+                this.warn("lodash", "unrecognized method", method);
                 return input; 
             }
         } else {
@@ -1027,7 +1055,7 @@ help for those adapting to the new version.
         ["csv"],
         ["lodash"],
         ["he"]
-       ].slice();
+       ].slice(0);
     tests.apply(null,  files);
 
 ### test gitignore

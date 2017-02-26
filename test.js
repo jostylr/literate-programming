@@ -19,5 +19,5 @@ var files = [["first",  "first.md second.md -s ."],
     ["csv"],
     ["lodash"],
     ["he"]
-   ].slice();
+   ].slice(0);
 tests.apply(null,  files);
