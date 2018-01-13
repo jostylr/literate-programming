@@ -5,15 +5,16 @@ module that can be used on its own or with plugins. It can run in node or the
 browser via browserify.
 
 The basic idea is that the text is fed to it already and then it parses it. It
-is event based and so to have it do something, one has to connect up the
-events. 
+generates promises in the stitching, using await and async. It requires
+runtimes that are okay with that. 
 
 A literate program is a series of chunks of explanatory text and code blocks
-that get woven together. The compilation of a literate program can grunt,
-after a fashion, as it weaves. 
+that get woven together. The compilation of a literate program is not just
+weaving code blocks, but managing the entire input and output cycle of a
+project, including linting, testing, minimizing.
 
-The command line client is in a set of separate modules. This is strictly for
-browser-compatible setup. 
+The command line client is in a set of separate modules.
+
 
 # [literate-programming-lib](# "version:1.11.1; A literate programming compiler. Write your program in markdown. This is the core library and does not know about files.")
 
@@ -66,17 +67,25 @@ These are the relevant project files for understanding the library.
 * [](# "cd: save")
 
 
-## The event nature of this program
+## Bluebird
 
-We use the [event-when module](https://github.com/jostylr/event-wheni)
-to provide a flow-control based on events. As
-each code block compiles, it issues an event that it is done. Anything
-listening for it, then acts.
-
-The emitter is a part of the document object. 
-
+We use promises and bluebird is the promise library we use. It has a variety
+of nice features above the native promises.
 
 ## Structure of the module
+
+The module exports a constructor. Call the constructor to create a folder,
+which will hold an entire processing chain. 
+
+To call a literate programming process on a text, use `folder.parse(scope,
+text)` where scope is the name of where to store the blocks and text is a text
+to store. 
+
+The parsing starts with commonmark processing the text. Then the compile phase
+begins. 
+
+....
+
 
 This is where we outline the structure of the compile document. Essentially,
 it is the module boilerplate setup, importing marked and event-when, and
