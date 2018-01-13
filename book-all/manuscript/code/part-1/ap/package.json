@@ -1,0 +1,17 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "description": "examples for intro",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "james",
+  "license": "ISC",
+  "private": true,
+  "dependencies": {
+    "jade": "^1.11.0",
+    "litpro-jshint": "^0.2.1",
+    "markdown-it": "^6.0.0"
+  }
+}

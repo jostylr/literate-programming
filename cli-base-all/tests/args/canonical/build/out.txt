@@ -1,0 +1,2 @@
+cool
+other,_,file,encoding,build,src,checksum,lprc,flag,cache

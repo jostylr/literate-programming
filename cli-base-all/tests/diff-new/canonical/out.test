@@ -1,0 +1,14 @@
+# FOLDER LOGS
+## SAVED
+./build/change.txt
+## DONE
+./build
+# FOLDER LOGS
+## DIFF NEW FILE
+### build/new.txt
+`````
+What? A new file?
+
+`````
+## DONE
+./build

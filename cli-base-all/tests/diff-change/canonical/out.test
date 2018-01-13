@@ -1,0 +1,22 @@
+# FOLDER LOGS
+## SAVED
+./build/change.txt
+## DONE
+./build
+# FOLDER LOGS
+## DIFF DETECTED
+Index: build/change.txt
+===================================================================
+--- build/change.txt	old
++++ build/change.txt	new
+@@ -1,5 +1,5 @@
+ Hey This is great.
+ 
++Yeah
++
+ Sure is.
+-
+-Yep.
+
+## DONE
+./build

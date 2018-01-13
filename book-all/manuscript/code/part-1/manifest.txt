@@ -1,0 +1,21 @@
+default: -s . -b .
+ap/ 
+	operators.md 
+		ops.js
+ap/ 
+	ops2.md
+		ops2.js
+ap/ 
+	web.md
+		web.html
+ap/ 
+	web-lprc.md
+		lprc.js
+slp/ 
+	simple.md
+		teens.js
+sp/ 
+	load.md
+		widget.js
+    	widget.css
+    	full.html
