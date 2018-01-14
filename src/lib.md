@@ -107,13 +107,32 @@ an object on Folder that are then used as prototypes for the folder instances.
 Each doc within a folder shares all the directives and commands. 
 
 
-    /*global require, module */
-    /*jslint evil:true*/
+
+
+## Index 
+
+This is the node index file 
+
+    const P = require('bluebird');
+    const commonmark = require('commonmark');
+    require('string.fromcodepoint);
+    
+    _"Folder"
+
+    module.exports = Folder;
+        
 
     var EvW = require('event-when');
     var commonmark = require('commonmark');
-    require('string.fromcodepoint');
-   
+    require('string.fromcodepoint'); 
+    
+    module.exports = Folder;
+ 
+
+## Folder
+
+This is what can be saved for the browser directly, pulling in bluebird and
+commonmark scripts
 
     var apply = _"events::apply";
 
@@ -172,9 +191,8 @@ Each doc within a folder shares all the directives and commands.
     _"stitching::"
  
     _"commands::more" 
-    
-    module.exports = Folder;
- 
+
+
 
 ## folder constructor
 This is the container that contains a bunch of related docs if need be and
