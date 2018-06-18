@@ -16,21 +16,6 @@ project, including linting, testing, minimizing.
 The command line client is in a set of separate modules.
 
 
-# [literate-programming-lib](# "version:1.11.1; A literate programming compiler. Write your program in markdown. This is the core library and does not know about files.")
-
-This creates the core of the literate-programming system. It is a stand-alone
-module that can be used on its own or with plugins. It can run in node or the
-browser via browserify.
-
-The basic idea is that the text is fed to it already and then it parses it. It
-is event based and so to have it do something, one has to connect up the
-events. 
-
-A literate program is a series of chunks of explanatory text and code blocks
-that get woven together. The compilation of a literate program can grunt,
-after a fashion, as it weaves. 
-
-
 ## Directory structure
 
 ### Load
@@ -67,66 +52,67 @@ These are the relevant project files for understanding the library.
 * [](# "cd: save")
 
 
-## Bluebird
-
-We use promises and bluebird is the promise library we use. It has a variety
-of nice features above the native promises.
 
 ## Structure of the module
 
-The module exports a constructor. Call the constructor to create a folder,
-which will hold an entire processing chain. 
+The module exports a function that takes in a text and an optional options
+object. This function is asynchronous. It returns an object with a variety of
+objects, but the most important being the folder object which is the virtual
+folder directory of the outputs, namely with keys that are filenames (urls)
+and the text content. 
 
-To call a literate programming process on a text, use `folder.parse(scope,
-text)` where scope is the name of where to store the blocks and text is a text
-to store. 
+To call a literate programming process on a text, we can use the following: 
 
-The parsing starts with commonmark processing the text. Then the compile phase
-begins. 
-
-....
-
-
-This is where we outline the structure of the compile document. Essentially,
-it is the module boilerplate setup, importing marked and event-when, and
-exporting the Document constructor. You can pass in a string and an array of
-event assignments to initialize or one can do that after the initialization.
-If you pass in stuff, the compilation will begin then. If you add all of that
-later, then you have to start the compilation by emitting a "ready to
-compile".
-
-By default, there are no methods for reading or writing out the results. It is
-the responsible of the caller to pass handlers to accomplish that.
-
-At the top of the hierarchy is a group of documents. This includes an event
-emitter.
-
-The Folder constructor creates folder instances that contain all the relevant
-sibling literate program documents. The commands and directives are stored in
-an object on Folder that are then used as prototypes for the folder instances.
-Each doc within a folder shares all the directives and commands. 
+    const lp$ = require('literate-programming-lib');
+    const res = await lp$(text, {save: somesaveprocess, read:
+    somereadingprocess});
+    Object.keys(res.folder); //produces list of all files
+    res.save(); // saves the folder
 
 
+The parsing starts with commonmark processing the text. While the commonmark
+parsing itself is synchronous, the directives encountered can be fundamentally 
+asynchronous. So we do awaits for the directives. 
+
+After the parsing is done, we then do the compile phase, which is also
+potentially asynchronous. Note that parsing of other literate files may be
+called into action while doing the compiling. 
+
+To be environment agnostic, the lp function has hooks for saving and reading,
+but does not implement them. That is done at another level. They should both
+by asynchronous functions where save takes in the folder object and saves all
+the files in there and the read function takes in a string
+(filename/url/directory name/doc store in db; there is a convention here) and
+outputs an object of texts with keys (typically it will be one key, the one
+that matches  the filename text, but if a directory, it would produce all the
+files). The cli-module has one set of conventions for this, the browser
+another.
 
 
 ## Index 
 
 This is the node index file 
 
-    const P = require('bluebird');
-    const commonmark = require('commonmark');
-    require('string.fromcodepoint);
-    
-    _"Folder"
 
-    module.exports = Folder;
+    const commonmark = require('commonmark');
+
+    const lp$ = async function (text = '', options = {}) {
+
+        
+        _"options"
+
+        const scopes = {};
+
+        const parser = _"commonmark::"
+
+        const compiler = _"
+
         
 
-    var EvW = require('event-when');
-    var commonmark = require('commonmark');
-    require('string.fromcodepoint'); 
+    };
     
-    module.exports = Folder;
+    module.exports = lp$;
+            
  
 
 ## Folder
