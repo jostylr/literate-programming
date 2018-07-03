@@ -22,8 +22,6 @@ The command line client is in a set of separate modules.
 
 These are loaded from the src directory.
 
-* [events](events.md "load:") Some of the events that get emitted. It would be
-  good to get more there. 
 * [commonmark](commonmark.md "load:") This is where the markdown document is parsed
   into events using commonmark. 
 * [stitching](stitching.md "load:") This is where we stitch all the pieces

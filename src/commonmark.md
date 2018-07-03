@@ -1,91 +1,123 @@
-Here we implement the markdown parser. We use commonmark and it generates an
-AST which we can then do whatever we like with it. Our purposes are purely
-informational and we extract headers, links, and code blocks. 
+Here we work with the markdown parser. We use commonmark and it generates an
+AST which we can then walk along as we wish. As we go along, we set up our
+block structure. 
 
-    function (doc) {
-        var gcd = doc.gcd;
-        var file = doc.file;
+We expect a text to come in, an identifier, and an object with the commands,
+directives, etc. The compiled form returns the markdown parsed structure, the
+compiled blocks, and a set of saved files. There will be a lot of promises
+involved here that are waiting for the completion of the other promises. 
 
-        gcd.when("marked done:"+file, "parsing done:"+file);
+The object dc contains a number of methods, some of which manipulate
+structures outside of this function (side effects!). Mainly, it is a set of
+promises that 
 
-        gcd.on("parsing done:"+file, function () {
-            doc.parsed = true;
-        });
 
-        var text = doc.text;
-        _"process comments"
+    function (id, text, dc, docs) {
 
-        var reader = new commonmark.Parser();
-        var parsed = reader.parse(text); 
+        let reader = new commonmark.Parser();
+        let parsed = reader.parse(text); 
 
-        var walker = parsed.walker();
-        var event, node, entering, htext = false, ltext = false, lang, code;
-        var ind, pipes, middle, title, href, directive; //for links
+        let walker = parsed.walker();
 
-        while ((event = walker.next())) {
-            node = event.node;
-            entering = event.entering;
-
-            _"walk the tree"
-
-           // console.log(node.type, node.literal || '', node.destination|| '', node.title|| '', node.info|| '', node.level|| '', node.sourcepos, event.entering);
+        let ret = {
+            id,
+            parsed,
+            lines : text.split('\n'),
+            blocks : [],
+            log : []
         }
 
-        gcd.emit("marked done:" + file);
+
+Parser is something that can be changed around based on directives. We use cur
+as an object that gets into any parser type function. If no such type exists,
+then noop does not. The log from dc should expect to be passed in the array to
+store the logs and return a function to be called as the logger.
+
+The block for a current is where we stash the code, as we assemble it, the
+name, boundary information. We also have a header property which is there for
+the last "proper" header, determined at the end of the parsing of a header.
+
+
+        let noop = () => null;
+        let cur = {
+            parser : new dc.Parser(),
+            log : (dc.log)(ret.log) || noop,
+            levels : [id],
+        };
+        let log = (dc.log)(ret.log) || noop;
+
+        let position = [0,0];
+        _"new code block"
+
+        let iter = 0;
+        while (let event = walker.next()) {
+            cur.node = event.node;
+            cur.entering = event.entering;
+            log("walker start", iter, cur);
+            (cur.parser[cur.node.type] || noop)(cur, ret, dc);
+            log("walker end", iter, cur);
+            iter += 1;
+
+        }
+
+        position = [ret.lines.length, 0];
+        _"close code block"
+
+        _"clean up"
+
+        return ret;
+
     }
 
+## For dc
 
-## process comments
+This is the jumping off point for the dc inclusion of items here
 
+    _"main parser"
 
-This strips the comment part of comments of the form `<!--+ ... -->`. This
-allows one to hide a great deal from viewing while maintaining functionality.
-The comment needs to start at a new line.
-
-    var bits = text.split("\n<!--+");
-    if (bits.length > 1) {
-        text = bits[0] + "\n" + bits.slice(1).map(function (el) {
-            var ind = el.indexOf("-->"); 
-            if (ind !== -1) {
-                return el.slice(0, ind).trim() + el.slice(ind+3);
-            } else {
-                return el;
-            }
-        }).join("\n");
-    } 
+    dc.convertHeading = _"convert heading";
 
 
+## Main Parser
 
-# walk the tree
+The above strategy is to have a parser object that has various functions for
+different node types of interest. This parser can be replaced at times if
+desired. But here we are interested in specifying the behavior. They are all
+given the node, a boolean indicating whether this is the first time we have
+seen it, the current working state which contains what parser to use and the
+log function, as well as the forming block, to add code and transforms to.
+When the block finishes, there should be an end attribute added. The name of
+the block should be the heading name; when the heading is done, the block gets
+added underneath that name (or combined with an existing name if it already
+exists). The block also has a boundary property which gives a list of
+start.end positions; it could be multiple due to repeat headers. 
+
 
 So we examine the nodes and decide when to do something of interest. The nodes
 of interest are of type Heading, Link, Text, and CodeBlock. CodeBlock is easy
 as the literal is all we need. Both Heading and Link require us to descend and
 string together the text. 
 
+We create an object for nodeParsing to allow the adding of methods to
+customize the parsing on the fly with directives. 
 
-    switch (node.type) {
-    case "text" : 
-        _":text"
-    break;
-    case "link" : 
-        _"link"
-    break;
-    case "code_block" :
-        _":code"
-    break;
-    case "heading" :
-        _":heading"
-    break;
-    }
-    
+    dc.nodeParser = function nodeParser () {return this;}
+    let p = dc.nodeParser.prototype;
+    p.text          = (cur, ret, dc) => {_"text"},
+    p.link          = (cur, ret, dc) => {_"link"},
+    p.code_block    = (cur, ret, dc) => {_"code"},
+    p.heading       = (cur, ret, dc) => {_"heading"}
 
-[text]() 
+
+
+### Text
 
 This simply adds the text to an array if the array is there. We have header
 text and link text. Since links may be in headers, we have two separate text
-trackers. 
+trackers since both might be active at the same time. Also, note that links
+can have stuff inside them as well, which is why it is not just bubbled up. 
 
+    let {htext, node, ltext} = cur;
     if (htext) {
         htext.push(node.literal);
     }
@@ -93,54 +125,199 @@ trackers.
         ltext.push(node.literal);
     }
 
-[heading]()
 
-Headings create blocks. We emit an event to say we found one. We collect the
-text as we go with the text and then join them when ready. 
+### Heading
 
+Headings create blocks. 
+
+We collect the text as we go along and then join them when ready. Different
+heading levels have different behavior.
+
+The sourcepos attribute contains both the beginning and ending of the block,
+but it is not our block. Hence we need to just use the beginning and, when
+closing a block, use the beginning of that block as the end which means it is
+one more than the actual end, like a slice. 
+
+    let {node, block, levels} = cur;
+    let position = node.sourcepos[0];
     if (entering) {
-        htext = [];
+        _"close code block"
+        _"new code block"
+        cur.htext = [];
     } else {
-        gcd.emit("heading found:"+node.level+":"+file, htext.join(""));
-        htext = false;
+        let level = node.level;
+        let htext = dc.convertHeading(cur.htext.join(''));
+        cur.htext = false;
+
+        if (level === 5) {
+            levels[2] = htext;
+            levels.length = 3;
+        } else if (level === 6) {
+            levels[3] = htext;
+            levels.length = 4;
+        } else {
+            levels[1] = htext;
+            levels.length = 2;
+        }
+        block.levels = Array.from(levels);
+        block.name = block.levels.join('/');
+
     }
-    
-[code]()
 
-We emit found code blocks with optional language. These should be stored and
-concatenated as need be. 
 
-    lang = node.info;
+
+#### Convert Heading
+
+This converts the heading to a normal form with lower caps, one space, no
+spaces at ends.
+
+    function convertHeading (str) {
+        var reg = /\s+/g;
+        str = str.trim().toLowerCase();
+        str = str.replace(reg, " ");
+        return str;
+    }
+
+
+
+### Close code block
+
+Here we close any open code blocks. We essentially store the block, both in
+the return object of blocks as well as in the docs block.
+
+    cur.boundary.push(position);
+    _":chunk"
+    ret.blocks.push(block);
+    block.placement = ret.blocks.length - 1;
+    dc.storeBlock(block);
+
+[chunk]()
+
+We also put a
+complete textual representation of the whole chunk in the block. The end is
+fine for slicing as long as it is at the beginning of the block (typical); otherwise we
+need to add 1. 
+
+    let start = block.boundary[0][0];
+    let end = position[0];
+    if (position[1] !== 0) {
+        end += 1;
+    }
+    block.chunk = ret.lines.slice(start, end);
+    start = block.boundary[0][1]; // start on the first line
+    if (start) { block.chunk[0] = block.chunk[0].slice(start); }
+    end = position[1]; 
+    if (end) { 
+        let last = block.length-1;
+         block.chunk[last] = block.chunk[last].slice(0, end);
+    }
+
+
+### Store Block
+
+This might get moved. It is a function that takes in a block and stores a copy
+of it in the structure of blocks. It is complicated because we allow for
+multiple blocks with the same name and this puts them all together. 
+
+    function (block) {
+        let dc = this;
+        let docs = dc.docs;
+        let target = docs[block.name];
+
+        if ( target ) {
+            dc.log("repeat block", block);
+        } else {
+            target = docs[block.name] = {
+                code : [],
+                transforms : [],
+                boundaries : [],
+                name : block.name,
+                chunks : []
+            };
+        }
+        
+        target.chunks.push( [block.chunk, block.placement] );
+        
+        ['code', 'transforms', 'boundaries'].forEach ( (type) => {
+            block[type].forEach( 
+                    (item) => target[type].push(dc.deepCopy(item))
+                )
+            }       
+        );
+    }
+
+
+### New code block
+
+This is where we define a new code block. Essentially, we have an array for
+the code, an array for any transforms listed on this block (piped commands to
+be done on the code before storing it). There is also a boundary and a name 
+
+
+    cur.block = {
+        code: [],
+        transforms : [],
+        boundary: [position],
+        name : null
+    };
+
+
+
+### Code
+
+We store code blocks with an optional language. The concatenation will occur
+separately, as needed. Typically, the language should be the same, but having
+it allows for some different options including potentially mixing languages in
+a single block and pulling them out separately. 
+
+The removal of the last newline happens because we generally concatenate with
+newlines which would make it redundant. 
+
+    lang = node.info || '';
     code = node.literal || '';
     if (code[code.length -1] === "\n") {
         code = code.slice(0,-1);
     }
-    if (lang) {
-        gcd.emit("code block found:"+lang+":"+file, code);
-    } else {
-        gcd.emit("code block found:"+ file, code);
-    }
+    cur.block.code.push( {
+        lang, code, start:node.sourcepos[0], end:node.sourcepos[1]
+    });
+
 
 ### Link
 
 Links may be directives if one of the following things occur:
 
-1. Title contains a colon. If so, then it is emitted as a directive with the
-   stuff preceeding the colon being a directive. The data sent is an array
+1. Title contains a colon. If so, then it is run as a directive with the
+   stuff preceding the colon being the directive name. The data sent is an array
    with the link text, the stuff after the colon, and the href being sent. No
-   pipe parsing is done at this point.
-2. Title starts with a colon in which case it is a switch directive. The stuff
+   pipe parsing is done at this point, but the directive's execution may do
+   the parsing. 
+2. Title starts with a colon in which case it is a switch directive with link
+   text not being empty or beginning with a pipe. The stuff
    after the colon is sent as second in the data array, with the link text as
    first. The href in this instance is completely ignored. There is some pipe
    processing that happens.
-3. Title and href are empty. 
+3. Title and href are empty. This is a switch with no later processing.
+4. Transforms either have a directive of transform or have nothing before the
+   colon (like a switch) but to distinguish, it needs either no link text or link text containing a pipe. 
+5. Switch like except link text is `^`. This restores the setup to the current
+   operating major block heading. This allows for little minor block
+   interruptions and then returning to the flow. This would also work with h5,
+   h6 headings. 
+
+For the switches and transforms, the commands are parsed and placed as
+transforms in the block. A switch also creates a new block.
+
+All of these options are converted into a directive which is then called. As
+the current object
 
 Return the text in case it is included in a header; only the link text will be
 in the heading then. 
 
     if (entering) {
         ltext = [];
-    } else {
+    } else { //link text ready
+
         href = node.destination;
 
 Commonmark translates `^` into `%5E`. This undoes that. May want to think
@@ -150,24 +327,46 @@ now.
         if (href === "#%5E") {
             href = "#^";
         }
+
+Clean up other stuff. We don't transform the link text because it could be
+used by other stuff. 
+
         title = node.title;
-        ltext = ltext.join('').trim();
+        let ltext = ltext.join('').trim();
         
         if (title) {
             title = title.replace(/&#39;/g, "'").replace(/&quot;/g, '"');
         }   
+
+Now we figure out what we have
+
         if ((!href) && (!title)) {
-            gcd.emit("switch found:"+file, [ltext, ""]);
+            dc.log("switch found", cur);
+            _"switch"
         } else if (title[0] === ":") {
-            if  ((ltext.indexOf("|") !== -1) || ( ltext.length === 0) ) {
-                _":transform"
+            let pipes = title.slice(1);
+
+            if  ((ltext.indexOf("|") !== -1 ) || ( ltext.length === 0) ) {
+                _"transform"
+            } else if (ltext === "^") {
+                _"return to main"
             } else {
-                _":switch with pipes"
+                _"switch"
+                _"transform"
             }
+
         } else if ( (ind = title.indexOf(":")) !== -1) {
-            _":directive"
+
+These are what happens to directives in general. Be sure to use cur for load
+and save prefixes.  
+
+            directive =  dc.convertHeading(title.slice(0,ind)); 
+            dc.directives(directive, ltext, title.slice(ind+1), href, cur, ret)
+
         }
+
         ltext = false;
+    
     }
 
 [transform]()
@@ -195,26 +394,6 @@ empty link text though that becomes entirely hidden to the reader and is best no
 
 [directive]()
 
-A nice customary directive found. The load and save prefixes allow for
-changing the path. Those directives need that data sent to them. 
-
-    directive =  doc.convertHeading(title.slice(0,ind)); 
-    var toSend = {   link : ltext,
-            input : title.slice(ind+1),
-            href: href, 
-            cur: doc.curname, 
-            directive : directive 
-        };
-    if (doc.loadprefix) {
-        toSend.loadprefix = doc.loadprefix;
-    }
-    if (doc.saveprefix) {
-        toSend.saveprefix = doc.saveprefix;
-    }
-    gcd.emit("directive found:" + 
-        directive +  ":" + file, 
-        toSend
-    );
 
 
 [switch with pipes]()
