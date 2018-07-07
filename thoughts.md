@@ -74,7 +74,47 @@ require the test before saving changes. Something like that.
 Want to have graphs for this stuff. The compiled chunk should point to its
 ancestors that compile into it. 
 
+Thinking kind of mindmap style, with the blocknames as being what is shown,
+links to other sub-blocks forming the extended out list blocks.  
 
 
+## Code spans
 
+!Failed.  Commonmark does not give position data for inline elements. Thus
+cannot look after the code line. But we can use this to make some more
+interesting directive syntax, including shortening the save/load directives. 
+
+We can have a special syntax for inline code, generally in the form of a list.
+This could allow for lots of little variables. Essentially, look for each code
+span, look in the next character and see if it matches a known character. If so, do
+it, with the stuff in the code being passed as raw and the stuff after the
+symbol up to the next whitespace being passed in as well. 
+
+* `a#3`~  stores the number 3 into a. This is eval'd js. Alt `3`#a
+* `ace beta=3`~ or  `3`=ace-beta stores directly into 'ace beta' (the
+  whitespace thing is also the same from the href in link directives, I
+  believe. 
+* `lib::index>index.js`~ saves the block in lib::index into the file index.js
+* `lib<lib.md`~ reads lib.md into the file space lib.
+* `lib::index>index.js:utf8|parse whatever | ...`~ allows for usual save
+  options in this syntax. 
+* `*<*.md`~ would load all markdown files in the top src directory and put
+  them under their filename without the md
+* `posts/*.html~posts/*.md|scrub|html`~ would load all posts
+* `linktext=href info|cmds`!dir is a complete alternative syntax for
+  directives (use dashes in the directive name if a space is needed.)
+* [lib::index>index.js](~) could be another syntax
+
+For an activated code span with a tilde, we go through each character one at a
+time, looking for the first symbol to match the execution.  
+
+
+## link syntax
+
+[ace beta = 3](~)
+
+[a=`3+6`](~)
+
+[`*<*.md`](~ ":|whatever...")
+ 
 
