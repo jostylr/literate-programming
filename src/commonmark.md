@@ -3,7 +3,7 @@ AST which we can then walk along as we wish. As we go along, we set up our
 block structure. 
 
 We expect a text to come in, an identifier, and an object with the commands,
-directives, etc. The compiled form returns the markdown parsed structure, the
+directives, the docs, etc. The compiled form returns the markdown parsed structure, the
 compiled blocks, and a set of saved files. There will be a lot of promises
 involved here that are waiting for the completion of the other promises. 
 
@@ -11,22 +11,23 @@ The object dc contains a number of methods, some of which manipulate
 structures outside of this function (side effects!). Mainly, it is a set of
 promises that 
 
-
+    
     async function (id, text, dc) {
+        let docs = dc.docs;
 
-        let reader = new commonmark.Parser();
-        let parsed = reader.parse(text); 
+        text = await text;
 
+        let ret = dc.makeRet(id);
+        ret.lines = text.split('\n'),
+
+
+        let prom = docs.files[id]; // this may create the item 
+
+
+        let reader, parsed;
+        _"commonmark parse"
+    
         let walker = parsed.walker();
-
-        let ret = {
-            id,
-            parsed,
-            lines : text.split('\n'),
-            blocks : [],
-            files : []
-        }
-
 
 
 The `dc.Parser` is something that can be changed around based on directives. We use cur
@@ -45,20 +46,9 @@ the last "proper" header, determined at the end of the parsing of a header.
             levels : [id],
         };
 
-        let cur.position = [[1,1],[1,1]];
-        dc.directive.newBlock(cur, ret, dc);
+        _"gather up text and run directives" 
 
-        while (let event = walker.next()) {
-            cur.node = event.node;
-            cur.position = dc.deepCopy(node.sourcepos);
-            cur.entering = event.entering;
-            (cur.parser[cur.node.type] || noop)(cur, ret, dc);
-        }
-
-        position = [ret.lines.length, ];
-        _"close code block"
-
-        _"clean up"
+        prom.res(ret);
 
         return ret;
 
@@ -488,5 +478,48 @@ This adds a block
     });
 
 
+
+## Commonmark Parse
+
+This does the basic parsing. If fails, we reject the promise and return. 
+
+    try {
+        reader = new commonmark.Parser();
+        parsed = ret.parsed = reader.parse(text); 
+
+    } catch (e) {
+        let reason = "commonmark failed to parse";
+        e.reason = reason + id;
+        prom.rej(e);
+        error(reason, id, e);
+        throw e;    
+    }
+
+## Gather up text and run directives
+
+
+    try {
+        let cur.position = [[1,1],[1,1]];
+        dc.directive.newBlock(cur, ret, dc);
+
+        while (let event = walker.next()) {
+            cur.node = event.node;
+            cur.position = dc.deepCopy(node.sourcepos);
+            cur.entering = event.entering;
+            (cur.parser[cur.node.type] || noop)(cur, ret, dc);
+        }
+
+        position = [ret.lines.length, ];
+        _"close code block"
+
+        _"clean up"
+
+    } catch (e) {
+        let reason = "commonmark failed to parse";
+        e.reason = reason + id;
+        prom.rej(e);
+        error(reason, id, e);
+        throw e;    
+    }
 
 
