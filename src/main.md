@@ -1,5 +1,23 @@
 # Core
 
+NEW IDEA: Write the flow writer such that it runs over a document using a
+custom parser per document. That parser should call the directive handler each
+time something ought to be done, such as defining a new block, adding a code
+block, running a more generic directive, or loading a file. The directives
+should be able to be run immediately, modifying stuff as needed. 
+
+Related to this is changing from using markdown to html as a basic expected
+format. This allows any markup language that converts into html to be used. It
+requires seeing `h#` blocks, `a` links with titles and `pre code` blocks for
+the code bits. Need to work on position extraction. 
+
+Also want to enable customizable code block parsing, possibly language
+dependent. 
+
+
+https://www.npmjs.com/package/line-column
+
+
 This is the main entry for the common library of literate-programming. 
 
 In this file, we set up the main flows, such as the proxies for directives,
@@ -15,7 +33,7 @@ setup files (init) and the starter files (start).
 
     let commonmark = require('commonmark');
 
-    modules.exports = async function lpLib () {
+    modules.exports = async function lpLib (config={}) {
         let directives = {_"directives::"};
         let cmds = { _"commands::" };
         let subcmds = {_"subcommands::"};
@@ -29,7 +47,10 @@ setup files (init) and the starter files (start).
             errors : [],
             docs : {
                 files: {}
-            }
+            },
+            underscore : config.underscore || "\u005F",
+            quotes : config.quotes || [ ["'", "'"], ['"', '"'], ['`', '`']]
+            
         };
 
         let setFile = await access.read(setName);
@@ -201,10 +222,12 @@ available through closure.
 
         let block = {
             bits : [],
-            full : ''
+            full : '',
         };
          
         _"run through source"
+
+        _"transform into final"
 
         return block;
 
@@ -343,7 +366,10 @@ construct is probably better served as a transform directive.
 
     while (let ind < n) {
 
-        
+       ind = block.indexOf(underscore, ind); 
+
+
+
 
 
     }
