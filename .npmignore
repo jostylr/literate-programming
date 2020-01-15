@@ -3,5 +3,6 @@ build
 cache
 tests
 test.js
-travis.yml
+.travis.yml
+lprc.js
 *.md

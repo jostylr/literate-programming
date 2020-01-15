@@ -1,4 +1,4 @@
-# [literate-programming](# "version:1.0.0; Fat command line for literate-programming")
+# [literate-programming](# "version:1.1.0; Fat command line for literate-programming")
 
 This is the command line portion of literate-programming. It depends on
 literate-programming-lib. 
@@ -104,7 +104,8 @@ The requisite npm package file.
     cache
     tests
     test.js
-    travis.yml
+    .travis.yml
+    lprc.js
     *.md
 
 
@@ -149,12 +150,12 @@ A travis.yml file for continuous test integration!
 
 
 by [James Taylor](https://github.com/jostylr "npminfo: jostylr@gmail.com ; 
-    deps: literate-programming-cli 2.0.0, jshint 2.9.4,
-       postcss 5.2.8, autoprefixer 6.6.0, pug 2.0.0-beta6,
-       markdown-it 8.2.2, cheerio 0.22.0, js-beautify 1.6.7,
-       html-minifier 3.2.3, clean-css 3.4.23, uglify-js 2.7.5,
-       csv 1.1.0, date-fns 1.24.0, lodash 4.17.4, he 1.1.0   ;
-    dev: litpro-jshint 0.3.1, 
+    deps: literate-programming-cli 2.1.0, jshint 2.11.0,
+       postcss 7.0.26, autoprefixer 9.7.4, pug 2.0.4,
+       markdown-it 10.0.0, cheerio 0.22.0, js-beautify 1.10.3,
+       html-minifier 4.0.0, clean-css 4.2.1, uglify-js 3.7.5,
+       csv 5.3.1, date-fns 1.30.1, lodash 4.17.15, he 1.2.0   ;
+    dev: litpro-jshint 0.4.0, 
         literate-programming-cli-test 0.5.1, 
-        markdown-it-anchor 2.6.0")
+        markdown-it-anchor 5.2.5")
 
